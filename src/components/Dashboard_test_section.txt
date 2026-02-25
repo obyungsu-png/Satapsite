@@ -1,0 +1,299 @@
+                {wordStudyMode === 'test' && (
+                  <div className="max-w-4xl mx-auto">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-8">
+                      <h2 className="text-xl">학습하기</h2>
+                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Show Review Screen Every 10 Questions */}
+                    {currentWordIndex % 10 === 0 && currentWordIndex !== 0 && !showTestResult[currentWordIndex] ? (
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                        <h2 className="text-2xl mb-2">잘했어요. 점점 더 나아가고 있어요.</h2>
+                        <div className="mb-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="flex-1 bg-gray-200 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 transition-all" 
+                                style={{ width: `${(currentWordIndex / selectedWordList.words.length) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-600">
+                              총 세트 전체률: <span className="text-green-600">{Math.round((currentWordIndex / selectedWordList.words.length) * 100)}%</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mb-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-gray-600">정답</span>
+                            <span className="text-gray-600">문제</span>
+                          </div>
+                        </div>
+
+                        <h3 className="text-lg mb-4">이 라운드에서 학습한 단어</h3>
+                        <div className="space-y-3 mb-6">
+                          {selectedWordList.words.slice(Math.max(0, currentWordIndex - 10), currentWordIndex).map((word: any, idx: number) => {
+                            const actualIdx = currentWordIndex - 10 + idx;
+                            return (
+                              <div key={actualIdx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div className="flex items-center gap-4 flex-1">
+                                  <span className="text-gray-800">{word.word}</span>
+                                  <span className="text-gray-500 text-sm">{word.definition}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button className="p-1.5 hover:bg-gray-200 rounded">
+                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                  </button>
+                                  <button className="p-1.5 hover:bg-gray-200 rounded">
+                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.122-2.121" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            onClick={() => {
+                              // Just continue to next question
+                            }}
+                            className="px-8 py-3 rounded-lg text-white hover:opacity-90 transition-colors"
+                            style={{ backgroundColor: '#4F46E5' }}
+                          >
+                            계속
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Progress Bar */}
+                        <div className="mb-8">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 flex gap-1">
+                              {selectedWordList.words.map((_: any, idx: number) => {
+                                const isAnswered = showTestResult[idx];
+                                const isCorrect = isAnswered && testAnswers[idx] === selectedWordList.words[idx]?.word;
+                                
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`flex-1 h-3 rounded-full transition-all relative ${
+                                      isCorrect
+                                        ? 'bg-green-500'
+                                        : isAnswered
+                                        ? 'bg-orange-500'
+                                        : idx === currentWordIndex
+                                        ? 'bg-gray-400'
+                                        : 'bg-gray-200'
+                                    }`}
+                                  >
+                                    {idx === currentWordIndex && (
+                                      <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white text-xs px-2 py-1 rounded-full">
+                                        {idx + 1}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <span className="text-sm text-gray-600 ml-2">
+                              {selectedWordList.words.length}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Test Card - Multiple Choice or Subjective */}
+                        {currentWordIndex < selectedWordList.words.length && (
+                          <>
+                            {/* Multiple Choice Questions (first half) */}
+                            {currentWordIndex < Math.ceil(selectedWordList.words.length / 2) ? (
+                              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
+                                {/* Word Definition */}
+                                <div className="mb-8">
+                                  <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-sm text-gray-600">뜻</span>
+                                    <button className="p-1 hover:bg-gray-100 rounded-full">
+                                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.122-2.121" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <p className="text-xl text-gray-800 leading-relaxed">
+                                    {selectedWordList.words[currentWordIndex]?.definition}
+                                  </p>
+                                </div>
+
+                                {/* Answer Options */}
+                                <div className="mb-6">
+                                  <p className={`text-sm mb-4 ${
+                                    showTestResult[currentWordIndex] && testAnswers[currentWordIndex] === selectedWordList.words[currentWordIndex]?.word
+                                      ? 'text-green-600'
+                                      : showTestResult[currentWordIndex] && testAnswers[currentWordIndex] !== selectedWordList.words[currentWordIndex]?.word
+                                      ? 'text-orange-600'
+                                      : 'text-gray-600'
+                                  }`}>
+                                    {showTestResult[currentWordIndex] && testAnswers[currentWordIndex] === selectedWordList.words[currentWordIndex]?.word
+                                      ? ['잘했어요!', '훌륭해요!', '정답입니다'][currentWordIndex % 3]
+                                      : showTestResult[currentWordIndex] && testAnswers[currentWordIndex] !== selectedWordList.words[currentWordIndex]?.word
+                                      ? '걱정하지 마세요, 아직 배우고 있잖아요!'
+                                      : '정답을 고르세요'}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    {generateTestOptions(
+                                      selectedWordList.words[currentWordIndex]?.definition,
+                                      selectedWordList.words,
+                                      currentWordIndex
+                                    ).map((option, idx) => {
+                                      const isSelected = testAnswers[currentWordIndex] === option;
+                                      const isCorrect = option === selectedWordList.words[currentWordIndex]?.word;
+                                      const showResult = showTestResult[currentWordIndex];
+                                      
+                                      return (
+                                        <button
+                                          key={idx}
+                                          onClick={() => {
+                                            handleTestAnswer(currentWordIndex, option, selectedWordList.words[currentWordIndex]?.word);
+                                          }}
+                                          disabled={showResult}
+                                          className={`p-4 text-left rounded-lg transition-all relative ${
+                                            showResult && isCorrect
+                                              ? 'border-2 border-green-500 bg-white'
+                                              : showResult && isSelected && !isCorrect
+                                              ? 'border-2 border-orange-500 bg-white'
+                                              : showResult && !isSelected && isCorrect
+                                              ? 'border-2 border-dashed border-green-500 bg-white'
+                                              : 'border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                          }`}
+                                          style={showResult && !isSelected && isCorrect ? { borderStyle: 'dashed' } : {}}
+                                        >
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-start gap-2 flex-1">
+                                              <span className={`text-sm ${
+                                                showResult && isCorrect
+                                                  ? 'text-green-600'
+                                                  : showResult && isSelected && !isCorrect
+                                                  ? 'text-orange-600'
+                                                  : 'text-gray-500'
+                                              }`}>
+                                                {showResult && isCorrect
+                                                  ? '✓'
+                                                  : showResult && isSelected && !isCorrect
+                                                  ? 'X'
+                                                  : idx + 1}
+                                              </span>
+                                              <span className="text-gray-800">{option}</span>
+                                            </div>
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Help Link */}
+                                <div className="flex justify-end">
+                                  <button className="text-sm text-blue-600 hover:underline">
+                                    모르시겠어요?
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Subjective Questions (second half) */
+                              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
+                                {/* Word Type and Sound Icon */}
+                                <div className="flex items-center gap-2 mb-6">
+                                  <span className="text-sm text-gray-600">뜻</span>
+                                  <button className="p-1 hover:bg-gray-100 rounded-full">
+                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.122-2.121" />
+                                    </svg>
+                                  </button>
+                                </div>
+
+                                {/* Definition */}
+                                <p className="text-xl text-gray-800 leading-relaxed mb-12">
+                                  {selectedWordList.words[currentWordIndex]?.definition}
+                                </p>
+
+                                {/* Answer Input Section */}
+                                <div className="mb-6">
+                                  <h3 className="text-sm text-gray-600 mb-3">희원님의 답</h3>
+                                  <input
+                                    type="text"
+                                    value={subjectiveAnswer}
+                                    onChange={(e) => setSubjectiveAnswer(e.target.value)}
+                                    placeholder="정답을 입력하세요"
+                                    disabled={showTestResult[currentWordIndex]}
+                                    className="w-full p-4 border-2 border-blue-400 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-blue-500 disabled:bg-gray-50"
+                                  />
+                                </div>
+
+                                {/* Hint Section */}
+                                <div className="flex items-center justify-between mb-6">
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <span className="text-blue-600">힌트 보기</span>
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    <span>{selectedWordList.words[currentWordIndex]?.word?.slice(0, 4)}___</span>
+                                  </div>
+                                  <button className="text-sm text-blue-600 hover:underline">
+                                    모르시겠어요?
+                                  </button>
+                                </div>
+
+                                {/* Submit Button - Only show when answer is entered */}
+                                {subjectiveAnswer.trim() && !showTestResult[currentWordIndex] && (
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={() => {
+                                        handleTestAnswer(currentWordIndex, subjectiveAnswer.trim(), selectedWordList.words[currentWordIndex]?.word);
+                                      }}
+                                      className="px-8 py-3 rounded-lg text-white hover:opacity-90 transition-colors"
+                                      style={{ backgroundColor: '#1E40AF' }}
+                                    >
+                                      답하기
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Continue Button and Message */}
+                            {showTestResult[currentWordIndex] && (
+                              <div className="flex justify-between items-center mt-4">
+                                <p className="text-sm text-gray-600">
+                                  정답을 클릭하거나 이동 키나 놓고 계속하세요
+                                </p>
+                                <button
+                                  onClick={() => {
+                                    if (currentWordIndex < selectedWordList.words.length - 1) {
+                                      handleNextWord();
+                                    } else {
+                                      alert('테스트 완료!');
+                                    }
+                                  }}
+                                  className="px-6 py-2.5 text-white rounded-lg hover:opacity-90 transition-colors text-sm"
+                                  style={{ backgroundColor: '#1E40AF' }}
+                                >
+                                  계속
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
