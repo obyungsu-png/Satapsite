@@ -1,7 +1,7 @@
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner@2.0.3";
 import specialIcon from 'figma:asset/d7f2c71b688d83c12f0a6e1dec983a339119de39.png';
@@ -21,15 +21,30 @@ import { generateTableRows } from './utils/generateTableRows';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { AdManagement, Advertisement, AdBannerDisplay } from './AdManagement';
 import { LandingPage } from './LandingPage';
+import { BulkUpload } from './BulkUpload';
 
 interface DashboardProps {
   onStartTest: (testInfo?: any) => void;
   learnedWords?: any[];
   practiceRecords?: any[];
+  currentUser?: any;
+  setCurrentUser?: (user: any) => void;
 }
 
 // LocalStorage + Supabase 이중 저장 시스템
 const STORAGE_KEY = 'sat_practice_tests';
+
+// Timeout wrapper for fetch calls
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 // localStorage에서 로드
 const loadTestsFromStorage = (): any[] => {
@@ -55,7 +70,7 @@ const saveTestsToStorage = (tests: any[]) => {
 const loadTestsFromSupabase = async (): Promise<any[] | null> => {
   try {
     console.log('📡 Supabase 서버에 연결 중...');
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
+    const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
@@ -65,7 +80,7 @@ const loadTestsFromSupabase = async (): Promise<any[] | null> => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('⚠️ Supabase에서 데이터를 찾을 수 없습니다. localStorage 사용합니다.', errorText);
+      console.log('⚠️ Supabase 응답 에러, localStorage 사용:', errorText);
       return null;
     }
 
@@ -73,8 +88,10 @@ const loadTestsFromSupabase = async (): Promise<any[] | null> => {
     console.log('✅ Supabase에서 데이터 로드 완료');
     return data.tests || null;
   } catch (error) {
-    console.error('❌ Supabase 로드 에러 (서버가 응답하지 않거나 네트워크 문제):', error instanceof Error ? error.message : String(error));
-    console.log('💡 로컬 데이터를 사용합니다.');
+    const msg = error instanceof DOMException && error.name === 'AbortError'
+      ? 'Request timed out'
+      : (error instanceof Error ? error.message : String(error));
+    console.log('⚠️ Supabase 로드 실패 (localStorage 사용):', msg);
     return null;
   }
 };
@@ -82,8 +99,7 @@ const loadTestsFromSupabase = async (): Promise<any[] | null> => {
 // Supabase에 데이터 저장
 const saveTestsToSupabase = async (tests: any[]) => {
   try {
-    console.log('📡 Supabase에 데이터 저장 시도...');
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
+    const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
@@ -94,13 +110,15 @@ const saveTestsToSupabase = async (tests: any[]) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Supabase 저장 실패:', errorText);
+      console.log('⚠️ Supabase 저장 실패:', errorText);
     } else {
       console.log('✅ Supabase에 저장 완료');
     }
   } catch (error) {
-    console.error('❌ Supabase 저장 에러 (서버가 응답하지 않거나 네트워크 문제):', error instanceof Error ? error.message : String(error));
-    console.log('💡 로컬 데이터는 정상적으로 저장되었습니다.');
+    const msg = error instanceof DOMException && error.name === 'AbortError'
+      ? 'Request timed out'
+      : (error instanceof Error ? error.message : String(error));
+    console.log('⚠️ Supabase 저장 실패 (로컬 저장은 완료):', msg);
   }
 };
 
@@ -583,12 +601,12 @@ const extractWordsFromTests = () => {
   return keyWords;
 };
 
-export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = [] }: DashboardProps) {
+export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('Home');
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isContentUnlocked, setIsContentUnlocked] = useState(() => {
@@ -613,6 +631,54 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
       window.removeEventListener('storage', checkAdminMode);
     };
   }, []);
+
+  // Helper function to save student to Supabase
+  const saveStudentToSupabase = async (student: any) => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/students`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(student),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Student saved to Supabase:', data);
+        return data.student;
+      } else {
+        console.error('Failed to save student to Supabase');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error saving student to Supabase:', error);
+      return null;
+    }
+  };
+
+  // Handle login
+  const handleLogin = async (email: string, name: string) => {
+    const user = {
+      id: `student_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      email,
+      name,
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Save to Supabase
+    const savedUser = await saveStudentToSupabase(user);
+    
+    // Update local state
+    if (setCurrentUser) {
+      setCurrentUser(savedUser || user);
+    }
+    setIsLoggedIn(true);
+    setShowLoginPage(false);
+    setShowSignUpPage(false);
+    toast.success(`환영합니다, ${name}님!`);
+  };
   
   // Practice content state
   const [smartPracticeTab, setSmartPracticeTab] = useState('기출문제'); // 기출문제 or 공식문제 or 단어관리
@@ -636,7 +702,7 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
   const [incorrectQuestions, setIncorrectQuestions] = useState<number[]>([]); // 틀린 문제 목록
   const [completedWordTests, setCompletedWordTests] = useState<any[]>([]); // 완료한 단어 테스트 목록
   const [viewedWordLists, setViewedWordLists] = useState<any[]>([]); // 학습한 단어 목록 (단어목록에 표시됨)
-  const [showDownloadDialog, setShowDownloadDialog] = useState(false); // 다운로드 옵션 다이얼로그 ���시
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false); // 다운로드 옵션 다이얼로그 표시
   const [showTestDialog, setShowTestDialog] = useState(false); // 테스트 옵션 다이얼로그 표시
   const [testType, setTestType] = useState<'multiple' | 'subjective' | 'mixed'>('multiple'); // 테스트 유형: 객관식, 주관식, 혼합
   
@@ -660,8 +726,12 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
   const [showAdManagement, setShowAdManagement] = useState(false);
   
   // Upload content state
-  const [uploadTab, setUploadTab] = useState('직접 입력'); // 직접 입력 or 파일업로드 or 대량 업로드
+  const [uploadTab, setUploadTab] = useState('직접 입력'); // 직접 입력 or 파일업로드 or 대량 업로드 or 학생관리
   const [uploadLocation, setUploadLocation] = useState('스마트 연습');
+  
+  // Student management state
+  const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string | null>(null);
   const [uploadSubcategory, setUploadSubcategory] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'local' | 'external'>('local');
   const [externalLink, setExternalLink] = useState('');
@@ -677,6 +747,11 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
     data?: any;
     questionType?: string;
     difficulty?: string;
+    cardTitle?: string;
+    trainingCategory?: string;
+    trainingType?: string;
+    trainingDifficulty?: string;
+    trainingSource?: string;
   }>>([]);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -686,7 +761,7 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
       console.log('🔍 uploadedFiles를 Supabase에서 로드 시도...');
       
       try {
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
+        const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${publicAnonKey}`,
@@ -716,17 +791,7 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
             console.log('📂 localStorage에서 uploadedFiles 로드:', parsed.length, '개');
             setUploadedFiles(parsed);
             
-            // localStorage 데이터를 Supabase에 백업
-            if (parsed.length > 0) {
-              fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${publicAnonKey}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ files: parsed }),
-              }).then(() => console.log('��� localStorage 데이터를 Supabase에 백업 완료'));
-            }
+            // localStorage 데이터를 Supabase에 백업 (setUploadedFiles의 save useEffect에서 자동 처리)
           }
         } catch (error) {
           console.error('Error loading practice tests from localStorage:', error);
@@ -739,45 +804,77 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
   
   // Save uploaded files to localStorage AND Supabase whenever they change
   useEffect(() => {
-    const saveUploadedFiles = async () => {
-      if (uploadedFiles.length > 0) {
-        // 1. localStorage에 저장
-        localStorage.setItem('sat_practice_tests', JSON.stringify(uploadedFiles));
-        console.log('✅ uploadedFiles를 localStorage에 저장');
-        
-        // 2. Supabase에도 저장
-        try {
-          console.log('📡 uploadedFiles를 Supabase에 저장 시도...');
-          const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
-            method: 'POST',
+    if (uploadedFiles.length === 0) return;
+
+    // 1. localStorage에 즉시 저장
+    localStorage.setItem('sat_practice_tests', JSON.stringify(uploadedFiles));
+    console.log('✅ uploadedFiles를 localStorage에 저장');
+
+    // 2. Supabase 저장은 debounce + AbortController로 관리
+    const abortController = new AbortController();
+    const debounceTimer = setTimeout(async () => {
+      if (abortController.signal.aborted) return; // cleanup 후에는 실행하지 않음
+      try {
+        console.log('📡 uploadedFiles를 Supabase에 저장 시도...');
+        const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ files: uploadedFiles }),
+        });
+
+        if (response.ok) {
+          console.log('✅ uploadedFiles를 Supabase에 저장 완료');
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Supabase uploadedFiles 저장 실패:', errorText);
+        }
+      } catch (error) {
+        if (abortController.signal.aborted) return; // cleanup abort는 무시
+        console.warn('⚠️ Supabase uploadedFiles 저장 에러 (로컬 데이터는 정상 저장됨):', error instanceof Error ? error.message : String(error));
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      abortController.abort();
+    };
+  }, [uploadedFiles]);
+
+  // Load students from Supabase on mount
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const response = await fetchWithTimeout(
+          `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/students`,
+          {
             headers: {
               'Authorization': `Bearer ${publicAnonKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ files: uploadedFiles }),
-          });
-
-          if (response.ok) {
-            console.log('✅ uploadedFiles를 Supabase에 저장 완료');
-          } else {
-            const errorText = await response.text();
-            console.error('❌ Supabase uploadedFiles 저장 실패:', errorText);
+              'Content-Type': 'application/json'
+            }
           }
-        } catch (error) {
-          console.error('❌ Supabase uploadedFiles 저장 에러 (서버가 응답하지 않거나 네트워크 문제):', error instanceof Error ? error.message : String(error));
-          console.log('💡 로컬 데이터는 정상적으로 저장되었습니다.');
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Students loaded from Supabase:', data.students);
+          setStudents(data.students || []);
         }
+      } catch (error) {
+        console.error('Error loading students from Supabase:', error);
       }
     };
-    
-    saveUploadedFiles();
-  }, [uploadedFiles]);
+
+    loadStudents();
+  }, []);
 
   // Load advertisements from Supabase on mount
   useEffect(() => {
     const loadAdvertisements = async () => {
       try {
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
           {
             headers: {
@@ -855,11 +952,16 @@ export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = []
         practiceRecords={practiceRecords}
         onStartTest={onStartTest}
         advertisements={advertisements}
+        reportContent={renderReportContentInner()}
+        uploadedFiles={uploadedFiles}
+        currentUser={currentUser}
+        selectedStudentFilter={selectedStudentFilter}
+        setSelectedStudentFilter={setSelectedStudentFilter}
       />
     );
   };
 
-  const renderReportContent = () => {
+  const renderReportContentInner = () => {
     // Use component-level state hooks instead of declaring them here
     const copied = reportCopied;
     const setCopied = setReportCopied;
@@ -951,21 +1053,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     };
 
     return (
-      <div className="min-h-screen bg-gray-50 pb-20">
-        {/* Hero Banner */}
-        <div className="relative overflow-hidden" style={{ backgroundColor: '#1e3a8a' }}>
-          {/* Decorative circles */}
-          <div className="absolute top-6 left-12 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
-          <div className="absolute bottom-6 right-12 w-32 h-32 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
-          <div className="absolute top-16 right-1/4 w-20 h-20 rounded-full opacity-15" style={{ backgroundColor: 'white' }}></div>
-          <div className="absolute bottom-10 left-1/3 w-16 h-16 rounded-full opacity-10" style={{ backgroundColor: 'white' }}></div>
-          
-          <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
-            <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">SAT Performance Report</h1>
-            <p className="text-sm md:text-base text-blue-100 text-center">Your Path to Success</p>
-          </div>
-        </div>
-
+      <div className="bg-gray-50 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -1186,9 +1274,25 @@ ${studentMessage || '(메시지가 없습니다)'}`;
   };
 
   const getUploadedFilesForTraining = () => {
-    return uploadedFiles.filter(file => 
-      file && file.location && file.location === '전문 훈련' && file.status === 'completed'
-    );
+    return uploadedFiles.filter(file => {
+      if (!file || !file.status || file.status !== 'completed') return false;
+      
+      // Check if any question in the file has training classification
+      if (Array.isArray(file.data)) {
+        // Array of questions - check if at least one has training data
+        const hasTrainingData = file.data.some((q: any) => 
+          q.trainingCategory || q.trainingType || q.trainingDifficulty || q.trainingSource
+        );
+        return hasTrainingData;
+      } else if (file.data) {
+        // Single question - check if it has training data
+        const hasTrainingData = file.data.trainingCategory || file.data.trainingType || 
+                               file.data.trainingDifficulty || file.data.trainingSource;
+        return hasTrainingData;
+      }
+      
+      return false;
+    });
   };
 
   const createPracticeTestFromFile = (file: typeof uploadedFiles[0]) => {
@@ -1199,7 +1303,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       // Handle both single question and array of questions
       const dataArray = Array.isArray(rawData) ? rawData : [rawData];
       
-      return dataArray.map((item, index) => ({
+      // Limit to 27 questions per module (total 54 for both modules)
+      const limitedData = dataArray.slice(0, 54);
+      
+      return limitedData.map((item, index) => ({
         id: index + 1,
         title: item.title || `Question ${index + 1}`,
         passage: item.passage || '',
@@ -1454,8 +1561,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
   useEffect(() => {
     const loadAdvertisements = async () => {
       try {
-        console.log('📡 ����고 데이터 로드 시도...');
-        const response = await fetch(
+        console.log('📡 광고 데이터 로드 시도...');
+        const response = await fetchWithTimeout(
           `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
           {
             headers: {
@@ -1865,10 +1972,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             {/* Study Hub Section */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2B478B' }}>
-                  <GraduationCap className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#00bcd4' }}>
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-lg text-gray-900">Study Hub</h3>
+                <h3 className="text-lg text-gray-900 font-bold">AllMyExam-<span style={{ color: '#00bcd4' }}>SAT</span></h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Empowering learners worldwide with personalized education.
@@ -1910,7 +2017,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Copyright */}
           <div className="pt-8 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
-              © 2025 Study Hub. All rights reserved.
+              © 2025 AllMyExam-SAT. All rights reserved.
             </p>
           </div>
         </div>
@@ -1951,7 +2058,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             
             if (wordListType !== '전체' && wordList.type !== wordListType) matches = false;
             if (wordCategory !== '전체' && wordList.category !== wordCategory && wordList.category !== '전체') matches = false;
-            if (wordDifficulty !== '전체' && wordList.difficulty !== wordDifficulty && wordList.difficulty !== '���체') matches = false;
+            if (wordDifficulty !== '전체' && wordList.difficulty !== wordDifficulty && wordList.difficulty !== '전체') matches = false;
             
             return matches;
           });
@@ -2127,116 +2234,56 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         URL.revokeObjectURL(url);
         toast.success("답안지가 다운로드되었습니다!");
       } else {
-        // ���험지와 답안�� 전체 다운로드
-        const htmlContent = `
-          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-          <head>
-            <meta charset="utf-8">
-            <title>${selectedWordList.title} - 전체</title>
-            <style>
-              @page {
-                size: A4;
-                margin: 2cm 1.5cm;
-              }
-              body {
-                font-family: "Malgun Gothic", sans-serif;
-                padding: 20px;
-              }
-            </style>
-          </head>
-          <body>
-            <div>
-              <div style="font-size: 9pt; margin-bottom: 15px; display: flex; justify-content: space-between;">
-                <span>${dateString} 오후 3:08</span>
-                <span style="flex: 1; text-align: center; font-weight: bold; font-size: 11pt;">SAT 어휘 시험지</span>
-              </div>
-              
-              <div style="border-top: 3px solid #000; margin-bottom: 20px;"></div>
-              
-              <div style="margin-bottom: 20px; padding: 10px 0; border-top: 1px solid #000; border-bottom: 1px solid #000;">
-                <table style="width: 100%; font-size: 11pt;">
-                  <tr>
-                    <td style="width: 20%;">${dateString}</td>
-                    <td style="width: 30%; text-align: center;">
-                      <span style="display: inline-block; border: 1px solid #000; border-radius: 15px; padding: 2px 15px; margin: 0 10px;">이름</span>
-                      <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
-                    </td>
-                    <td style="width: 50%; text-align: right;">
-                      <span style="display: inline-block; border: 1px solid #000; border-radius: 15px; padding: 2px 15px; margin: 0 10px;">맞은개수</span>
-                      <span>/ ${totalCount}</span>
-                      <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px; margin-left: 10px;"></span>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 20px; font-size: 10pt; padding: 10px 0;">
-                (1~${totalCount}) ※ 알맞은 영어 단어의 한글 뜻을 적으세요.
-              </div>
-              
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                ${generateTableRows(selectedWordList.words, false)}
-              </table>
-              
-              <div style="font-size: 8pt; color: #666; display: flex; justify-content: space-between; margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd;">
-                <span>about-blank</span>
-                <span>1/2</span>
-              </div>
-            </div>
-            
-            <div style="page-break-before: always;"></div>
-            
-            <div>
-              <div style="font-size: 9pt; margin-bottom: 15px; display: flex; justify-content: space-between;">
-                <span>${dateString} 오후 3:08</span>
-                <span style="flex: 1; text-align: center; font-weight: bold; font-size: 11pt;">SAT 어휘 답안지</span>
-              </div>
-              
-              <div style="border-top: 3px solid #000; margin-bottom: 20px;"></div>
-              
-              <div style="margin-bottom: 20px; padding: 10px 0; border-top: 1px solid #000; border-bottom: 1px solid #000;">
-                <table style="width: 100%; font-size: 11pt;">
-                  <tr>
-                    <td style="width: 20%;">${dateString}</td>
-                    <td style="width: 30%; text-align: center;">
-                      <span style="display: inline-block; border: 1px solid #000; border-radius: 15px; padding: 2px 15px; margin: 0 10px;">이름</span>
-                      <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px;"></span>
-                    </td>
-                    <td style="width: 50%; text-align: right;">
-                      <span style="display: inline-block; border: 1px solid #000; border-radius: 15px; padding: 2px 15px; margin: 0 10px;">맞은개수</span>
-                      <span>/ ${totalCount}</span>
-                      <span style="border-bottom: 1px solid #000; display: inline-block; width: 150px; margin-left: 10px;"></span>
-                    </td>
-                  </tr>
-                </table>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 20px; font-size: 10pt; padding: 10px 0; color: red; font-weight: bold;">
-                ※ 정답이 빨간색으로 표시되어 있습니다.
-              </div>
-              
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                ${generateTableRows(selectedWordList.words, true)}
-              </table>
-              
-              <div style="font-size: 8pt; color: #666; display: flex; justify-content: space-between; margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd;">
-                <span>about-blank</span>
-                <span>2/2</span>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-        const blob = new Blob(["\ufeff", htmlContent], { type: "application/msword" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${selectedWordList.title}_전체.doc`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        toast.success("시험지·답안지 전체가 다운로드되었습니다!");
+        // 시험지와 답안지 전체 다운로드 - PDF (인쇄 대화상자)
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          toast.error('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+          setShowDownloadDialog(false);
+          return;
+        }
+        
+        const half = Math.ceil(totalCount / 2);
+        let testRows = '';
+        let answerRows = '';
+        for (let i = 0; i < half; i++) {
+          const lw = selectedWordList.words[i];
+          const rw = i + half < totalCount ? selectedWordList.words[i + half] : null;
+          testRows += `<tr><td class="num">${i+1}</td><td class="word">${lw?.word||''}</td><td class="blank"></td>`;
+          testRows += rw ? `<td class="num">${i+half+1}</td><td class="word">${rw.word||''}</td><td class="blank"></td></tr>` : `<td></td><td></td><td></td></tr>`;
+          answerRows += `<tr><td class="num">${i+1}</td><td class="word">${lw?.word||''}</td><td class="def">${lw?.definition||''}</td>`;
+          answerRows += rw ? `<td class="num">${i+half+1}</td><td class="word">${rw.word||''}</td><td class="def">${rw.definition||''}</td></tr>` : `<td></td><td></td><td></td></tr>`;
+        }
+        
+        printWindow.document.write(`<html><head><meta charset="utf-8"><title>${selectedWordList.title}</title>
+          <style>
+            @page{size:A4;margin:1.5cm 1.2cm}
+            @media print{.page-break{page-break-before:always}}
+            body{font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding:20px;margin:0}
+            .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+            .date{font-size:9pt;color:#666}
+            .badge{font-size:9pt;background:#f97316;color:#fff;padding:2px 10px;border-radius:3px;font-weight:700;font-style:italic}
+            .bar{width:4px;background:#ef4444;display:inline-block;height:20px;vertical-align:middle;margin-right:8px}
+            .stitle{font-size:10pt;text-align:center;color:#333;padding:8px 0;margin-bottom:12px}
+            .stitle.ans{color:#f97316}
+            hr{border:none;border-top:1px solid #ddd;margin:8px 0}
+            table{width:100%;border-collapse:collapse}
+            td{padding:6px 10px;font-size:10pt;border-bottom:1px solid #eee;vertical-align:top}
+            .num{width:30px;color:#999;text-align:right;padding-right:12px}
+            .word{font-weight:600}
+            .def{color:#f97316}
+            .blank{width:40%}
+          </style></head><body>
+          <div class="hdr"><span class="date">${dateString}</span></div><hr>
+          <div class="stitle"><span class="bar"></span>(1~${totalCount}) ※ 알맞은 영어 단어의 한글 뜻을 적으세요.</div>
+          <table>${testRows}</table>
+          <div class="page-break"></div>
+          <div class="hdr"><span class="date">${dateString}</span><span class="badge">ANSWER KEY</span></div><hr>
+          <div class="stitle ans"><span class="bar"></span>(1~${totalCount}) ※ 답안지 — 정답 확인용</div>
+          <table>${answerRows}</table>
+          </body></html>`);
+        printWindow.document.close();
+        printWindow.onload = () => { printWindow.print(); };
+        toast.success("PDF 인쇄 대화상자가 열렸습니다!");
       }
       setShowDownloadDialog(false);
     };
@@ -2643,7 +2690,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-800 mb-3">단어 유형:</h3>
                 <div className="flex flex-wrap gap-2">
-                  {['전체', '기출문제', '공식문제'].map((type) => (
+                  {['���체', '기출문제', '공식문제'].map((type) => (
                     <button
                       key={type}
                       onClick={() => setWordListType(type)}
@@ -2805,8 +2852,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               // Browse Mode - Show word study session list
               <div className="space-y-6">
                 {/* Back to normal view button */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start sm:items-center justify-between mb-4 gap-2">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     <Button
                       onClick={() => {
                         setShowWordBrowseView(false);
@@ -2814,11 +2861,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       }}
                       variant="outline"
                       size="sm"
+                      className="flex-shrink-0 text-xs sm:text-sm"
                     >
-                      ← 돌아가기
+                      ←
                     </Button>
-                    <h2 className="text-xl font-medium text-gray-800">
-                      단어 목록 ({wordListType} - {wordCategory} - {wordDifficulty})
+                    <h2 className="text-sm sm:text-xl font-medium text-gray-800 leading-tight">
+                      단어 목록 <span className="text-gray-500 text-xs sm:text-base">({wordListType} · {wordCategory} · {wordDifficulty})</span>
                     </h2>
                   </div>
                 </div>
@@ -2856,32 +2904,27 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                         setWordStudyMode('list');
                                       }}
                                     >
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <h4 className="text-sm sm:text-base font-medium text-gray-800 mb-2">
+                                      <div className="flex items-start sm:items-center justify-between gap-2 mb-1.5">
+                                        <h4 className="text-sm sm:text-base font-medium text-gray-800 flex-1 min-w-0" style={{ wordBreak: 'keep-all' }}>
                                           {session.title}
-                                          <span className="ml-2 text-gray-600">
-                                            <span className="hidden sm:inline">{session.desktopTimestamp}</span>
-                                            <span className="inline sm:hidden">{session.mobileTimestamp}</span>
-                                          </span>
                                         </h4>
-                                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                                          <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
                                             {session.type}
                                           </span>
-                                          {/* New or Attempt Count Badge */}
                                           {!session.attemptCount || session.attemptCount === 0 ? (
-                                            <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-medium whitespace-nowrap">
+                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-green-100 text-green-600 font-medium whitespace-nowrap">
                                               new
                                             </span>
                                           ) : (
-                                            <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
+                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
                                               {session.attemptCount}회
                                             </span>
                                           )}
                                         </div>
                                       </div>
-                                      <p className="text-xs sm:text-sm text-gray-500 mb-2">{session.description}</p>
-                                      <div className="flex items-center gap-2 sm:gap-4 text-xs text-gray-600 flex-wrap">
+                                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">{session.description}</p>
+                                      <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-600 flex-wrap">
                                         <span className="hidden sm:inline">생성일: {new Date(session.createdAt).toLocaleDateString('ko-KR')}</span>
                                         {session.filters && (
                                           <span>문항수: {session.filters.questionCount}개</span>
@@ -2990,25 +3033,16 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
                 {/* Completed Tests Section */}
                 {completedWordTests.length > 0 && (
-                  <div className="bg-white rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-medium text-gray-800 mb-4">완료한 테스트</h3>
+                  <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">완료한 테스트</h3>
                     <div className="space-y-3">
                       {completedWordTests.map((test: any, index: number) => (
-                        <div key={`completed-${test.id}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-800 mb-1">{test.title}</h4>
-                              <p className="text-sm text-gray-500 mb-2">{test.description}</p>
-                              <div className="flex items-center gap-4 text-xs text-gray-600">
-                                <span>완료일: {test.completedDate}</span>
-                                <span>정답률: {Math.round((test.correctAnswers / test.totalQuestions) * 100)}%</span>
-                                <span>문항: {test.answeredQuestions}/{test.totalQuestions}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
+                        <div key={`completed-${test.id}-${index}`} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <h4 className="text-sm sm:text-base font-medium text-gray-800" style={{ wordBreak: 'keep-all' }}>{test.title}</h4>
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
                               <Button
                                 onClick={() => {
-                                  // Restart this test
                                   const filteredWords = getAllWords();
                                   setSelectedWordList({
                                     ...test,
@@ -3023,6 +3057,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                 }}
                                 size="sm"
                                 variant="outline"
+                                className="text-xs px-2 py-1"
                               >
                                 다시 풀기
                               </Button>
@@ -3037,9 +3072,15 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                 variant="outline"
                                 className="text-red-600 border-red-300 hover:bg-red-50"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                               </Button>
                             </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mb-1.5 hidden sm:block">{test.description}</p>
+                          <div className="flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs text-gray-600">
+                            <span>완료일: {test.completedDate}</span>
+                            <span>정답률: {Math.round((test.correctAnswers / test.totalQuestions) * 100)}%</span>
+                            <span>문항: {test.answeredQuestions}/{test.totalQuestions}</span>
                           </div>
                         </div>
                       ))}
@@ -3057,25 +3098,34 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       onClick={handleBackToWordLists}
                       variant="outline"
                       size="sm"
-                      className="text-xs px-2 py-1 h-7"
+                      className="text-xs px-2 py-1 h-7 flex-shrink-0"
                     >
                       ←
                     </Button>
                     <div className="flex-1 min-w-0">
                       <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate">{selectedWordList.title}</h2>
-                      <p className="text-xs text-gray-500 truncate">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
+                      <p className="text-xs text-gray-500 truncate hidden sm:block">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
                     </div>
+                    {/* Mobile download button */}
+                    <button
+                      onClick={() => handleDownloadQuestions('both')}
+                      className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md transition-all text-[11px] bg-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
+                      title="PDF 다운로드"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>다운</span>
+                    </button>
                   </div>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
+                  <div className="grid grid-cols-3 gap-1.5 sm:flex sm:gap-1.5 sm:overflow-x-auto pb-1">
                     <button
                       onClick={() => setWordStudyMode('list')}
-                      className={`flex items-center gap-1.5 px-3 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
+                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
                         wordStudyMode === 'list'
                           ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
                           : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>단어 목록</span>
                     </button>
                     <button
@@ -3084,27 +3134,27 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                         setCurrentWordIndex(0);
                         setIsFlashcardFlipped(false);
                       }}
-                      className={`flex items-center gap-1.5 px-3 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
+                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
                         wordStudyMode === 'flashcard'
                           ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
                           : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>플래시카드</span>
                     </button>
-                    <div className="relative flex-shrink-0">
+                    <div className="relative">
                       <button
                         onClick={() => setShowTestDialog(!showTestDialog)}
-                        className={`flex items-center gap-1.5 px-3 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
+                        className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap w-full ${
                           wordStudyMode === 'test'
                             ? 'bg-blue-600 text-white border-2 border-blue-600 font-medium'
                             : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                         title="테스트 옵션"
                       >
-                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span>주관식</span>
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <span>Test</span>
                       </button>
                       
                       {/* Test Options Popover */}
@@ -3179,87 +3229,35 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       )}
                     </div>
                     <div className="w-px h-8 bg-gray-300 mx-1 hidden sm:block"></div>
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowDownloadDialog(!showDownloadDialog)}
-                        className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-6 py-1.5 sm:py-2.5 rounded-full transition-all text-[11px] sm:text-sm bg-gray-100 border-2 border-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap"
-                        title="다운로드 옵션"
-                      >
-                        <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span className="hidden sm:inline">다운로드</span>
-                        <span className="sm:hidden">다운</span>
-                      </button>
-                      
-                      {/* Download Options Popover */}
-                      {showDownloadDialog && (
-                        <>
-                          {/* Backdrop to close popover when clicking outside */}
-                          <div 
-                            className="fixed inset-0 z-40" 
-                            onClick={() => setShowDownloadDialog(false)}
-                          />
-                          <div className="absolute top-full mt-2 right-0 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50 min-w-max">
-                          <div className="flex gap-1.5">
-                            <button
-                              onClick={() => handleDownloadQuestions('questions')}
-                              className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[110px]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-gray-600" />
-                              <div className="text-center">
-                                <div className="text-[11px] font-medium text-gray-800">시험지 다운로드</div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">단어만 포함</div>
-                              </div>
-                            </button>
-                            
-                            <button
-                              onClick={() => handleDownloadQuestions('answers')}
-                              className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[110px]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-gray-600" />
-                              <div className="text-center">
-                                <div className="text-[11px] font-medium text-gray-800">답안지 다운로드</div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">단어와 뜻 포함</div>
-                              </div>
-                            </button>
-                            
-                            <button
-                              onClick={() => handleDownloadQuestions('both')}
-                              className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[110px]"
-                            >
-                              <Download className="w-3.5 h-3.5 text-gray-600" />
-                              <div className="text-center">
-                                <div className="text-[11px] font-medium text-gray-800">전체 다운로드</div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">시험지·답안지</div>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-                        </>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => handleDownloadQuestions('both')}
+                      className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-full transition-all text-sm bg-gray-100 border-2 border-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
+                      title="시험지+답안지 다운로드"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>다운로드</span>
+                    </button>
                   </div>
                 </div>
 
                 {/* Word Study Content */}
                 {wordStudyMode === 'list' && (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {selectedWordList.words.map((word: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-medium text-gray-800">{word.word}</h3>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                word.difficulty === '어려움' ? 'bg-red-100 text-red-600' :
-                                word.difficulty === '보통' ? 'bg-yellow-100 text-yellow-600' :
-                                'bg-green-100 text-green-600'
-                              }`}>
-                                {word.difficulty}
-                              </span>
-                            </div>
-                            <p className="text-gray-600 mb-2">{word.definition}</p>
-                            <p className="text-sm text-gray-500 italic">"{word.context}"</p>
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 flex gap-2.5 sm:gap-3 items-start">
+                        <span className="text-xs sm:text-sm text-gray-400 font-medium mt-0.5 sm:mt-1 flex-shrink-0 w-5 sm:w-7 text-right">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                            <h3 className="text-base sm:text-lg font-medium text-gray-800">{word.word}</h3>
+                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0 ${
+                              word.difficulty === '어려움' ? 'bg-red-100 text-red-600' :
+                              word.difficulty === '보통' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-green-100 text-green-600'
+                            }`}>
+                              {word.difficulty}
+                            </span>
                           </div>
+                          <p className="text-sm sm:text-base text-gray-600">{word.definition}</p>
                         </div>
                       </div>
                     ))}
@@ -3366,6 +3364,9 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       setWordStudyMode('list'); // Set to list mode by default
                       setShowWordBrowseView(false);
                       handleWordListSelect(testWordList);
+                    } else {
+                      // No words available for this test yet
+                      toast.info('이 문제의 단어가 아직 등록되지 않았습니다. 문제를 풀면서 단어를 저장하면 자동으로 생성됩니다.');
                     }
                   }}
                   isUnlocked={isContentUnlocked}
@@ -3821,7 +3822,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-medium text-gray-800 mb-2">강의 및 특강</h1>
-            <p className="text-gray-600">AI가 분석한 개인 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
+            <p className="text-gray-600">AI가 분석한 개��� 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
           </div>
 
           {/* Category Tabs - Updated to match Training page style */}
@@ -4023,7 +4024,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center gap-6">
               <button
-                onClick={() => setUploadTab('파일업로드')}
+                onClick={() => setUploadTab('���일업로드')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   uploadTab === '파일업로드'
                     ? 'border-blue-500 text-blue-600'
@@ -4032,6 +4033,17 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               >
                 <Upload className="h-4 w-4 inline mr-2" />
                 파일 업로드
+              </button>
+              <button
+                onClick={() => setUploadTab('대량업로드')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  uploadTab === '대량업로드'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Database className="h-4 w-4 inline mr-2" />
+                대량 업로드
               </button>
               <button
                 onClick={() => setUploadTab('광고관리')}
@@ -4043,6 +4055,17 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               >
                 <Settings className="h-4 w-4 inline mr-2" />
                 광고 관리
+              </button>
+              <button
+                onClick={() => setUploadTab('학생관리')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  uploadTab === '학생관리'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <GraduationCap className="h-4 w-4 inline mr-2" />
+                학생 관리
               </button>
               <button
                 onClick={() => setUploadTab('관리자모드')}
@@ -4070,8 +4093,20 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         {/* Content Area */}
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="grid grid-cols-1 gap-8">
-            {/* Ad Management Content */}
-            {uploadTab === '광고관리' ? (
+            {/* Bulk Upload Content */}
+            {uploadTab === '대량업로드' ? (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-8">
+                  <BulkUpload
+                    onUploadSuccess={(files) => {
+                      const updatedFiles = [...uploadedFiles, ...files];
+                      setUploadedFiles(updatedFiles);
+                      toast.success('파일이 업로드되었습니다. 바로 실전 문제를 풀 수 있습니다!');
+                    }}
+                  />
+                </div>
+              </div>
+            ) : uploadTab === '광고관리' ? (
               <div className="space-y-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-8">
                   <AdManagement
@@ -4080,6 +4115,60 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     publicAnonKey={publicAnonKey}
                     onAdsUpdate={setAdvertisements}
                   />
+                </div>
+              </div>
+            ) : uploadTab === '학생관리' ? (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-8">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">학생 관리</h2>
+                  
+                  {students.length === 0 ? (
+                    <div className="text-center py-12">
+                      <GraduationCap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">등록된 학생이 없습니다.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이메일</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가입일</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시험 횟수</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {students.map((student) => (
+                            <tr key={student.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{student.name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {new Date(student.createdAt).toLocaleDateString('ko-KR')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {student.testCount || 0}회
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button
+                                  onClick={() => {
+                                    setSelectedStudentFilter(student.id);
+                                    setActiveTab('연습 기록');
+                                    setUploadTab('파일업로드');
+                                    toast.success(`${student.name} 학생의 기록을 표시합니다.`);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-900 mr-4"
+                                >
+                                  기록 보기
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -4500,12 +4589,13 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           setShowSignUpPage(true);
         }}
         onLoginSuccess={handleLoginSuccess}
+        onLogin={handleLogin}
       />;
     }
     
     // Show signup page if active
     if (showSignUpPage) {
-      return <SignUpPage onSignUpSuccess={handleLoginSuccess} />;
+      return <SignUpPage onSignUpSuccess={handleLoginSuccess} onSignUp={handleLogin} />;
     }
     
     // Show regular tab content
@@ -4531,7 +4621,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       case '연습 기록':
         return renderPracticeRecordContent();
       case '리포트':
-        return renderReportContent();
+        // Report is now inside History tab - fallback
+        return renderPracticeRecordContent();
       default:
         return renderSmartPracticeContent();
     }
@@ -4544,8 +4635,21 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center space-x-6">
-              <div className="flex-shrink-0">
-                <h1 className="text-lg text-gray-900 font-bold">SAT Prep</h1>
+              <div 
+                className="flex-shrink-0 flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => {
+                  if (!isStudyHubUnlocked) {
+                    setShowStudyHubPassword(true);
+                  } else {
+                    setShowLoginPage(false);
+                    setShowSignUpPage(false);
+                    setActiveTab('업로드');
+                  }
+                }}
+                title="Study Hub CMS"
+              >
+                <Zap className="w-5 h-5" style={{ color: '#00bcd4' }} fill="#00bcd4" />
+                <h1 className="text-lg text-gray-900 font-extrabold tracking-tight">AllMyExam-<span style={{ color: '#00bcd4' }}>SAT</span></h1>
               </div>
               {/* Mobile menu button */}
               <button
@@ -4614,7 +4718,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   }`}
                   style={activeTab === '강의 및 특강' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
                 >
-                  Lectures
+                  Pattern 뽀개기
                 </button>
                 <button
                   onClick={() => {
@@ -4640,25 +4744,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </button>
                 <button
                   onClick={() => {
-                    if (!isStudyHubUnlocked) {
-                      setShowStudyHubPassword(true);
-                      return;
-                    }
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('업로드');
-                  }}
-                  className={`inline-flex items-center px-5 py-3 border-b-2 text-base transition-colors ${
-                    activeTab === '업로드' && !showLoginPage && !showSignUpPage
-                      ? 'text-gray-900 font-extrabold'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 font-bold'
-                  }`}
-                  style={activeTab === '업로드' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
-                >
-                  Study Hub
-                </button>
-                <button
-                  onClick={() => {
                     if (!isLoggedIn) {
                       setShowLoginPage(false);
                       setShowSignUpPage(false);
@@ -4679,77 +4764,86 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 >
                   History
                 </button>
-                <button
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      setShowLoginPage(false);
-                      setShowSignUpPage(false);
-                      setActiveTab('리포트');
-                      setShowLoginPopup(true);
-                      return;
-                    }
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('리포트');
-                  }}
-                  className={`inline-flex items-center px-5 py-3 border-b-2 text-base transition-colors ${
-                    activeTab === '리포트' && !showLoginPage && !showSignUpPage
-                      ? 'text-gray-900 font-extrabold'
-                      : 'border-transparent text-gray-600 hover:text-gray-900 font-bold'
-                  }`}
-                  style={activeTab === '리포트' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
-                >
-                  Report
-                </button>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => {
-                  setShowLoginPage(true);
-                  setShowSignUpPage(false);
-                }}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-md text-sm sm:text-base transition-colors font-semibold whitespace-nowrap"
-                style={{ 
-                  backgroundColor: showLoginPage && !showSignUpPage ? '#0891B2' : 'white',
-                  color: showLoginPage && !showSignUpPage ? 'white' : '#374151',
-                  border: '1px solid #D1D5DB',
-                  minWidth: '95px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!showLoginPage || showSignUpPage) {
-                    e.currentTarget.style.backgroundColor = '#F3F4F6';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = showLoginPage && !showSignUpPage ? '#0891B2' : 'white';
-                }}
-              >
-                로그인
-              </button>
-              <button 
-                onClick={() => {
-                  setShowSignUpPage(true);
-                  setShowLoginPage(false);
-                }}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-md text-sm sm:text-base transition-colors font-semibold whitespace-nowrap"
-                style={{ 
-                  backgroundColor: showSignUpPage && !showLoginPage ? '#0891B2' : 'white',
-                  color: showSignUpPage && !showLoginPage ? 'white' : '#374151',
-                  border: '1px solid #D1D5DB',
-                  minWidth: '105px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!showSignUpPage || showLoginPage) {
-                    e.currentTarget.style.backgroundColor = '#F3F4F6';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = showSignUpPage && !showLoginPage ? '#0891B2' : 'white';
-                }}
-              >
-                회원가입
-              </button>
+              {currentUser ? (
+                <div className="flex items-center gap-3">
+                  <div className="text-sm sm:text-base font-semibold text-gray-700">
+                    Hi, <span style={{ color: '#0891B2' }}>{currentUser.name || currentUser.username || currentUser.email}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      if (setCurrentUser) {
+                        setCurrentUser(null);
+                      }
+                      setIsLoggedIn(false);
+                      toast.success('로그아웃되었습니다.');
+                    }}
+                    className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-md text-xs sm:text-base transition-colors font-semibold whitespace-nowrap"
+                    style={{ 
+                      backgroundColor: 'white',
+                      color: '#374151',
+                      border: '1px solid #D1D5DB'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#F3F4F6';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }}
+                  >
+                    로그아웃
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setShowLoginPage(true);
+                      setShowSignUpPage(false);
+                    }}
+                    className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-md text-xs sm:text-base transition-colors font-semibold whitespace-nowrap"
+                    style={{ 
+                      backgroundColor: showLoginPage && !showSignUpPage ? '#0891B2' : 'white',
+                      color: showLoginPage && !showSignUpPage ? 'white' : '#374151',
+                      border: '1px solid #D1D5DB'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!showLoginPage || showSignUpPage) {
+                        e.currentTarget.style.backgroundColor = '#F3F4F6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = showLoginPage && !showSignUpPage ? '#0891B2' : 'white';
+                    }}
+                  >
+                    로그인
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setShowSignUpPage(true);
+                      setShowLoginPage(false);
+                    }}
+                    className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-md text-xs sm:text-base transition-colors font-semibold whitespace-nowrap"
+                    style={{ 
+                      backgroundColor: showSignUpPage && !showLoginPage ? '#0891B2' : 'white',
+                      color: showSignUpPage && !showLoginPage ? 'white' : '#374151',
+                      border: '1px solid #D1D5DB'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!showSignUpPage || showLoginPage) {
+                        e.currentTarget.style.backgroundColor = '#F3F4F6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = showSignUpPage && !showLoginPage ? '#0891B2' : 'white';
+                    }}
+                  >
+                    회원가입
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -4844,26 +4938,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </button>
               <button
                 onClick={() => {
-                  if (!isStudyHubUnlocked) {
-                    setShowStudyHubPassword(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
-                  setShowLoginPage(false);
-                  setShowSignUpPage(false);
-                  setActiveTab('업로드');
-                  setShowMobileMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  activeTab === '업로드' && !showLoginPage && !showSignUpPage
-                    ? 'bg-blue-50 text-blue-700 font-bold'
-                    : 'text-gray-600 hover:bg-gray-50 font-medium'
-                }`}
-              >
-                Study Hub
-              </button>
-              <button
-                onClick={() => {
                   if (!isLoggedIn) {
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
@@ -4884,29 +4958,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 }`}
               >
                 History
-              </button>
-              <button
-                onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('리포트');
-                    setShowLoginPopup(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
-                  setShowLoginPage(false);
-                  setShowSignUpPage(false);
-                  setActiveTab('리포트');
-                  setShowMobileMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  activeTab === '리포트' && !showLoginPage && !showSignUpPage
-                    ? 'bg-blue-50 text-blue-700 font-bold'
-                    : 'text-gray-600 hover:bg-gray-50 font-medium'
-                }`}
-              >
-                Report
               </button>
             </div>
           </div>
@@ -4935,9 +4986,9 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       {showStudyHubPassword && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Study Hub 비밀번호</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Study Hub CMS</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Study Hub에 접근하려면 비밀번호를 입력해주세요.
+              관리자 비밀번호를 입력해주세요.
             </p>
             <input
               type="password"
@@ -4952,7 +5003,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('업로드');
-                    toast.success('Study Hub 잠금이 해제되었습니다!');
+                    toast.success('Study Hub CMS가 열렸습니다!');
                   } else {
                     toast.error('비밀번호가 올바르지 않습니다.');
                     setStudyHubPasswordInput('');
@@ -4960,7 +5011,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 }
               }}
               placeholder="비밀번호 입력"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent mb-4"
               autoFocus
             />
             <div className="flex gap-3 justify-end">
@@ -4982,13 +5033,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('업로드');
-                    toast.success('Study Hub 잠금이 해제되었습니다!');
+                    toast.success('Study Hub CMS가 열렸습니다!');
                   } else {
                     toast.error('비밀번호가 올바르지 않습니다.');
                     setStudyHubPasswordInput('');
                   }
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                className="px-4 py-2 rounded-lg font-medium text-white"
+                style={{ backgroundColor: '#00bcd4' }}
               >
                 확인
               </button>
@@ -5059,7 +5111,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             }}
           >
             <GraduationCap size={22} strokeWidth={activeTab === '강의 및 특강' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
-            <span className="text-xs mt-0.5 font-medium">Lectures</span>
+            <span className="text-xs mt-0.5 font-medium">Pattern 뽀개기</span>
           </button>
 
           {/* Training */}
@@ -5106,29 +5158,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           >
             <BarChart3 size={22} strokeWidth={activeTab === '연습 기록' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
             <span className="text-xs mt-0.5 font-medium">History</span>
-          </button>
-
-          {/* Report */}
-          <button
-            onClick={() => {
-              if (!isLoggedIn) {
-                setShowLoginPage(false);
-                setShowSignUpPage(false);
-                setActiveTab('리포트');
-                setShowLoginPopup(true);
-                return;
-              }
-              setShowLoginPage(false);
-              setShowSignUpPage(false);
-              setActiveTab('리포트');
-            }}
-            className="flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-lg transition-colors"
-            style={{
-              color: activeTab === '리포트' && !showLoginPage && !showSignUpPage ? '#10B981' : '#6B7280'
-            }}
-          >
-            <TrendingUp size={22} strokeWidth={activeTab === '리포트' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
-            <span className="text-xs mt-0.5 font-medium">Report</span>
           </button>
         </div>
       </div>

@@ -2,37 +2,14 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner@2.0.3';
 
-export function SignUpPage({ onSignUpSuccess }: { onSignUpSuccess?: () => void }) {
-  const [countdown, setCountdown] = useState(0);
+export function SignUpPage({ onSignUpSuccess, onSignUp }: { onSignUpSuccess?: () => void; onSignUp?: (email: string, name: string) => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [countryCode, setCountryCode] = useState('+86');
   const [formData, setFormData] = useState({
-    phone: '',
-    verificationCode: '',
+    email: '',
     username: '',
     password: '',
     confirmPassword: ''
   });
-
-  const handleSendCode = () => {
-    if (!formData.phone) {
-      toast.error('전화번호를 입력해주세요.');
-      return;
-    }
-    
-    let count = 60;
-    setCountdown(count);
-    
-    const timer = setInterval(() => {
-      count--;
-      setCountdown(count);
-      if (count <= 0) {
-        clearInterval(timer);
-      }
-    }, 1000);
-    
-    toast.success('인증 코드가 전송되었습니다! (시뮬레이션)');
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +30,7 @@ export function SignUpPage({ onSignUpSuccess }: { onSignUpSuccess?: () => void }
     setTimeout(() => {
       // Save user data to localStorage
       const userData = {
-        phone: countryCode + formData.phone,
+        email: formData.email,
         username: formData.username,
         password: formData.password,
         registeredAt: new Date().toISOString()
@@ -64,12 +41,12 @@ export function SignUpPage({ onSignUpSuccess }: { onSignUpSuccess?: () => void }
       
       // Check if user already exists
       const userExists = existingUsers.some((user: any) => 
-        user.username === formData.username || user.phone === userData.phone
+        user.username === formData.username || user.email === userData.email
       );
       
       if (userExists) {
         setIsSubmitting(false);
-        toast.error('이미 존재하는 사용자명 또는 전화번호입니다.');
+        toast.error('이미 존재하는 사용자명 또는 이메일입니다.');
         return;
       }
       
@@ -82,6 +59,10 @@ export function SignUpPage({ onSignUpSuccess }: { onSignUpSuccess?: () => void }
       
       if (onSignUpSuccess) {
         onSignUpSuccess();
+      }
+
+      if (onSignUp) {
+        onSignUp(formData.email, formData.username);
       }
     }, 1500);
   };
@@ -172,54 +153,19 @@ export function SignUpPage({ onSignUpSuccess }: { onSignUpSuccess?: () => void }
           </h2>
           
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-5">
-            {/* Phone Number with Country Code */}
-            <div className="relative">
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-transparent border-none text-gray-700 font-semibold focus:outline-none z-10 cursor-pointer"
-                style={{ width: '80px' }}
-              >
-                <option value="+86">🇨🇳 +86</option>
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+82">🇰🇷 +82</option>
-                <option value="+81">🇯🇵 +81</option>
-                <option value="+44">🇬🇧 +44</option>
-              </select>
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                required
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-4 pl-28 rounded-md bg-white shadow-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition-all"
-              />
-              <div className="absolute left-24 top-1/2 -translate-y-1/2 text-gray-300">
-                |
-              </div>
-            </div>
-
-            {/* Verification Code */}
+            {/* Email */}
             <div className="relative">
               <input
-                type="text"
-                placeholder="Verification Code"
+                type="email"
+                placeholder="Email"
                 required
-                value={formData.verificationCode}
-                onChange={(e) => setFormData({ ...formData, verificationCode: e.target.value })}
-                className="w-full px-4 py-4 pl-12 pr-24 rounded-md bg-white shadow-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition-all"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-4 pl-12 rounded-md bg-white shadow-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-blue-300/50 transition-all"
               />
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
-                🛡️
+                ✉️
               </div>
-              <button
-                type="button"
-                onClick={handleSendCode}
-                disabled={countdown > 0}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 text-white font-semibold px-3 py-2 rounded cursor-pointer hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
-              >
-                {countdown > 0 ? `${countdown}s` : 'Get Code'}
-              </button>
             </div>
 
             {/* Username */}

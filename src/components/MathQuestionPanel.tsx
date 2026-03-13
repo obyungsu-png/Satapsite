@@ -59,10 +59,10 @@ export function MathQuestionPanel({
 
   return (
     <div ref={containerRef} className="h-full bg-white overflow-y-auto relative">
-      <div className="max-w-[740px] mx-auto px-6 py-4">
+      <div className="max-w-[740px] mx-auto px-6 py-4 pl-9 md:pl-11">
 
         {/* Top Bar with Gray Background and Dashed Border */}
-        <div className="bg-[#e8e8e8] px-3 py-2 rounded border-b-2 border-dashed border-black mb-5 relative">
+        <div className="bg-[#e8e8e8] px-3 py-2 rounded-none border-b-2 border-dashed border-black mb-5 relative">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
               {/* Question Number */}
@@ -113,7 +113,7 @@ export function MathQuestionPanel({
         
         {/* Question Text */}
         <div className="mb-5">
-          <p className="text-[#222] leading-[1.5]" style={{ fontSize: '15px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+          <p className="text-[#222] leading-[1.5]" style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
             {question}
           </p>
         </div>
@@ -140,10 +140,10 @@ export function MathQuestionPanel({
                 <div className="flex-1 relative">
                   <button
                     onClick={() => onAnswerChange(choice.id)}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 border rounded-lg transition-all text-left ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 border transition-all duration-150 text-left rounded-lg ${
                       isSelected 
                         ? 'border-blue-500 border-2 bg-blue-50' 
-                        : 'border-gray-400 bg-white hover:bg-gray-50'
+                        : 'border-gray-400 bg-white hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]'
                     } ${isEliminated ? 'opacity-50' : ''}`}
                   >
                     {/* Circle with letter */}
@@ -158,7 +158,7 @@ export function MathQuestionPanel({
                     {/* Answer text */}
                     <span className={`flex-1 ${
                       isSelected ? 'text-gray-900' : 'text-gray-900'
-                    } ${isEliminated ? 'line-through' : ''}`} style={{ fontSize: '15px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', lineHeight: '1.4' }}>
+                    } ${isEliminated ? 'line-through' : ''}`} style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.4' }}>
                       {choice.text}
                     </span>
                   </button>

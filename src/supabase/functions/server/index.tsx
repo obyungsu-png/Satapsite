@@ -6,33 +6,39 @@ import * as kv from "./kv_store.tsx";
 const app = new Hono();
 
 // Initialize Supabase client
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-);
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+let supabase: ReturnType<typeof createClient> | null = null;
+try {
+  supabase = createClient(supabaseUrl, supabaseKey);
+} catch (e) {
+  console.log('Supabase client creation failed:', e);
+}
 
 // Ensure storage bucket exists
 const ensureBucket = async () => {
+  if (!supabase) return;
   const bucketName = 'make-46fa08c1-images';
   try {
     const { data: buckets } = await supabase.storage.listBuckets();
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+    const bucketExists = buckets?.some((bucket: any) => bucket.name === bucketName);
     if (!bucketExists) {
       await supabase.storage.createBucket(bucketName, {
         public: false,
       });
-      console.log(`✅ Storage bucket '${bucketName}' created`);
+      console.log(`Storage bucket '${bucketName}' created`);
     }
   } catch (error) {
-    console.error('Error ensuring bucket:', error);
+    console.log('Error ensuring bucket:', error);
   }
 };
 
-// Call on startup
+// Call on startup (non-blocking)
 ensureBucket();
 
 // Enable logger
-app.use('*', logger(console.log));
+app.use('*', logger());
 
 // Enable CORS for all routes and methods
 app.use(
@@ -48,7 +54,7 @@ app.use(
 
 // Health check endpoint
 app.get("/make-server-46fa08c1/health", (c) => {
-  return c.json({ status: "ok" });
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // Practice tests endpoints
@@ -277,9 +283,189 @@ app.get('/make-server-46fa08c1/advertisements/active', async (c) => {
 // Image Upload Routes
 // ==============================================
 
+// ==============================================
+// Student Management Routes
+// ==============================================
+
+// Get all students
+app.get('/make-server-46fa08c1/students', async (c) => {
+  try {
+    const students = await kv.getByPrefix('student:');
+    
+    // Get practice record count for each student
+    const studentsWithCounts = await Promise.all(
+      students.map(async (student) => {
+        try {
+          const records = await kv.getByPrefix(`practice_record:${student.id}:`);
+          return {
+            ...student,
+            testCount: records.length || 0
+          };
+        } catch {
+          return {
+            ...student,
+            testCount: 0
+          };
+        }
+      })
+    );
+    
+    const sortedStudents = studentsWithCounts.sort((a, b) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+    return c.json({ success: true, students: sortedStudents });
+  } catch (error) {
+    console.error('Error loading students:', error);
+    return c.json({ success: false, error: 'Failed to load students', details: String(error) }, 500);
+  }
+});
+
+// Get student by ID
+app.get('/make-server-46fa08c1/students/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const student = await kv.get(`student:${id}`);
+    if (!student) {
+      return c.json({ success: false, error: 'Student not found' }, 404);
+    }
+    return c.json({ success: true, student });
+  } catch (error) {
+    console.error('Error loading student:', error);
+    return c.json({ success: false, error: 'Failed to load student', details: String(error) }, 500);
+  }
+});
+
+// Create or update student
+app.post('/make-server-46fa08c1/students', async (c) => {
+  try {
+    const student = await c.req.json();
+    
+    // Generate ID if not provided
+    if (!student.id) {
+      student.id = `student_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    // Add timestamp if not provided
+    if (!student.createdAt) {
+      student.createdAt = new Date().toISOString();
+    }
+    
+    await kv.set(`student:${student.id}`, student);
+    console.log('✅ Student saved:', student.id);
+    return c.json({ success: true, student });
+  } catch (error) {
+    console.error('Error saving student:', error);
+    return c.json({ success: false, error: 'Failed to save student', details: String(error) }, 500);
+  }
+});
+
+// Update student
+app.put('/make-server-46fa08c1/students/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const updates = await c.req.json();
+    
+    const existing = await kv.get(`student:${id}`);
+    if (!existing) {
+      return c.json({ success: false, error: 'Student not found' }, 404);
+    }
+    
+    const updated = { ...existing, ...updates, id };
+    await kv.set(`student:${id}`, updated);
+    console.log('✅ Student updated:', id);
+    return c.json({ success: true, student: updated });
+  } catch (error) {
+    console.error('Error updating student:', error);
+    return c.json({ success: false, error: 'Failed to update student', details: String(error) }, 500);
+  }
+});
+
+// Delete student
+app.delete('/make-server-46fa08c1/students/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    await kv.del(`student:${id}`);
+    console.log('✅ Student deleted:', id);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    return c.json({ success: false, error: 'Failed to delete student', details: String(error) }, 500);
+  }
+});
+
+// ==============================================
+// Practice Record Routes
+// ==============================================
+
+// Get all practice records for a student
+app.get('/make-server-46fa08c1/practice-records/:studentId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId');
+    const records = await kv.getByPrefix(`practice_record:${studentId}:`);
+    const sortedRecords = records.sort((a, b) => 
+      new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
+    );
+    return c.json({ success: true, records: sortedRecords });
+  } catch (error) {
+    console.error('Error loading practice records:', error);
+    return c.json({ success: false, error: 'Failed to load practice records', details: String(error) }, 500);
+  }
+});
+
+// Save practice record
+app.post('/make-server-46fa08c1/practice-records', async (c) => {
+  try {
+    const record = await c.req.json();
+    
+    if (!record.studentId) {
+      return c.json({ success: false, error: 'Student ID is required' }, 400);
+    }
+    
+    // Generate ID if not provided
+    if (!record.id) {
+      record.id = Date.now();
+    }
+    
+    // Add timestamp if not provided
+    if (!record.timestamp) {
+      record.timestamp = new Date().toISOString();
+    }
+    
+    const key = `practice_record:${record.studentId}:${record.id}`;
+    await kv.set(key, record);
+    console.log('✅ Practice record saved:', key);
+    return c.json({ success: true, record });
+  } catch (error) {
+    console.error('Error saving practice record:', error);
+    return c.json({ success: false, error: 'Failed to save practice record', details: String(error) }, 500);
+  }
+});
+
+// Delete practice record
+app.delete('/make-server-46fa08c1/practice-records/:studentId/:recordId', async (c) => {
+  try {
+    const studentId = c.req.param('studentId');
+    const recordId = c.req.param('recordId');
+    const key = `practice_record:${studentId}:${recordId}`;
+    await kv.del(key);
+    console.log('✅ Practice record deleted:', key);
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting practice record:', error);
+    return c.json({ success: false, error: 'Failed to delete practice record', details: String(error) }, 500);
+  }
+});
+
+// ==============================================
+// Image Upload Routes
+// ==============================================
+
 // Upload image to Supabase Storage
 app.post('/make-server-46fa08c1/upload-image', async (c) => {
   try {
+    if (!supabase) {
+      return c.json({ success: false, error: 'Supabase client not initialized' }, 500);
+    }
     const body = await c.req.json();
     const { fileData, fileName, contentType } = body;
     
@@ -332,6 +518,9 @@ app.post('/make-server-46fa08c1/upload-image', async (c) => {
 // Delete image from Supabase Storage
 app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
   try {
+    if (!supabase) {
+      return c.json({ success: false, error: 'Supabase client not initialized' }, 500);
+    }
     const filePath = c.req.param('filePath');
     const bucketName = 'make-46fa08c1-images';
     
@@ -349,6 +538,95 @@ app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
   } catch (error) {
     console.error('Error deleting image:', error);
     return c.json({ success: false, error: 'Failed to delete image', details: String(error) }, 500);
+  }
+});
+
+// ==============================================
+// AI Analysis Routes (DeepSeek API)
+// ==============================================
+
+// AI Analysis endpoint
+app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
+  try {
+    const { type, question, passage, choices } = await c.req.json();
+    
+    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!deepseekApiKey) {
+      return c.json({ 
+        success: false, 
+        error: 'DEEPSEEK_API_KEY not configured',
+        message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.' 
+      }, 500);
+    }
+
+    // Build prompt based on analysis type
+    let prompt = '';
+    switch (type) {
+      case '해석':
+        prompt = `다음 SAT 지문을 한국어로 정확하게 해석해주세요. 문단별로 구분하여 설명해주세요:\n\n${passage}`;
+        break;
+      case '분석':
+        prompt = `다음 SAT 문제를 분석해주세요:\n\n지문: ${passage}\n\n질문: ${question}\n\n선택지:\n${choices.map((c: any, i: number) => `${String.fromCharCode(65 + i)}. ${c.text}`).join('\n')}\n\n출제 의도, 해결 전략, 주의사항을 포함하여 분석해주세요.`;
+        break;
+      case '단어':
+        prompt = `다음 SAT 지문에서 중요한 어휘를 추출하고 설명해주세요:\n\n${passage}\n\n각 단어의 뜻, 예문, 중요도를 포함해주세요.`;
+        break;
+      case '정답':
+        prompt = `다음 SAT 문제의 정답을 찾고, 각 선택지가 왜 정답이거나 오답인지 설명해주세요:\n\n지문: ${passage}\n\n질문: ${question}\n\n선택지:\n${choices.map((c: any, i: number) => `${String.fromCharCode(65 + i)}. ${c.text}`).join('\n')}`;
+        break;
+      default:
+        return c.json({ success: false, error: 'Invalid analysis type' }, 400);
+    }
+
+    // Call DeepSeek API
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${deepseekApiKey}`
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: '당신은 SAT 시험 전문가입니다. 학생들이 문제를 이해하고 해결할 수 있도록 명확하고 체계적으로 설명해주세요.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DeepSeek API error:', errorText);
+      return c.json({ 
+        success: false, 
+        error: 'DeepSeek API request failed',
+        details: errorText 
+      }, response.status);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices?.[0]?.message?.content || '';
+
+    return c.json({ 
+      success: true, 
+      response: aiResponse,
+      type 
+    });
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    return c.json({ 
+      success: false, 
+      error: 'AI analysis failed', 
+      details: String(error) 
+    }, 500);
   }
 });
 

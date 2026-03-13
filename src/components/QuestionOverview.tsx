@@ -53,7 +53,7 @@ export function QuestionOverview({
       <div className="fixed inset-0 z-40" onClick={onClose} />
       
       {/* Panel */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white z-50 rounded-t-lg border-t border-gray-300 shadow-2xl w-full md:w-[800px] max-w-[95vw] max-h-[70vh] md:max-h-[500px] overflow-y-auto">
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-white z-50 rounded-t-lg border-t border-gray-300 shadow-2xl w-full md:w-[650px] max-w-[95vw] max-h-[60vh] md:max-h-[400px] overflow-y-auto">
         <div className="p-3 md:p-6">
           {/* Header */}
           <div className="mb-3 md:mb-4">

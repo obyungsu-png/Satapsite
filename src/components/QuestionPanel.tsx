@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { RadioGroup } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Bookmark, Play } from "lucide-react";
-import { ExpandIcon } from "./ExpandIcon";
+import { Bookmark, Play, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 interface Choice {
@@ -44,7 +43,7 @@ export function QuestionPanel({
 }: QuestionPanelProps) {
   const [abcMode, setAbcMode] = useState(false); // ABC mode inactive by default
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set()); // B is eliminated by default
-  const [fontSize, setFontSize] = useState(18); // Increased from 16 to 18
+  const [fontSize, setFontSize] = useState(18); // Visually match Mark for Review size
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleEliminateChoice = (choiceId: string) => {
@@ -86,25 +85,26 @@ export function QuestionPanel({
   }, []);
 
   return (
-    <div ref={containerRef} className="h-full p-4 md:p-6 bg-white overflow-y-auto relative">
-      <div className="max-w-none w-full">
+    <div ref={containerRef} className="h-full px-4 md:px-6 pt-6 md:pt-16 pb-8 bg-white overflow-y-auto relative">
+      <div className="max-w-none w-full pl-3 md:pl-5">
 
         {/* Top Bar with Gray Background and Dashed Border */}
-        <div className="bg-[#e8e8e8] px-3 py-2 rounded border-b-2 border-dashed border-black mb-4 relative">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              {/* Question Number */}
-              <div className="bg-[#333] text-white px-2 py-1 rounded w-6 h-6 flex items-center justify-center">
-                <span className="font-bold" style={{ fontSize: '14px' }}>{questionNumber}</span>
-              </div>
-              
-              {/* Mark for Review */}
-              <div className="flex items-center gap-2 cursor-pointer" onClick={onToggleMarkForReview}>
-                <Bookmark 
-                  className={`h-[14px] w-[14px] ${isMarkedForReview ? 'text-red-600 fill-red-600' : 'text-gray-600 stroke-2'}`} 
-                />
-                <span className="text-[#333]" style={{ fontSize: '14px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', fontWeight: '500' }}>Mark for Review</span>
-              </div>
+        <div className="bg-[#f0f0f0] pl-0 pr-3 py-0 rounded-none border-b-2 border-dashed border-black mb-3 relative flex items-stretch h-[42px] overflow-hidden">
+          {/* Question Number - Full Height */}
+          <div className="bg-black text-white w-[42px] flex items-center justify-center shrink-0">
+            <span className="font-bold" style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif' }}>{questionNumber}</span>
+          </div>
+
+          <div className="flex items-center justify-between flex-1 pl-4">
+            {/* Mark for Review */}
+            <div className="flex items-center gap-2 cursor-pointer group" onClick={onToggleMarkForReview}>
+              <Bookmark 
+                className={`h-[16px] w-[16px] transition-colors ${isMarkedForReview ? 'text-red-600 fill-red-600' : 'text-[#555] group-hover:text-black'}`} 
+                strokeWidth={2}
+              />
+              <span className={`text-[15px] font-medium transition-colors ${isMarkedForReview ? 'text-red-600' : 'text-[#333] group-hover:text-black'}`} style={{ fontFamily: 'sans-serif' }}>
+                Mark for Review
+              </span>
             </div>
             
             {/* ABC Button */}
@@ -116,17 +116,17 @@ export function QuestionPanel({
                       variant="outline"
                       size="sm"
                       onClick={() => setAbcMode(!abcMode)}
-                      className={`px-[8px] py-[3px] font-bold border rounded relative overflow-hidden h-auto min-h-0 ${
+                      className={`px-[8px] h-[24px] font-bold border rounded-[4px] relative overflow-hidden transition-all ${
                         abcMode 
                           ? 'bg-[#005eb8] border-[#005eb8] text-white hover:bg-[#004780] hover:text-white' 
-                          : 'bg-white border-gray-400 hover:bg-gray-50 text-gray-800'
+                          : 'bg-transparent border-[#999] text-[#333] hover:bg-black/5 hover:border-black'
                       }`}
-                      style={{ fontSize: '12px', lineHeight: '1.2' }}
+                      style={{ fontSize: '13px' }}
                     >
-                      <span className="relative z-10">ABC</span>
-                      {/* Diagonal line through ABC - always visible, color changes with state */}
-                      <div className={`absolute top-1/2 left-0 w-full h-[1px] transform -rotate-12 ${
-                        abcMode ? 'bg-white' : 'bg-black'
+                      <span className="relative z-10 tracking-tight">ABC</span>
+                      {/* Diagonal line through ABC */}
+                      <div className={`absolute top-1/2 left-0 w-full h-[1.5px] transform -rotate-[15deg] origin-center ${
+                        abcMode ? 'bg-white' : 'bg-[#333]'
                       }`}></div>
                     </Button>
                   </div>
@@ -140,7 +140,7 @@ export function QuestionPanel({
         </div>
         
         {/* Question Section */}
-        <div className="relative pt-3">
+        <div className="relative">
           {/* Image Display (if exists) */}
           {imageUrl && (
             <div className="mb-4">
@@ -154,7 +154,7 @@ export function QuestionPanel({
           )}
           
           <div className="mb-5">
-            <p className="text-[#222] leading-[1.6]" style={{ fontSize: '17px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+            <p className="text-[#222] leading-[1.6]" style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
               {question}
             </p>
           </div>
@@ -169,10 +169,10 @@ export function QuestionPanel({
                 <div key={choice.id} className="flex items-center space-x-3 mb-2">
                   <Label 
                     htmlFor={choice.id} 
-                    className={`flex-1 cursor-pointer p-3 border rounded-lg transition-all duration-200 relative flex items-center gap-4 ${
+                    className={`flex-1 cursor-pointer p-3 border transition-all duration-150 relative flex items-center gap-4 rounded-lg ${
                       isSelected 
                         ? "border-blue-500 border-2 bg-blue-50" 
-                        : "border-[#888] hover:border-blue-300 hover:bg-gray-50"
+                        : "border-[#888] hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]"
                     } ${isEliminated ? "bg-gray-50 hover:bg-gray-100" : "bg-white"}`}
                     onClick={() => onAnswerChange(choice.id)}
                   >
@@ -183,14 +183,15 @@ export function QuestionPanel({
                     }`} style={{ fontSize: '14px', fontWeight: '700' }}>
                       {choice.id.toUpperCase()}
                     </div>
-                    <span className={`relative flex-1 ${isSelected ? "text-blue-600" : "text-[#000]"} ${isEliminated ? "opacity-40" : ""}`} style={{ fontSize: '16px', fontFamily: '"Times New Roman", Times, serif', lineHeight: '1.6' }}>
+                    <span className={`relative flex-1 ${isSelected ? "text-blue-600" : "text-[#000]"} ${isEliminated ? "opacity-40" : ""}`} style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.6' }}>
                       {choice.text}
-                      {isEliminated && (
-                        <span className="absolute top-1/2 left-[-60px] right-[-60px] flex items-center transform -translate-y-1/2">
-                          <span className="w-full h-[2.5px] bg-[#000]"></span>
-                        </span>
-                      )}
                     </span>
+                    {/* Strike-through line across entire box */}
+                    {isEliminated && (
+                      <span className="absolute top-1/2 -left-2 -right-2 flex items-center pointer-events-none -translate-y-1/2">
+                        <span className="w-full h-[1.5px] bg-[#000]"></span>
+                      </span>
+                    )}
                   </Label>
                   
                   {/* ABC Mode Controls */}
@@ -227,13 +228,13 @@ export function QuestionPanel({
           <div className="mt-6 pt-4 border-t border-gray-200">
             <Button
               onClick={() => onShowVideoLecture?.(questionNumber)}
-              className="w-full bg-purple-500 text-white py-3 rounded-lg hover:bg-purple-600 flex items-center justify-center gap-2"
+              className="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm transition-all hover:shadow-md"
             >
-              <Play className="h-5 w-5" />
-              🎥 동영상 강의
+              <Zap className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-bold text-base">유형 뽀개기</span>
             </Button>
-            <p className="text-xs text-gray-500 text-center mt-2">
-              이 문제에 대한 전문가 해설 영상을 시청하세요
+            <p className="text-xs text-gray-600 text-center mt-2 font-medium">
+              AI와 함께 이 유형을 완벽하게 마스터해보세요! 🚀
             </p>
           </div>
         )}

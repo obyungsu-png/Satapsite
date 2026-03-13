@@ -361,25 +361,28 @@ export function ReviewModal({
             </label>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Button
               onClick={onPrevious}
               disabled={!canGoPrevious}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
+              className={`flex items-center gap-3 px-8 py-2.5 rounded-full h-11 min-w-[130px] justify-center text-[15px] font-semibold ${!canGoPrevious ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+              style={canGoPrevious ? { backgroundColor: '#2B478B' } : undefined}
+              onMouseEnter={canGoPrevious ? (e) => e.currentTarget.style.backgroundColor = '#1F3666' : undefined}
+              onMouseLeave={canGoPrevious ? (e) => e.currentTarget.style.backgroundColor = '#2B478B' : undefined}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
+              <ChevronLeft className="h-5 w-5" />
+              Back
             </Button>
             <Button
               onClick={onNext}
               disabled={!canGoNext}
-              size="sm"
-              className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white"
+              className={`flex items-center gap-3 px-8 py-2.5 rounded-full h-11 min-w-[130px] justify-center text-[15px] font-semibold ${!canGoNext ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+              style={canGoNext ? { backgroundColor: '#2B478B' } : undefined}
+              onMouseEnter={canGoNext ? (e) => e.currentTarget.style.backgroundColor = '#1F3666' : undefined}
+              onMouseLeave={canGoNext ? (e) => e.currentTarget.style.backgroundColor = '#2B478B' : undefined}
             >
               Next
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         </div>

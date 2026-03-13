@@ -3,6 +3,17 @@ import { Button } from './ui/button';
 import { toast } from 'sonner@2.0.3';
 import { useState, useEffect } from 'react';
 
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
 export interface Advertisement {
   id: string;
   title: string;
@@ -57,7 +68,7 @@ export function AdManagement({ onClose, projectId, publicAnonKey, onAdsUpdate }:
 
   const loadAdvertisements = async () => {
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
         {
           headers: {
@@ -113,7 +124,7 @@ export function AdManagement({ onClose, projectId, publicAnonKey, onAdsUpdate }:
     };
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
         {
           method: editingAd ? 'PUT' : 'POST',
@@ -158,7 +169,7 @@ export function AdManagement({ onClose, projectId, publicAnonKey, onAdsUpdate }:
     if (!confirm('이 광고를 삭제하시겠습니까?')) return;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements/${id}`,
         {
           method: 'DELETE',
@@ -182,7 +193,7 @@ export function AdManagement({ onClose, projectId, publicAnonKey, onAdsUpdate }:
     const updatedAd = { ...ad, isActive: !ad.isActive };
 
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
         {
           method: 'PUT',

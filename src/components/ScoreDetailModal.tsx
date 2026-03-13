@@ -62,16 +62,17 @@ export function ScoreDetailModal({
     <div className="min-h-screen bg-gray-50">
       <div className="w-full flex flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl text-gray-900">SAT Scores</h2>
+        <div className="border-b border-gray-200 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-2 md:gap-4 min-w-0">
+            <h2 className="text-base md:text-xl text-gray-900 whitespace-nowrap">SAT Scores</h2>
             <Button
               onClick={() => {
                 setShowScore(!showScore);
                 if (showAnalysis) setShowAnalysis(false);
               }}
               variant="outline"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              size="sm"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 text-xs md:text-sm px-2 md:px-4"
             >
               Score
             </Button>
@@ -81,14 +82,15 @@ export function ScoreDetailModal({
                 if (showScore) setShowScore(false);
               }}
               variant="outline"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              size="sm"
+              className="border-blue-600 text-blue-600 hover:bg-blue-50 text-xs md:text-sm px-2 md:px-4"
             >
               분석
             </Button>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-gray-500 hover:text-gray-700 transition-colors shrink-0 ml-2"
           >
             <X className="h-5 w-5" />
           </button>
@@ -96,8 +98,8 @@ export function ScoreDetailModal({
 
         {/* Blue Info Banner - Only show when Score tab is active */}
         {showScore && (
-          <div className="px-6 pt-4 bg-gray-50">
-            <div className="text-white rounded-lg p-4 text-sm" style={{ backgroundColor: '#1e3a8a' }}>
+          <div className="px-3 md:px-6 pt-3 md:pt-4 bg-gray-50">
+            <div className="text-white rounded-lg p-3 md:p-4 text-xs md:text-sm leading-relaxed" style={{ backgroundColor: '#1e3a8a' }}>
               정확한 점수 데이터를 공개하기 어려우므로, 이 점수는 Bluebook의 여러 평가 결과를 참고한 것입니다. 각 섹션의 점수는 상하 10-20점 정도 변동될 수 있으니 참고용으로 활용하세요.
             </div>
           </div>
@@ -249,96 +251,146 @@ export function ScoreDetailModal({
               </div>
             </div>
           ) : (
-            <div className="p-8 pt-6">
+            <div className="p-4 md:p-8 pt-4 md:pt-6">
               {/* Score Overview - Only show when showScore is true */}
               {showScore && (
-                <div className="grid grid-cols-3 gap-6 mb-8">
-                  {/* Total Score */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 className="text-sm text-gray-600 mb-2">TOTAL SCORE</h3>
-                    <div className="flex items-baseline gap-3 mb-2">
-                      <span className="text-5xl text-gray-900">1120</span>
-                      <div className="flex flex-col text-xs text-gray-500">
-                        <span>400-</span>
-                        <span>1600</span>
+                <>
+                  {/* Mobile: stacked cards */}
+                  <div className="md:hidden space-y-3 mb-6">
+                    {/* Total Score Card */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Total Score</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-light text-gray-900">1120</span>
+                        <span className="text-xs text-gray-400">/ 1600</span>
+                        <div className="bg-gray-100 px-2 py-0.5 rounded-full ml-auto">
+                          <span className="text-xs text-gray-600">75th*</span>
+                        </div>
                       </div>
-                      <div className="bg-gray-100 px-3 py-1 rounded-full">
-                        <span className="text-sm">75th*</span>
+                      <p className="text-xs text-gray-500 mt-1">Range: 1080-1160 · Avg: 1100</p>
+                    </div>
+
+                    {/* Section Scores - 2 columns */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Reading & Writing</h3>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-3xl font-light text-gray-900">620</span>
+                          <span className="text-xs text-gray-400">/ 800</span>
+                        </div>
+                        <div className="bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
+                          <span className="text-xs text-gray-600">60th*</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Range: 590-650</p>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Math</h3>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-3xl font-light text-gray-900">500</span>
+                          <span className="text-xs text-gray-400">/ 800</span>
+                        </div>
+                        <div className="bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
+                          <span className="text-xs text-gray-600">70th*</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Range: 470-530</p>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500">Score Range: 1080-1160</p>
-                    <p className="text-xs text-gray-500">Average Score (all testers): 1100</p>
+
+                    {/* Note - compact */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 leading-relaxed">
+                      <p>* Percentiles represent the percent of 11th grade test takers from the past 3 years who scored the same as or below you. Score range is the range you could get if you took the SAT multiple times.</p>
+                    </div>
                   </div>
 
-                  {/* Section Scores */}
-                  <div className="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 className="text-sm text-gray-600 mb-4">SECTION SCORES</h3>
-                    
-                    <div className="mb-4">
-                      <div className="flex items-baseline gap-3 mb-1">
-                        <span className="text-2xl text-gray-900">620</span>
+                  {/* Desktop: 3-col grid */}
+                  <div className="hidden md:grid grid-cols-3 gap-6 mb-8">
+                    {/* Total Score */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-sm text-gray-600 mb-2">TOTAL SCORE</h3>
+                      <div className="flex items-baseline gap-3 mb-2">
+                        <span className="text-5xl text-gray-900">1120</span>
                         <div className="flex flex-col text-xs text-gray-500">
-                          <span>200-</span>
-                          <span>800</span>
+                          <span>400-</span>
+                          <span>1600</span>
                         </div>
-                        <div className="bg-gray-100 px-2 py-0.5 rounded-full">
-                          <span className="text-xs">60th*</span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-600">Reading and Writing</p>
-                      <p className="text-xs text-gray-500">Your Score Range: 590-650</p>
-                      <p className="text-xs text-gray-500">Average Score (all testers): 600</p>
-                    </div>
-
-                    <div>
-                      <div className="flex items-baseline gap-3 mb-1">
-                        <span className="text-2xl text-gray-900">500</span>
-                        <div className="flex flex-col text-xs text-gray-500">
-                          <span>200-</span>
-                          <span>800</span>
-                        </div>
-                        <div className="bg-gray-100 px-2 py-0.5 rounded-full">
-                          <span className="text-xs">70th*</span>
+                        <div className="bg-gray-100 px-3 py-1 rounded-full">
+                          <span className="text-sm">75th*</span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600">Math</p>
-                      <p className="text-xs text-gray-500">Your Score Range: 470-530</p>
-                      <p className="text-xs text-gray-500">Average Score (all testers): 530</p>
+                      <p className="text-xs text-gray-500">Score Range: 1080-1160</p>
+                      <p className="text-xs text-gray-500">Average Score (all testers): 1100</p>
+                    </div>
+
+                    {/* Section Scores */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-6">
+                      <h3 className="text-sm text-gray-600 mb-4">SECTION SCORES</h3>
+                      
+                      <div className="mb-4">
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <span className="text-2xl text-gray-900">620</span>
+                          <div className="flex flex-col text-xs text-gray-500">
+                            <span>200-</span>
+                            <span>800</span>
+                          </div>
+                          <div className="bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="text-xs">60th*</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600">Reading and Writing</p>
+                        <p className="text-xs text-gray-500">Your Score Range: 590-650</p>
+                        <p className="text-xs text-gray-500">Average Score (all testers): 600</p>
+                      </div>
+
+                      <div>
+                        <div className="flex items-baseline gap-3 mb-1">
+                          <span className="text-2xl text-gray-900">500</span>
+                          <div className="flex flex-col text-xs text-gray-500">
+                            <span>200-</span>
+                            <span>800</span>
+                          </div>
+                          <div className="bg-gray-100 px-2 py-0.5 rounded-full">
+                            <span className="text-xs">70th*</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600">Math</p>
+                        <p className="text-xs text-gray-500">Your Score Range: 470-530</p>
+                        <p className="text-xs text-gray-500">Average Score (all testers): 530</p>
+                      </div>
+                    </div>
+
+                    {/* Note */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-xs text-gray-600">
+                      <p className="mb-2">* Percentiles represent the percent of 11th grade test takers from the past 3 years who scored the same as or below you.</p>
+                      <p>Score range: This is the range of scores you could possibly get if you took the SAT multiple times on different days.</p>
                     </div>
                   </div>
-
-                  {/* Note */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-xs text-gray-600">
-                    <p className="mb-2">* Percentiles represent the percent of 11th grade test takers from the past 3 years who scored the same as or below you.</p>
-                    <p>Score range: This is the range of scores you could possibly get if you took the SAT multiple times on different days.</p>
-                  </div>
-                </div>
+                </>
               )}
 
               {/* Knowledge and Skills - Only show when showScore is true */}
               {showScore && (
                 <div className="mb-8">
-                  <h3 className="text-xl mb-2 text-gray-900">Knowledge and Skills</h3>
-                  <p className="text-sm text-gray-600 mb-6">View your performance across the 8 content domains measured on the SAT.</p>
+                  <h3 className="text-lg md:text-xl mb-2 text-gray-900">Knowledge and Skills</h3>
+                  <p className="text-xs md:text-sm text-gray-600 mb-4 md:mb-6">View your performance across the 8 content domains measured on the SAT.</p>
 
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                     {/* Reading and Writing */}
                     <div>
-                      <h4 className="text-lg mb-4 text-gray-800">Reading and Writing</h4>
-                      <div className="space-y-4">
+                      <h4 className="text-base md:text-lg mb-3 md:mb-4 text-gray-800">Reading and Writing</h4>
+                      <div className="space-y-3 md:space-y-4">
                         {Object.entries(analysisData.reading).map(([category, data]) => (
                           <div key={category}>
                             <div className="flex justify-between items-start mb-1">
                               <div>
-                                <p className="text-sm text-gray-900">{category}</p>
-                                <p className="text-xs text-gray-500">({Math.round((data.total / 56) * 100)}% of test section, {data.total} questions)</p>
+                                <p className="text-xs md:text-sm text-gray-900">{category}</p>
+                                <p className="text-xs text-gray-500">({Math.round((data.total / 56) * 100)}% of section, {data.total} Qs)</p>
                               </div>
                             </div>
                             <div className="flex gap-0.5">
                               {Array.from({ length: data.total }).map((_, i) => (
                                 <div
                                   key={i}
-                                  className={`h-6 flex-1 ${
+                                  className={`h-5 md:h-6 flex-1 ${
                                     i < data.correct ? 'bg-gray-800' : 'bg-gray-200'
                                   }`}
                                 />
@@ -351,21 +403,21 @@ export function ScoreDetailModal({
 
                     {/* Math */}
                     <div>
-                      <h4 className="text-lg mb-4 text-gray-800">Math</h4>
-                      <div className="space-y-4">
+                      <h4 className="text-base md:text-lg mb-3 md:mb-4 text-gray-800">Math</h4>
+                      <div className="space-y-3 md:space-y-4">
                         {Object.entries(analysisData.math).map(([category, data]) => (
                           <div key={category}>
                             <div className="flex justify-between items-start mb-1">
                               <div>
-                                <p className="text-sm text-gray-900">{category}</p>
-                                <p className="text-xs text-gray-500">({Math.round((data.total / 46) * 100)}% of test section, {data.total} questions)</p>
+                                <p className="text-xs md:text-sm text-gray-900">{category}</p>
+                                <p className="text-xs text-gray-500">({Math.round((data.total / 46) * 100)}% of section, {data.total} Qs)</p>
                               </div>
                             </div>
                             <div className="flex gap-0.5">
                               {Array.from({ length: data.total }).map((_, i) => (
                                 <div
                                   key={i}
-                                  className={`h-6 flex-1 ${
+                                  className={`h-5 md:h-6 flex-1 ${
                                     i < data.correct ? 'bg-gray-800' : 'bg-gray-200'
                                   }`}
                                 />
@@ -382,24 +434,63 @@ export function ScoreDetailModal({
               {/* Questions Table - Show when neither Score nor Analysis is active */}
               {!showScore && !showAnalysis && (
                 <div className="mb-6">
-                  <h3 className="text-lg mb-4 text-gray-900">Questions Overview</h3>
+                  <h3 className="text-base md:text-lg mb-3 md:mb-4 text-gray-900">Questions Overview</h3>
                   
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-blue-50 rounded-lg p-6 text-center">
-                      <div className="text-3xl mb-2 text-gray-800">{totalQuestions}</div>
-                      <div className="text-sm text-gray-600">Total Questions</div>
+                  <div className="grid grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
+                    <div className="bg-blue-50 rounded-lg p-3 md:p-6 text-center">
+                      <div className="text-2xl md:text-3xl mb-1 md:mb-2 text-gray-800">{totalQuestions}</div>
+                      <div className="text-xs md:text-sm text-gray-600">Total Questions</div>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-6 text-center">
-                      <div className="text-3xl mb-2 text-gray-800">{correctAnswers}</div>
-                      <div className="text-sm text-gray-600">Correct Answers</div>
+                    <div className="bg-blue-50 rounded-lg p-3 md:p-6 text-center">
+                      <div className="text-2xl md:text-3xl mb-1 md:mb-2 text-gray-800">{correctAnswers}</div>
+                      <div className="text-xs md:text-sm text-gray-600">Correct Answers</div>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-6 text-center">
-                      <div className="text-3xl mb-2 text-gray-800">{incorrectAnswers}</div>
-                      <div className="text-sm text-gray-600">Incorrect Answers</div>
+                    <div className="bg-blue-50 rounded-lg p-3 md:p-6 text-center">
+                      <div className="text-2xl md:text-3xl mb-1 md:mb-2 text-gray-800">{incorrectAnswers}</div>
+                      <div className="text-xs md:text-sm text-gray-600">Incorrect Answers</div>
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                  {/* Mobile: card-style list */}
+                  <div className="md:hidden space-y-2">
+                    <div className="bg-gray-700 text-white rounded-lg px-4 py-2.5 grid grid-cols-4 text-xs font-semibold">
+                      <span>Question</span>
+                      <span>Section</span>
+                      <span className="text-center">Correct</span>
+                      <span className="text-center">Yours</span>
+                    </div>
+                    {questions.map((question) => {
+                      const correctAnswer = question.id === 3 ? 'C' : question.id === 4 ? 'B' : question.id === 5 ? 'B' : 'A';
+                      const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
+                      
+                      return (
+                        <button
+                          key={question.id}
+                          onClick={() => {
+                            onReviewQuestion(question.id);
+                            onClose();
+                          }}
+                          className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 grid grid-cols-4 items-center text-sm hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                        >
+                          <span className="text-gray-900 font-medium">{question.id}</span>
+                          <span className="text-gray-500 text-xs">R&W</span>
+                          <span className="text-center text-gray-900">{correctAnswer}</span>
+                          <span className="text-center">
+                            {userAnswer ? (
+                              <span className={`font-semibold ${userAnswer === correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
+                                {userAnswer}
+                              </span>
+                            ) : (
+                              <span className="text-red-500 font-medium text-xs">Omitted</span>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop: full table */}
+                  <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
                     <table className="w-full">
                       <thead className="bg-gray-700 text-white">
                         <tr>

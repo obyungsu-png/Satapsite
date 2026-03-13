@@ -13,15 +13,15 @@ export function PreparingScreen({ onComplete }: PreparingScreenProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-xl mx-auto text-center px-6">
-        <h1 className="text-4xl text-gray-800 mb-16">
+      <div className="max-w-xl mx-auto text-center px-4 sm:px-6">
+        <h1 className="text-2xl sm:text-4xl text-gray-800 mb-8 sm:mb-16">
           We're Preparing Your Test Exam
         </h1>
         
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 mb-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-12 mb-8">
           {/* Clock and Hourglass Icon */}
-          <div className="flex justify-center mb-12">
-            <svg width="300" height="225" viewBox="0 0 200 150" className="mx-auto">
+          <div className="flex justify-center mb-6 sm:mb-12">
+            <svg viewBox="0 0 200 150" className="mx-auto w-[180px] h-[135px] sm:w-[300px] sm:h-[225px]">
               {/* Clock */}
               <circle cx="70" cy="75" r="45" fill="#D4E4F7" stroke="#2C3E50" strokeWidth="3" />
               {/* Clock ticks */}
@@ -56,10 +56,10 @@ export function PreparingScreen({ onComplete }: PreparingScreenProps) {
             </svg>
           </div>
           
-          <p className="text-lg text-gray-600 mb-3">
+          <p className="text-base sm:text-lg text-gray-600 mb-2 sm:mb-3">
             This may take up to a minute.
           </p>
-          <p className="text-lg text-gray-600">
+          <p className="text-base sm:text-lg text-gray-600">
             Please don't refresh this page or exit.
           </p>
         </div>

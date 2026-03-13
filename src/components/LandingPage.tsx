@@ -57,12 +57,17 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
               >
                 SAT Prep
               </button>
-              <button
-                onClick={onGetStarted}
-                className="px-8 py-3 bg-white text-emerald-600 font-semibold rounded-md border-2 border-emerald-600 hover:bg-emerald-50 transition-colors"
-              >
-                ACT Prep
-              </button>
+              <div className="relative inline-block">
+                <button
+                  disabled
+                  className="px-8 py-3 bg-white text-emerald-600 font-semibold rounded-md border-2 border-emerald-600 opacity-60 cursor-not-allowed transition-colors"
+                >
+                  ACT Prep
+                </button>
+                <span className="absolute -top-3 -right-3 bg-amber-400 text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                  Coming Soon
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -131,7 +136,10 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="text-white font-bold text-lg mb-4">SAT & ACT Prep</h3>
+              <div className="flex items-center gap-1.5 mb-4">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#00bcd4" stroke="none"><path d="M13 2L3 14h9l-1 10 10-12h-9l1-10z"/></svg>
+                <h3 className="text-white font-extrabold text-lg tracking-tight">AllMyExam-<span style={{ color: '#00bcd4' }}>SAT</span></h3>
+              </div>
               <p className="text-sm">Your complete college test preparation platform</p>
             </div>
             <div>

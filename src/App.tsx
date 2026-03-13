@@ -24,7 +24,13 @@ import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
 import { X, Bookmark } from "lucide-react";
 import { Download } from "lucide-react";
-import { mathQuestions } from "./mathQuestions";
+import { BluebookExpandButton } from "./components/BluebookExpandButton";
+import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
+import { MobileExamTabs } from "./components/MobileExamTabs";
+import expandIconsSprite from "figma:asset/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
+import dragHandleImg from "figma:asset/af403f2609b757e96b427cbfdd300891837f3bc7.png";
+import expandRightIcon from "figma:asset/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
+import expandLeftIcon from "figma:asset/15377038ef3bc5534b33d4763b177c0dedf4adef.png";
 
 // TOEFL/SAT level vocabulary extraction
 const extractVocabularyFromText = (text: string, questionId: number) => {
@@ -110,10 +116,37 @@ const loadPracticeRecords = () => {
   }
 };
 
-// Save practice records to localStorage
-const savePracticeRecords = (records: any[]) => {
+// Save practice records to localStorage and Supabase
+const savePracticeRecords = async (records: any[], currentUser?: any) => {
   try {
     localStorage.setItem('practiceRecords', JSON.stringify(records));
+    
+    // Save to Supabase if user is logged in
+    if (currentUser && currentUser.id) {
+      // Save the latest record to Supabase
+      const latestRecord = records[0];
+      if (latestRecord) {
+        try {
+          const response = await fetch(`https://${(await import('./utils/supabase/info')).projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${(await import('./utils/supabase/info')).publicAnonKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...latestRecord,
+              studentId: currentUser.id,
+            }),
+          });
+          
+          if (response.ok) {
+            console.log('✅ Practice record saved to Supabase');
+          }
+        } catch (error) {
+          console.log('⚠️ Failed to save practice record to Supabase:', error);
+        }
+      }
+    }
   } catch {
     // Handle storage errors silently
   }
@@ -181,6 +214,57 @@ const generateQuestions = () => {
 const defaultQuestions = generateQuestions();
 
 export default function App() {
+  // Set document title and favicon
+  useEffect(() => {
+    document.title = "AllMyExam - SAT";
+    // Create favicon: teal rounded square with white lightning bolt (matching reference image)
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Rounded rectangle background with subtle gradient
+      const r = 14;
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(size - r, 0);
+      ctx.quadraticCurveTo(size, 0, size, r);
+      ctx.lineTo(size, size - r);
+      ctx.quadraticCurveTo(size, size, size - r, size);
+      ctx.lineTo(r, size);
+      ctx.quadraticCurveTo(0, size, 0, size - r);
+      ctx.lineTo(0, r);
+      ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#00cfe8');
+      grad.addColorStop(1, '#00a5b8');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      // White lightning bolt - centered, bold, matching reference
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(37, 6);
+      ctx.lineTo(18, 34);
+      ctx.lineTo(29, 34);
+      ctx.lineTo(26, 58);
+      ctx.lineTo(46, 30);
+      ctx.lineTo(35, 30);
+      ctx.closePath();
+      ctx.fill();
+      // Apply as favicon
+      let link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.type = 'image/png';
+      link.href = canvas.toDataURL('image/png');
+    }
+  }, []);
+
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({}); // No answers selected initially
   const [isHidden, setIsHidden] = useState(false);
   const [markedForReview, setMarkedForReview] = useState<Record<number, boolean>>({}); // No questions marked by default
@@ -210,10 +294,41 @@ export default function App() {
   const [showCalculator, setShowCalculator] = useState(false); // Calculator state
   const [showReference, setShowReference] = useState(false); // Reference modal state
   const [calculatorExpanded, setCalculatorExpanded] = useState(false); // Calculator expanded state
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    // Load current user from localStorage
+    try {
+      const saved = localStorage.getItem('currentUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }); // Current logged in user
   const totalQuestions = questions.length;
 
-  const currentQuestion = questions[currentQuestionIndex];
+  // Split questions into modules based on test type
+  const questionsPerModule = currentTestInfo?.type === 'Math' ? 22 : 27;
+  const module1Questions = questions.slice(0, questionsPerModule);
+  const module2Questions = questions.slice(questionsPerModule, questionsPerModule * 2);
+  
+  // Get current module's questions
+  const currentModuleQuestions = currentModule === 1 ? module1Questions : module2Questions;
+  const currentModuleTotalQuestions = currentModuleQuestions.length;
+
+  const currentQuestion = currentModuleQuestions[currentQuestionIndex];
   const currentQuestionId = currentQuestion?.id || 1;
+
+  // Save currentUser to localStorage when it changes
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('currentUser');
+      }
+    } catch (error) {
+      console.error('Error saving currentUser to localStorage:', error);
+    }
+  }, [currentUser]);
 
   // Timer effect - only start when exam begins and if timed mode is enabled
   useEffect(() => {
@@ -265,12 +380,15 @@ export default function App() {
             trainingType: currentTestInfo.trainingType,
             questionCount: currentTestInfo.questionCount,
             answers: selectedAnswers,
-            markedForReview: markedForReview
+            markedForReview: markedForReview,
+            studentId: currentUser?.id || null,
+            studentEmail: currentUser?.email || null,
+            studentName: currentUser?.name || currentUser?.username || null
           };
           
           const updatedRecords = [newRecord, ...practiceRecords];
           setPracticeRecords(updatedRecords);
-          savePracticeRecords(updatedRecords);
+          savePracticeRecords(updatedRecords, currentUser);
         }
       }
     }, 3000);
@@ -307,7 +425,7 @@ export default function App() {
       // Expand left (passage panel gets bigger)
       setIsExpanded(true);
       setExpandDirection('left');
-      setPanelWidth(70);
+      setPanelWidth(60);
     }
   };
 
@@ -321,7 +439,7 @@ export default function App() {
       // Expand right (question panel gets bigger)
       setIsExpanded(true);
       setExpandDirection('right');
-      setPanelWidth(30);
+      setPanelWidth(40);
     }
   };
 
@@ -488,7 +606,7 @@ export default function App() {
     // Extract words before moving to next question
     extractWordsFromCurrentQuestion();
     
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < currentModuleTotalQuestions - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       // Last question of the module - show Check Your Work screen first
@@ -532,7 +650,13 @@ export default function App() {
 
   // Show dashboard
   if (gameState === 'dashboard') {
-    return <Dashboard onStartTest={handleStartTest} learnedWords={learnedWords} practiceRecords={practiceRecords} />;
+    return <Dashboard 
+      onStartTest={handleStartTest} 
+      learnedWords={learnedWords} 
+      practiceRecords={practiceRecords}
+      currentUser={currentUser}
+      setCurrentUser={setCurrentUser}
+    />;
   }
 
   // Show preparing screen
@@ -574,47 +698,57 @@ export default function App() {
 
     return (
       <div className="h-screen flex flex-col" style={{ backgroundColor: '#F5F5F7' }}>
-        <div className="bg-white px-10 py-4 flex items-center justify-between" style={{ borderBottom: '2px dotted #999' }}>
-          <div className="flex items-center gap-3">
-            <h1 style={{ fontSize: '15px', fontWeight: '600', color: '#333' }}>Section 2, Module 1: Math</h1>
-            <button className="px-3 py-1 text-xs" style={{ border: '1px solid #999', borderRadius: '4px', background: 'white' }}>
+        {/* Header - responsive */}
+        <div className="bg-white px-3 md:px-10 py-2 md:py-4 flex items-center justify-between" style={{ borderBottom: '2px dotted #999' }}>
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
+            <h1 className="truncate" style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>
+              <span className="md:hidden">Section 2, Module 1</span>
+              <span className="hidden md:inline">Section 2, Module 1: Math</span>
+            </h1>
+            <button className="px-2 md:px-3 py-1 text-xs shrink-0" style={{ border: '1px solid #999', borderRadius: '4px', background: 'white' }}>
               Directions
             </button>
           </div>
-          <div className="flex items-center gap-6">
-            <span style={{ fontSize: '15px', fontWeight: '600' }}>{formatTime(timeRemaining)}</span>
-            <button className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded text-sm">Hide</button>
-            <button className="p-1.5"><span style={{ fontSize: '18px' }}>🖩</span></button>
-            <button className="p-1.5"><span style={{ fontSize: '18px' }}>📖</span></button>
-            <button className="p-1.5"><span style={{ fontSize: '18px' }}>⋮</span></button>
+          <div className="flex items-center gap-2 md:gap-6">
+            <span style={{ fontSize: '14px', fontWeight: '600' }}>{formatTime(timeRemaining)}</span>
+            <button className="px-2 md:px-4 py-1 md:py-1.5 bg-gray-200 text-gray-700 rounded text-xs md:text-sm">Hide</button>
+            <button className="p-1 hidden md:block"><span style={{ fontSize: '18px' }}>🖩</span></button>
+            <button className="p-1 hidden md:block"><span style={{ fontSize: '18px' }}></span></button>
+            <button className="p-1"><span style={{ fontSize: '18px' }}>⋮</span></button>
           </div>
         </div>
 
-        <div className="flex-1 flex items-start justify-center pt-8">
-          <div className="bg-white rounded-lg shadow-lg p-12 max-w-5xl w-full mx-6" style={{ marginTop: '10px' }}>
-            <h2 className="text-center mb-8" style={{ fontSize: '36px', color: '#555', fontWeight: '500' }}>Check Your Work</h2>
+        {/* Content - responsive */}
+        <div className="flex-1 flex items-start justify-center pt-4 md:pt-8 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg p-5 md:p-12 max-w-5xl w-full mx-3 md:mx-6 mb-4" style={{ marginTop: '4px' }}>
+            <h2 className="text-center mb-4 md:mb-8" style={{ fontSize: 'clamp(24px, 5vw, 36px)', color: '#555', fontWeight: '500' }}>Check Your Work</h2>
             
-            <div className="mb-8 text-center space-y-2">
-              <p className="text-base text-gray-700">On test day, you won't be able to move on to the next module until time expires.</p>
-              <p className="text-base text-gray-700">For these practice questions, you can click <strong>Next</strong> when you're ready to move on.</p>
+            <div className="mb-5 md:mb-8 text-center space-y-2">
+              <p className="text-sm md:text-base text-gray-700 leading-relaxed">On test day, you won't be able to move on to the next module until time expires.</p>
+              <p className="text-sm md:text-base text-gray-700 leading-relaxed">For these practice questions, you can click <strong>Next</strong> when you're ready to move on.</p>
             </div>
 
-            <div className="bg-white rounded-lg p-8 mb-8" style={{ border: '1px solid #ddd' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '17px', fontWeight: '600', color: '#333' }}>Section 2, Module 1: Math Questions</h3>
-                <div className="flex items-center gap-5 text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-dashed border-gray-500 rounded-sm bg-white"></span>
+            <div className="bg-white rounded-lg p-4 md:p-8 mb-6 md:mb-8" style={{ border: '1px solid #ddd' }}>
+              {/* Section title and legend */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 md:mb-6">
+                <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#333' }}>
+                  <span className="md:hidden">Section 2, Module 1:<br/>Math Questions</span>
+                  <span className="hidden md:inline">Section 2, Module 1: Math Questions</span>
+                </h3>
+                <div className="flex items-center gap-4 md:gap-5 text-xs md:text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-3.5 md:w-4 md:h-4 border-2 border-dashed border-gray-500 rounded-sm bg-white"></span>
                     <span style={{ color: '#666' }}>Unanswered</span>
                   </span>
-                  <span className="flex items-center gap-2">
-                    <Bookmark className="w-4 h-4 text-red-600 fill-red-600" />
+                  <span className="flex items-center gap-1.5">
+                    <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600 fill-red-600" />
                     <span style={{ color: '#666' }}>For Review</span>
                   </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-12 gap-3">
+              {/* Question grid - responsive columns */}
+              <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-12 gap-2 md:gap-3">
                 {Array.from({ length: 27 }, (_, i) => {
                   const questionNum = i + 1;
                   const isAnswered = selectedAnswers[questionNum];
@@ -628,7 +762,7 @@ export default function App() {
                         handleQuestionSelect(questionNum);
                       }}
                       className={`
-                        py-3 rounded border-2 border-dashed transition-colors flex items-center justify-center
+                        py-2.5 md:py-3 rounded border-2 border-dashed transition-colors flex items-center justify-center
                         ${isMarked 
                           ? 'bg-red-500 border-red-500 text-white' 
                           : isAnswered 
@@ -638,7 +772,7 @@ export default function App() {
                       `}
                       style={{ 
                         fontWeight: '600',
-                        fontSize: '15px',
+                        fontSize: '14px',
                         color: isMarked ? 'white' : isAnswered ? '#0066CC' : '#666'
                       }}
                     >
@@ -649,18 +783,19 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-4">
+            {/* Buttons - centered on mobile */}
+            <div className="flex justify-center md:justify-end gap-3 md:gap-4">
               <Button
                 onClick={handleCheckWorkBack}
-                className="px-8 py-2.5 text-white rounded-full"
-                style={{ backgroundColor: '#0066CC', fontWeight: '600', fontSize: '15px' }}
+                className="px-6 md:px-8 py-2.5 text-white rounded-full text-sm md:text-base"
+                style={{ backgroundColor: '#0066CC', fontWeight: '600' }}
               >
                 Back
               </Button>
               <Button
                 onClick={handleCheckWorkNext}
-                className="px-8 py-2.5 text-white rounded-full"
-                style={{ backgroundColor: '#0066CC', fontWeight: '600', fontSize: '15px' }}
+                className="px-6 md:px-8 py-2.5 text-white rounded-full text-sm md:text-base"
+                style={{ backgroundColor: '#0066CC', fontWeight: '600' }}
               >
                 Next
               </Button>
@@ -886,12 +1021,12 @@ export default function App() {
             }
           }}
           onNext={() => {
-            if (currentQuestionIndex < questions.length - 1) {
+            if (currentQuestionIndex < currentModuleTotalQuestions - 1) {
               setCurrentQuestionIndex(currentQuestionIndex + 1);
             }
           }}
           canGoPrevious={currentQuestionIndex > 0}
-          canGoNext={currentQuestionIndex < questions.length - 1}
+          canGoNext={currentQuestionIndex < currentModuleTotalQuestions - 1}
           questionType="Central Ideas and Details"
           difficulty="보통"
         />
@@ -917,7 +1052,7 @@ export default function App() {
     };
 
     const handleReviewNext = () => {
-      if (currentQuestionIndex < questions.length - 1) {
+      if (currentQuestionIndex < currentModuleTotalQuestions - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }
     };
@@ -964,10 +1099,10 @@ export default function App() {
               correctAnswer={correctAnswer}
               onPrevious={handleReviewPrevious}
               onNext={handleReviewNext}
-              hasNext={currentQuestionIndex < questions.length - 1}
+              hasNext={currentQuestionIndex < currentModuleTotalQuestions - 1}
               hasPrevious={currentQuestionIndex > 0}
               currentIndex={currentQuestionIndex}
-              totalQuestions={questions.length}
+              totalQuestions={currentModuleTotalQuestions}
             />
           </div>
         </div>
@@ -1071,8 +1206,8 @@ export default function App() {
                   width: `${panelWidth}%`,
                   height: "100%"
                 }}
-                minWidth="20%"
-                maxWidth="70%"
+                minWidth="10%"
+                maxWidth="90%"
                 enable={{
                   top: false,
                   right: true,
@@ -1084,7 +1219,7 @@ export default function App() {
                   topLeft: false
                 }}
                 onResizeStop={(e, direction, ref, d) => {
-                  const newWidth = Math.max(20, Math.min(70, panelWidth + (d.width / window.innerWidth) * 100));
+                  const newWidth = Math.max(10, Math.min(90, panelWidth + (d.width / window.innerWidth) * 100));
                   setPanelWidth(newWidth);
                   // Reset expansion state when manually resized
                   if (Math.abs(newWidth - 50) < 5) {
@@ -1095,19 +1230,56 @@ export default function App() {
                 }}
                 handleStyles={{
                   right: {
-                    width: "9px",
-                    right: "-4.5px",
-                    background: "linear-gradient(to right, transparent 4px, #d1d5db 4px, #d1d5db 6px, transparent 6px)",
+                    width: "60px",
+                    right: "-30px",
+                    background: "transparent",
                     cursor: "col-resize",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
+                    alignItems: "flex-start",
+                    justifyContent: "center",
+                    zIndex: 10
                   }
                 }}
                 handleComponent={{
                   right: (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-1 h-16 bg-gray-900 rounded-sm shadow-lg" style={{ boxShadow: '0 0 0 2px #374151' }}></div>
+                    <div className="w-full h-full flex flex-col items-center relative">
+                      {/* Vertical divider line */}
+                      <div className="absolute inset-0 flex justify-center">
+                        <div className="w-[2px] h-full bg-gray-300"></div>
+                      </div>
+                      {/* Top: Two circular expand buttons - SAT Bluebook coded style */}
+                      <div className="relative mt-2 flex items-center z-10" style={{ gap: '4px' }}>
+                        {/* Left expand button (Passage) - Always visible */}
+                        <BluebookExpandButton
+                          type={isExpanded && expandDirection === 'left' ? 'collapse' : 'expand'}
+                          onClick={(e) => { e.stopPropagation(); handleExpandLeft(); }}
+                          isExpanded={isExpanded && expandDirection === 'left'}
+                          className="scale-[0.85]"
+                          // Initial (Expand): Points Top-Right (Base)
+                          // Pressed (Collapse): Points Bottom-Left (Base)
+                          flipX={false}
+                          flipY={false}
+                        />
+                        
+                        {/* Right expand button (Questions) - Always visible */}
+                        <BluebookExpandButton
+                          type={isExpanded && expandDirection === 'right' ? 'collapse' : 'expand'}
+                          onClick={(e) => { e.stopPropagation(); handleExpandRight(); }}
+                          isExpanded={isExpanded && expandDirection === 'right'}
+                          className="scale-[0.85]"
+                          // Initial (Expand): Points Top-Left (FlipX)
+                          // Pressed (Collapse): Points Bottom-Right (FlipX)
+                          flipX={true}
+                          flipY={false}
+                        />
+                      </div>
+                      {/* Below: Black drag handle with diamond arrows - SAT Bluebook style */}
+                      <div className="relative mt-28 w-[14px] h-[24px] bg-black rounded-[3px] flex flex-col items-center justify-center cursor-col-resize z-10 shadow-sm border border-gray-600/50">
+                        <svg width="14" height="14" viewBox="0 0 18 18" fill="none" className="shrink-0">
+                          <path d="M7 3 L2 9 L7 15" fill="white" />
+                          <path d="M11 3 L16 9 L11 15" fill="white" />
+                        </svg>
+                      </div>
                     </div>
                   )
                 }}
@@ -1141,42 +1313,31 @@ export default function App() {
               </div>
             </div>
 
-            {/* Mobile Layout */}
-            <div className="flex-1 flex flex-col md:hidden">
-              <div className="flex-1">
-                <PassagePanel 
-                  content={currentQuestion.passage}
-                  highlightsMode={highlightsMode}
-                  onExpandRight={handleExpandLeft}
-                  isExpanded={isExpanded}
-                  expandDirection={expandDirection}
-                />
-              </div>
-              
-              <div className="flex-1">
-                <QuestionPanel
-                  questionNumber={currentQuestionId}
-                  question={currentQuestion.question}
-                  choices={currentQuestion.choices}
-                  selectedAnswer={selectedAnswers[currentQuestionId] || ""}
-                  onAnswerChange={handleAnswerChange}
-                  isMarkedForReview={markedForReview[currentQuestionId] || false}
-                  onToggleMarkForReview={handleToggleMarkForReview}
-                  onExpandLeft={handleExpandRight}
-                  isExpanded={isExpanded}
-                  expandDirection={expandDirection}
-                  testInfo={currentTestInfo}
-                  onShowVideoLecture={handleShowVideoLecture}
-                  imageUrl={currentQuestion.imageUrl}
-                />
-              </div>
+            {/* Mobile Layout - Tabbed Passage/Questions like Bluebook app */}
+            <div className="flex-1 flex flex-col md:hidden overflow-hidden">
+              <MobileExamTabs
+                passage={currentQuestion.passage}
+                questionNumber={currentQuestionId}
+                totalQuestions={totalQuestions}
+                question={currentQuestion.question}
+                choices={currentQuestion.choices}
+                selectedAnswer={selectedAnswers[currentQuestionId] || ""}
+                onAnswerChange={handleAnswerChange}
+                isMarkedForReview={markedForReview[currentQuestionId] || false}
+                onToggleMarkForReview={handleToggleMarkForReview}
+                testInfo={currentTestInfo}
+                onShowVideoLecture={handleShowVideoLecture}
+                imageUrl={currentQuestion.imageUrl}
+                sectionLabel={currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading'}
+                highlightsMode={highlightsMode}
+              />
             </div>
           </>
         )}
         
         <ExamNavigation
-          currentQuestion={currentQuestionId}
-          totalQuestions={totalQuestions}
+          currentQuestion={currentQuestionIndex + 1}
+          totalQuestions={currentModuleTotalQuestions}
           onPrevious={handlePrevious}
           onNext={handleNext}
           canGoPrevious={canGoPrevious}
@@ -1187,8 +1348,8 @@ export default function App() {
         {/* Question Overview Modal */}
         {showOverview && (
           <QuestionOverview
-            currentQuestion={currentQuestionId}
-            totalQuestions={totalQuestions}
+            currentQuestion={currentQuestionIndex + 1}
+            totalQuestions={currentModuleTotalQuestions}
             selectedAnswers={selectedAnswers}
             markedForReview={markedForReview}
             onQuestionSelect={handleQuestionSelect}
@@ -1206,6 +1367,7 @@ export default function App() {
             }}
             questionId={selectedVideoQuestion}
             testInfo={currentTestInfo}
+            currentQuestion={currentQuestion}
           />
         )}
 

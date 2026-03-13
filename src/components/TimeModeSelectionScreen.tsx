@@ -1,6 +1,7 @@
 import { Button } from './ui/button';
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { NavigationButtons } from './NavigationButtons';
 
 interface TimeModeSelectionScreenProps {
   onBack: () => void;
@@ -137,53 +138,13 @@ export function TimeModeSelectionScreen({ onBack, onNext }: TimeModeSelectionScr
       </div>
 
       {/* Bottom Border and Buttons */}
-      <div>
-        <div style={{ 
-          height: '2px', 
-          background: 'linear-gradient(to right, transparent, #d2d2d7 20%, #d2d2d7 80%, transparent)',
-          width: '100%',
-          marginBottom: '24px'
-        }} />
-        
-        <div className="flex justify-end gap-4 px-6 pb-6">
-          <Button
-            onClick={onBack}
-            className="flex items-center gap-2 text-white px-8 py-2 rounded-full"
-            style={{
-              backgroundColor: '#2B478B',
-              border: 'none',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1F3666';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#2B478B';
-            }}
-          >
-            <ChevronLeft className="h-5 w-5" />
-            Back
-          </Button>
-          <Button
-            onClick={handleNext}
-            className="flex items-center gap-2 text-white px-8 py-2 rounded-full"
-            style={{
-              backgroundColor: '#2B478B',
-              border: 'none',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#1F3666';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#2B478B';
-            }}
-          >
-            Next
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        </div>
-      </div>
+      <NavigationButtons
+        onBack={onBack}
+        onNext={handleNext}
+        showBack={true}
+        showNext={true}
+        variant="plain"
+      />
     </div>
   );
 }

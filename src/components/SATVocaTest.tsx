@@ -929,25 +929,12 @@ export function SATVocaTest({ testInfo, onExit }: SATVocaTestProps) {
                   </div>
                 </div>
 
-                {/* Help Link */}
-                <div className="flex justify-end">
-                  <button className="text-sm" style={{ color: '#4F46E5' }}>
-                    모르시겠어요?
-                  </button>
-                </div>
+
               </div>
             ) : (
               /* Subjective Question */
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-8 mb-3 sm:mb-6">
-                {/* Word Type - Hide on mobile */}
-                <div className="hidden sm:flex items-center gap-2 mb-6">
-                  <span className="text-sm text-gray-600">뜻</span>
-                  <button className="p-1 hover:bg-gray-100 rounded-full">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 012.122-2.121" />
-                    </svg>
-                  </button>
-                </div>
+
 
                 {/* Definition */}
                 <p className="text-base sm:text-xl text-gray-800 leading-snug sm:leading-relaxed mb-4 sm:mb-12">
@@ -1039,9 +1026,7 @@ export function SATVocaTest({ testInfo, onExit }: SATVocaTestProps) {
                       </div>
                       
                       <div className="flex items-center justify-end gap-2 md:gap-3">
-                        <button className="text-xs md:text-sm whitespace-nowrap" style={{ color: '#4F46E5' }}>
-                          모르시겠어요?
-                        </button>
+
                         
                         {subjectiveAnswer.trim() && (
                           <Button

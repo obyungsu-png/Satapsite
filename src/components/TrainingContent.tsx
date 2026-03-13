@@ -133,63 +133,44 @@ export function TrainingContent({
       {/* Hero Banner */}
       <div className="relative overflow-hidden" style={{ backgroundColor: '#1e3a8a' }}>
         {/* Decorative circles */}
-        <div className="absolute top-6 left-12 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
-        <div className="absolute bottom-6 right-12 w-32 h-32 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
+        <div className="absolute top-6 left-12 w-24 h-24 rounded-full opacity-20 hidden md:block" style={{ backgroundColor: '#60a5fa' }}></div>
+        <div className="absolute bottom-6 right-12 w-32 h-32 rounded-full opacity-20 hidden md:block" style={{ backgroundColor: '#60a5fa' }}></div>
         
-        <div className="max-w-7xl mx-auto px-6 py-6 relative z-10">
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">SAT Training</h1>
-          <p className="text-sm md:text-base text-blue-100 text-center">Your Path to Success</p>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 relative z-10">
+          <h1 className="text-xl md:text-3xl font-bold text-white text-center mb-1 md:mb-2">SAT Training</h1>
+          <p className="text-xs md:text-base text-blue-100 text-center">Your Path to Success</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Advertisement Banner - At Top */}
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <AdBannerDisplay advertisements={advertisements} location="training" />
         </div>
 
         {/* 1. 과목 선택 탭 (Subject Selection Tabs) */}
-        <div className="mb-6">
-          <div className="flex gap-2 border-b border-gray-200">
-            <button
-              onClick={() => setSelectedSubject('독해')}
-              className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                selectedSubject === '독해'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedSubject === '독해' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              독해
-            </button>
-            <button
-              onClick={() => setSelectedSubject('문법')}
-              className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                selectedSubject === '문법'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedSubject === '문법' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              문법
-            </button>
-            <button
-              onClick={() => setSelectedSubject('수학')}
-              className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                selectedSubject === '수학'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedSubject === '수학' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              수학
-            </button>
+        <div className="mb-5 md:mb-6">
+          <div className="flex border-b border-gray-200">
+            {['독해', '문법', '수학'].map((subject) => (
+              <button
+                key={subject}
+                onClick={() => setSelectedSubject(subject)}
+                className={`flex-1 md:flex-none md:px-6 py-2.5 md:py-3 text-sm transition-colors rounded-t-lg ${
+                  selectedSubject === subject
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 border-b-0 hover:bg-gray-50'
+                }`}
+                style={selectedSubject === subject ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                {subject}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* 2. 카드 섹션 (Question Types Grid) */}
-        <div className="mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3">
+        <div className="mb-5 md:mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3">
             {questionTypes.map((type, index) => {
               const IconComponent = type.icon;
               const isHovered = hoveredCard === type.id;
@@ -230,9 +211,9 @@ export function TrainingContent({
                   whileHover={{ scale: isLocked ? 1 : 1.05, y: isLocked ? 0 : isSelected ? -8 : -3 }}
                   whileTap={{ scale: isLocked ? 1 : 0.98 }}
                 >
-                  <div className="p-4 flex flex-col items-center justify-center">
+                  <div className="p-3 md:p-4 flex flex-col items-center justify-center min-h-[90px] md:min-h-0">
                     <motion.div 
-                      className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+                      className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-1.5 md:mb-2"
                       style={{ backgroundColor: isLocked ? '#d1d5db' : isSelected ? 'white' : '#E8EAF6' }}
                       animate={{
                         scale: isSelected && !isLocked ? [1, 1.1, 1] : 1
@@ -245,18 +226,18 @@ export function TrainingContent({
                     >
                       {isLocked ? (
                         <Lock 
-                          className="w-6 h-6" 
+                          className="w-5 h-5 md:w-6 md:h-6" 
                           style={{ color: '#6b7280' }} 
                         />
                       ) : (
                         <IconComponent 
-                          className="w-6 h-6" 
+                          className="w-5 h-5 md:w-6 md:h-6" 
                           style={{ color: '#3D5AA1' }} 
                         />
                       )}
                     </motion.div>
                     <span 
-                      className="text-xs text-center transition-colors duration-300"
+                      className="text-[10px] md:text-xs text-center transition-colors duration-300 leading-tight"
                       style={{ 
                         color: isLocked ? '#6b7280' : isSelected ? '#3D5AA1' : isHovered ? '#3D5AA1' : '#000',
                         fontWeight: isSelected && !isLocked ? 800 : 700
@@ -292,107 +273,57 @@ export function TrainingContent({
         </div>
 
         {/* 3. 문제 출처 (Question Source) */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-3">문제 출처:</h3>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setTrainingSource('전체')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingSource === '전체'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingSource === '전체' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              전체
-            </button>
-            <button
-              onClick={() => setTrainingSource('기출문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingSource === '기출문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingSource === '기출문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              기출문제
-            </button>
-            <button
-              onClick={() => setTrainingSource('공식문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingSource === '공식문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingSource === '공식문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              공식문제
-            </button>
-            <button
-              onClick={() => setTrainingSource('Question Bank 전용')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingSource === 'Question Bank 전용'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingSource === 'Question Bank 전용' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              Question Bank 전용
-            </button>
+        <div className="mb-5 md:mb-6">
+          <h3 className="text-sm font-bold text-gray-800 mb-2 md:mb-3">문제 출처:</h3>
+          <div className="grid grid-cols-4 gap-2 md:flex md:gap-3">
+            {[
+              { value: '전체', label: '전체' },
+              { value: '기출문제', label: '기출문제' },
+              { value: '공식문제', label: '공식문제' },
+              { value: 'Question Bank 전용', label: 'Question Bank 전용' }
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setTrainingSource(item.value)}
+                className={`px-2 md:px-6 py-2.5 md:py-2 text-xs md:text-sm transition-colors rounded-lg text-center leading-tight ${
+                  trainingSource === item.value
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={trainingSource === item.value ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* 4. 연습 유형 (Question Practice Type) */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-3">연습 유형:</h3>
-          <div className="flex gap-3 flex-wrap">
-            <button
-              onClick={() => setTrainingAttemptFilter('전체')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingAttemptFilter === '전체'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingAttemptFilter === '전체' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              전체
-            </button>
-            <button
-              onClick={() => setTrainingAttemptFilter('미연습')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingAttemptFilter === '미연습'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingAttemptFilter === '미연습' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              미연습 문제
-            </button>
-            <button
-              onClick={() => setTrainingAttemptFilter('한 번 틀린 문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingAttemptFilter === '한 번 틀린 문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingAttemptFilter === '한 번 틀린 문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              한 번 틀린 문제
-            </button>
-            <button
-              onClick={() => setTrainingAttemptFilter('두 번 이상 틀린 문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                trainingAttemptFilter === '두 번 이상 틀린 문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={trainingAttemptFilter === '두 번 이상 틀린 문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              두 번 이상 틀린 문제
-            </button>
+        <div className="mb-5 md:mb-6">
+          <h3 className="text-sm font-bold text-gray-800 mb-2 md:mb-3">연습 유형:</h3>
+          <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:gap-3">
+            {[
+              { value: '전체', label: '전체' },
+              { value: '미연습', label: '미연습 문제' },
+              { value: '한 번 틀린 문제', label: '한 번 틀린 문제' },
+              { value: '두 번 이상 틀린 문제', label: '두 번 이상 틀린 문제' },
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setTrainingAttemptFilter(item.value)}
+                className={`px-3 md:px-6 py-2 text-xs md:text-sm transition-colors rounded-lg text-center ${
+                  trainingAttemptFilter === item.value
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={trainingAttemptFilter === item.value ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                {item.label}
+              </button>
+            ))}
             <button
               onClick={() => setTrainingAttemptFilter('최근 일주일')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+              className={`px-3 md:px-6 py-2 text-xs md:text-sm transition-colors rounded-lg text-center col-span-2 md:col-span-1 ${
                 trainingAttemptFilter === '최근 일주일'
                   ? 'text-white font-medium'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -405,103 +336,63 @@ export function TrainingContent({
         </div>
 
         {/* 5. 난이도 (Difficulty Level) */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-3">난이도:</h3>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSelectedDifficulty('랜덤')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedDifficulty === '랜덤'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedDifficulty === '랜덤' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              랜덤
-            </button>
-            <button
-              onClick={() => setSelectedDifficulty('Hard')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedDifficulty === 'Hard'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedDifficulty === 'Hard' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              Hard
-            </button>
-            <button
-              onClick={() => setSelectedDifficulty('Medium')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedDifficulty === 'Medium'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedDifficulty === 'Medium' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              Medium
-            </button>
-            <button
-              onClick={() => setSelectedDifficulty('Easy')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedDifficulty === 'Easy'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedDifficulty === 'Easy' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              Easy
-            </button>
+        <div className="mb-5 md:mb-6">
+          <h3 className="text-sm font-bold text-gray-800 mb-2 md:mb-3">난이도:</h3>
+          <div className="grid grid-cols-4 gap-2 md:flex md:gap-3">
+            {[
+              { value: '랜덤', label: '랜덤' },
+              { value: 'Hard', label: 'Hard' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'Easy', label: 'Easy' }
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setSelectedDifficulty(item.value)}
+                className={`px-3 md:px-6 py-2 text-xs md:text-sm transition-colors rounded-lg text-center ${
+                  selectedDifficulty === item.value
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={selectedDifficulty === item.value ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* 6. 문제 수 (Number of Questions) */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-3">문제 수:</h3>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSelectedQuestionCount('5문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedQuestionCount === '5문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedQuestionCount === '5문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              5문제
-            </button>
-            <button
-              onClick={() => setSelectedQuestionCount('10문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedQuestionCount === '10문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedQuestionCount === '10문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              10문제
-            </button>
-            <button
-              onClick={() => setSelectedQuestionCount('20문제')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                selectedQuestionCount === '20문제'
-                  ? 'text-white font-medium'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-              }`}
-              style={selectedQuestionCount === '20문제' ? { backgroundColor: '#3D5AA1' } : {}}
-            >
-              20문제
-            </button>
+        <div className="mb-5 md:mb-6">
+          <h3 className="text-sm font-bold text-gray-800 mb-2 md:mb-3">문제 수:</h3>
+          <div className="grid grid-cols-3 gap-2 md:flex md:gap-3">
+            {[
+              { value: '5문제', label: '5문제' },
+              { value: '10문제', label: '10문제' },
+              { value: '20문제', label: '20문제' }
+            ].map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setSelectedQuestionCount(item.value)}
+                className={`px-3 md:px-6 py-2 text-xs md:text-sm transition-colors rounded-lg text-center ${
+                  selectedQuestionCount === item.value
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={selectedQuestionCount === item.value ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* 7. 정답 표시 방식 (Answer Display Mode) */}
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-800 mb-3">정답 표시 방식:</h3>
-          <div className="flex gap-3">
+        <div className="mb-5 md:mb-6">
+          <h3 className="text-sm font-bold text-gray-800 mb-2 md:mb-3">정답 표시 방식:</h3>
+          <div className="grid grid-cols-2 gap-2 md:flex md:gap-3">
             <button
               onClick={() => setAnswerDisplayMode('즉시')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+              className={`px-3 md:px-6 py-2.5 md:py-2 text-xs md:text-sm transition-colors rounded-lg text-center leading-tight ${
                 answerDisplayMode === '즉시'
                   ? 'text-white font-medium'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -512,7 +403,7 @@ export function TrainingContent({
             </button>
             <button
               onClick={() => setAnswerDisplayMode('나중에')}
-              className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+              className={`px-3 md:px-6 py-2.5 md:py-2 text-xs md:text-sm transition-colors rounded-lg text-center leading-tight ${
                 answerDisplayMode === '나중에'
                   ? 'text-white font-medium'
                   : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
@@ -525,7 +416,7 @@ export function TrainingContent({
         </div>
 
         {/* 8. 시작 버튼 (Start Practice Button) */}
-        <div className="mb-8 text-center">
+        <div className="mb-8 text-center px-0 md:px-0">
           <motion.button
             onClick={() => {
               if (!selectedCard) {
@@ -554,7 +445,7 @@ export function TrainingContent({
                 });
               }
             }}
-            className="px-12 py-3 text-white font-medium rounded-lg transition-all duration-300"
+            className="w-full md:w-auto px-12 py-3 text-white font-medium rounded-lg transition-all duration-300"
             style={{ backgroundColor: '#3D5AA1' }}
             whileHover={{ scale: 1.05, boxShadow: '0 4px 16px rgba(61, 90, 161, 0.3)' }}
             whileTap={{ scale: 0.98 }}

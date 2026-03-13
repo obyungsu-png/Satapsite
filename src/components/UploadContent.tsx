@@ -6,6 +6,7 @@ import { toast } from 'sonner@2.0.3';
 import { SATVocaManagement } from './SATVocaManagement';
 import { SubscriptionManager } from './SubscriptionManager';
 import { AdManagement } from './AdManagement';
+import { BulkUpload } from './BulkUpload';
 
 // LocalStorage 기반 데이터 관리
 const STORAGE_KEY = 'sat_practice_tests';
@@ -99,6 +100,11 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   // Training category state (Reading/Grammar/Math)
   const [trainingCategory, setTrainingCategory] = useState('');
   
+  // Training metadata for EACH QUESTION (not card-level)
+  const [questionTrainingType, setQuestionTrainingType] = useState('');
+  const [questionTrainingDifficulty, setQuestionTrainingDifficulty] = useState('');
+  const [questionTrainingSource, setQuestionTrainingSource] = useState('기출문제');
+  
   // Main category state for question types (리딩/문법/수학)
   const [mainQuestionCategory, setMainQuestionCategory] = useState('');
   
@@ -159,6 +165,12 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [editingExplanation, setEditingExplanation] = useState('');
   const [editingImageUrl, setEditingImageUrl] = useState(''); // Image URL for editing
 
+  // Training classification for editing
+  const [editingTrainingCategory, setEditingTrainingCategory] = useState('');
+  const [editingTrainingType, setEditingTrainingType] = useState('');
+  const [editingTrainingDifficulty, setEditingTrainingDifficulty] = useState('');
+  const [editingTrainingSource, setEditingTrainingSource] = useState('');
+
   // Add question to existing file state
   const [addingQuestionToFileId, setAddingQuestionToFileId] = useState<string | null>(null);
   const [newQuestionTitle, setNewQuestionTitle] = useState('');
@@ -169,9 +181,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [newQuestionExplanation, setNewQuestionExplanation] = useState('');
   const [newQuestionImageUrl, setNewQuestionImageUrl] = useState(''); // Image URL for new question
 
-  // Bulk upload state
-  const [bulkUploadText, setBulkUploadText] = useState('');
-  const [bulkUploadResult, setBulkUploadResult] = useState<{ success: boolean; message: string; parsedData?: any } | null>(null);
+
 
   // SUBCATEGORY mapping based on category
   const mapSubcategory = (category: string, subcategory: string): string => {
@@ -428,7 +438,12 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
           choices: manualChoices,
           correctAnswer: manualCorrectAnswer,
           explanation: manualExplanation,
-          imageUrl: manualImageUrl || undefined
+          imageUrl: manualImageUrl || undefined,
+          // Add training metadata to EACH question
+          trainingCategory: uploadSubcategory || mainQuestionCategory,
+          trainingType: questionTrainingType,
+          trainingDifficulty: questionTrainingDifficulty,
+          trainingSource: questionTrainingSource
         };
 
         // Update the existing card with the new question
@@ -465,7 +480,12 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
             choices: manualChoices,
             correctAnswer: manualCorrectAnswer,
             explanation: manualExplanation,
-            imageUrl: manualImageUrl || undefined
+            imageUrl: manualImageUrl || undefined,
+            // Add training metadata to EACH question
+            trainingCategory: uploadSubcategory || mainQuestionCategory,
+            trainingType: questionTrainingType,
+            trainingDifficulty: questionTrainingDifficulty,
+            trainingSource: questionTrainingSource
           }
         };
         
@@ -482,6 +502,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
       setManualCorrectAnswer('a');
       setManualExplanation('');
       setManualImageUrl(''); // Reset image URL
+      // Reset question-level training metadata for next question
+      setQuestionTrainingType('');
+      setQuestionTrainingDifficulty('');
+      // questionTrainingSource keeps the same default
       // Keep questionType, difficulty, and mainQuestionCategory as well
       // setQuestionType('');
       // setDifficulty('');
@@ -491,198 +515,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
     }, 1000);
   };
 
-  // Parse bulk upload text
-  const parseBulkUploadText = (text: string) => {
-    try {
-      const lines = text.split('\n');
-      let currentLine = 0;
-      
-      // Parse header info
-      const headerInfo: any = {};
-      const questions: any[] = [];
-      
-      // Read header
-      while (currentLine < lines.length) {
-        const line = lines[currentLine].trim();
-        
-        if (line.startsWith('TITLE:')) {
-          headerInfo.title = line.substring(6).trim();
-        } else if (line.startsWith('TYPE:')) {
-          headerInfo.type = line.substring(5).trim();
-        } else if (line.startsWith('SUBJECT:')) {
-          headerInfo.subject = line.substring(8).trim();
-        } else if (line.startsWith('MODULE:')) {
-          headerInfo.module = line.substring(7).trim();
-        } else if (line === '' && headerInfo.title) {
-          // Empty line after header, start parsing questions
-          currentLine++;
-          break;
-        }
-        currentLine++;
-      }
-      
-      // Parse questions
-      let currentQuestion: any = {};
-      let choicesCount = 0;
-      
-      while (currentLine < lines.length) {
-        const line = lines[currentLine].trim();
-        
-        if (line === '') {
-          // Empty line - end of question
-          if (currentQuestion.question && currentQuestion.answer) {
-            questions.push({ ...currentQuestion });
-          }
-          currentQuestion = {};
-          choicesCount = 0;
-        } else if (line.startsWith('CATEGORY:')) {
-          currentQuestion.category = line.substring(9).trim();
-        } else if (line.startsWith('SUBCATEGORY:')) {
-          const rawSubcategory = line.substring(12).trim();
-          // Map subcategory to standard format - will be done after we know the category
-          currentQuestion.subcategory = rawSubcategory;
-        } else if (line.startsWith('NUMBER:')) {
-          currentQuestion.number = line.substring(7).trim();
-        } else if (line.startsWith('DIFFICULTY:')) {
-          currentQuestion.difficulty = line.substring(11).trim();
-        } else if (line.startsWith('PASSAGE:')) {
-          currentQuestion.passage = line.substring(8).trim();
-        } else if (line.startsWith('QUESTION:')) {
-          currentQuestion.question = line.substring(9).trim();
-        } else if (line.match(/^[A-D]\)/)) {
-          // Choice line
-          if (!currentQuestion.choices) {
-            currentQuestion.choices = [];
-          }
-          currentQuestion.choices.push(line.substring(3).trim());
-          choicesCount++;
-        } else if (line.startsWith('ANSWER:')) {
-          currentQuestion.answer = line.substring(7).trim().toUpperCase();
-        } else if (line.startsWith('EXPLANATION:')) {
-          currentQuestion.explanation = line.substring(12).trim();
-        } else {
-          // Multi-line content (passage, explanation, etc.)
-          if (currentQuestion.passage !== undefined && !currentQuestion.question) {
-            currentQuestion.passage += '\n' + line;
-          } else if (currentQuestion.explanation !== undefined) {
-            currentQuestion.explanation += '\n' + line;
-          } else if (currentQuestion.question && !line.match(/^[A-D]\)/) && choicesCount === 0) {
-            currentQuestion.question += ' ' + line;
-          }
-        }
-        
-        currentLine++;
-      }
-      
-      // Add last question if exists
-      if (currentQuestion.question && currentQuestion.answer) {
-        questions.push(currentQuestion);
-      }
-      
-      // Map subcategories to standard format
-      questions.forEach((q: any) => {
-        if (q.subcategory && q.category) {
-          q.subcategory = mapSubcategory(q.category, q.subcategory);
-        }
-      });
-      
-      return {
-        success: true,
-        data: {
-          headerInfo,
-          questions
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: '텍스트 파싱 중 오류가 발생했습니다: ' + (error as Error).message
-      };
-    }
-  };
 
-  // Handle bulk upload submission
-  const handleBulkUploadSubmit = () => {
-    if (!bulkUploadText.trim()) {
-      toast.error('업로드할 텍스트를 입력해주세요.');
-      return;
-    }
-
-    if (!uploadSubcategory) {
-      toast.error('업로드 위치와 카테고리를 선택해주세요.');
-      return;
-    }
-
-    setIsUploading(true);
-    
-    const parseResult = parseBulkUploadText(bulkUploadText);
-    
-    if (!parseResult.success) {
-      toast.error(parseResult.error || '파싱 실패');
-      setBulkUploadResult({ success: false, message: parseResult.error || '파싱 실패' });
-      setIsUploading(false);
-      return;
-    }
-
-    const { headerInfo, questions } = parseResult.data;
-
-    // Convert to upload format
-    const formattedQuestions = questions.map((q: any) => ({
-      title: `문제 ${q.number || ''}`,
-      passage: q.passage || '',
-      question: q.question,
-      choices: q.choices || ['', '', '', ''],
-      correctAnswer: q.answer.toLowerCase(),
-      explanation: q.explanation || '',
-      category: q.category || '',
-      subcategory: q.subcategory || '',
-      difficulty: q.difficulty || '',
-    }));
-
-    const newFile = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: headerInfo.title || '대량 업로드 테스트',
-      location: uploadLocation,
-      subcategory: uploadSubcategory,
-      type: headerInfo.subject || 'Reading',
-      uploadDate: new Date().toLocaleDateString('ko-KR'),
-      questionCount: formattedQuestions.length,
-      data: formattedQuestions,
-      questionType: '',
-      difficulty: '',
-      category: uploadSubcategory,
-    };
-
-    setUploadedFiles(prev => [...prev, newFile]);
-
-    // Save to both localStorage and Supabase
-    const updatedFiles = [...uploadedFiles, newFile];
-    localStorage.setItem('uploaded_files', JSON.stringify(updatedFiles));
-
-    if (projectId && publicAnonKey) {
-      fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
-        body: JSON.stringify({ files: updatedFiles }),
-      }).catch(err => console.error('Supabase upload error:', err));
-    }
-
-    setBulkUploadResult({
-      success: true,
-      message: `성공적으로 ${formattedQuestions.length}개의 문제가 업로드되었습니다!`,
-      parsedData: { headerInfo, questions: formattedQuestions }
-    });
-
-    toast.success(`${formattedQuestions.length}개 문제가 업로드되었습니다!`);
-    
-    // Clear form
-    setBulkUploadText('');
-    
-    setIsUploading(false);
-  };
 
   // Handle file upload
   const handleFileUpload = (files: FileList) => {
@@ -911,10 +744,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
               }`}
             >
               <PlusCircle className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
-              직��� 입력
+              직접 입력
             </button>
             <button
-              onClick={() => setUploadTab('파일업로���')}
+              onClick={() => setUploadTab('파일업로드')}
               className={`px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 uploadTab === '파일업로드'
                   ? 'border-blue-500 text-blue-600'
@@ -1038,148 +871,6 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-800">
                     <span className="font-medium">{uploadLocation}</span> → <span className="font-medium">{getSubcategoryOptions().find(o => o.value === uploadSubcategory)?.label}</span>에 문제가 추가됩니다.
-                  </p>
-                </div>
-              )}
-
-              {/* Question Type and Difficulty for 기출문제 or 공식문제 */}
-              {(uploadSubcategory === 'past-exams' || uploadSubcategory === 'official-samples') && (
-                <div className="mt-3 sm:mt-4 bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-xs sm:text-sm font-medium text-green-900 mb-2 sm:mb-3">🏷️ 문제 분류 (Training 탭에서 검색 가능)</h3>
-                  <div className="space-y-3 sm:space-y-4">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">메인 카테고리</label>
-                      <select 
-                        className="w-full p-2 sm:p-3 text-sm sm:text-base border border-green-300 rounded-md bg-white"
-                        value={mainQuestionCategory}
-                        onChange={(e) => {
-                          setMainQuestionCategory(e.target.value);
-                          setQuestionType(''); // Reset question type when main category changes
-                        }}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="reading">리딩 (Reading)</option>
-                        <option value="grammar">문법 (Grammar)</option>
-                        <option value="math">수학 (Math)</option>
-                      </select>
-                    </div>
-                    
-                    {mainQuestionCategory && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">문제 유형</label>
-                          <select 
-                            className="w-full p-2 sm:p-3 text-sm sm:text-base border border-green-300 rounded-md bg-white"
-                            value={questionType}
-                            onChange={(e) => setQuestionType(e.target.value)}
-                          >
-                            <option value="">선택하세요</option>
-                            {getQuestionTypeOptions().map(opt => (
-                              <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">난이도</label>
-                          <select 
-                            className="w-full p-2 sm:p-3 text-sm sm:text-base border border-green-300 rounded-md bg-white"
-                            value={difficulty}
-                            onChange={(e) => setDifficulty(e.target.value)}
-                          >
-                            <option value="">선택하세요</option>
-                            <option value="쉬움">쉬움</option>
-                            <option value="보통">보통</option>
-                            <option value="어려움">어려움</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-green-700 mt-2">
-                    💡 이 정보는 나중에 전문 훈련 탭에서 유형별로 문제를 찾는 데 사용됩니다.
-                  </p>
-                </div>
-              )}
-
-              {/* Category and Difficulty selection for Training */}
-              {uploadLocation === '전문 훈련' && uploadSubcategory && (
-                <div className="mt-3 sm:mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="text-xs sm:text-sm font-medium text-purple-900 mb-2 sm:mb-3">🏷️ 문제 분류 설정</h3>
-                  <div className="space-y-2 sm:space-y-3">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                        메인 카테고리: <span className="text-purple-700 font-semibold">
-                          {uploadSubcategory === 'reading' ? '리딩 (Reading)' : 
-                           uploadSubcategory === 'grammar' ? '문법 (Grammar)' : 
-                           uploadSubcategory === 'math' ? '수학 (Math)' : uploadSubcategory}
-                        </span>
-                      </label>
-                    </div>
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">문제 유형</label>
-                      <select 
-                        className="w-full p-2 sm:p-3 text-sm sm:text-base border border-purple-300 rounded-md bg-white"
-                        value={questionType}
-                        onChange={(e) => setQuestionType(e.target.value)}
-                      >
-                        <option value="">선택하세요</option>
-                        {uploadSubcategory === 'reading' && [
-                          { value: 'central-ideas', label: 'Central Ideas and Details' },
-                          { value: 'evidence-textual', label: 'Command of Evidence (Textual)' },
-                          { value: 'evidence-quantitative', label: 'Command of Evidence (Quantitative)' },
-                          { value: 'inferences', label: 'Inferences' },
-                          { value: 'words-context', label: 'Words in Context' },
-                          { value: 'text-structure', label: 'Text Structure and Purpose' },
-                          { value: 'cross-text', label: 'Cross-Text Connections' },
-                        ].map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                        {uploadSubcategory === 'grammar' && [
-                          { value: 'punctuation-marks', label: 'Punctuation Marks' },
-                          { value: 'sentence-connection', label: 'Sentence Connection' },
-                          { value: 'verb-practice', label: 'Verb Practice' },
-                          { value: 'nouns-pronouns', label: 'Nouns, Pronouns' },
-                          { value: 'adjectives', label: 'Adjectives' },
-                          { value: 'attributive-adverbial', label: 'Attributive, Adverbial' },
-                          { value: 'appositive', label: 'Appositive' },
-                          { value: 'transition', label: 'Transition' },
-                          { value: 'rhetorical-synthesis', label: 'Rhetorical Synthesis' },
-                        ].map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                        {uploadSubcategory === 'math' && [
-                          { value: 'basic-operations', label: 'Basic Operations' },
-                          { value: 'linear-functions', label: 'Linear Functions' },
-                          { value: 'quadratic-functions', label: 'Quadratic Functions' },
-                          { value: 'exponential-functions', label: 'Exponential Functions' },
-                          { value: 'word-problems', label: 'Word Problems' },
-                          { value: 'geometry', label: 'Geometry' },
-                          { value: 'circles', label: 'Circles' },
-                          { value: 'trigonometric-functions', label: 'Trigonometric Functions' },
-                          { value: 'statistics', label: 'Statistics' },
-                          { value: 'data-analysis', label: 'Data Analysis' },
-                          { value: 'basic-functions', label: 'Basic Functions' },
-                        ].map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">난이도</label>
-                      <select 
-                        className="w-full p-2 sm:p-3 text-sm sm:text-base border border-purple-300 rounded-md bg-white"
-                        value={difficulty}
-                        onChange={(e) => setDifficulty(e.target.value)}
-                      >
-                        <option value="">선택하세요</option>
-                        <option value="쉬움">쉬움</option>
-                        <option value="보통">보통</option>
-                        <option value="어려움">어려움</option>
-                      </select>
-                    </div>
-                  </div>
-                  <p className="text-xs text-purple-700 mt-2">
-                    💡 카테고리와 난이도별로 문제를 구분하여 체계적인 학습이 가능합니다.
                   </p>
                 </div>
               )}
@@ -1359,6 +1050,14 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                     />
                   </div>
 
+                  {/* Info Message */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <p className="text-xs text-blue-800">
+                      💡 <strong>Training 분류는 편집 탭에서 설정하세요!</strong><br/>
+                      문제를 추가한 후, "편집" 탭에서 각 문제를 클릭하여 Training 카테고리, 유형, 난이도, 출처를 개별 설정할 수 있습니다.
+                    </p>
+                  </div>
+
                   {/* Submit Button */}
                   <Button
                     onClick={handleManualSubmit}
@@ -1482,203 +1181,13 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
 
             {/* Bulk Upload Form */}
             {uploadTab === '대량 업로드' && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileUp className="h-5 w-5 text-blue-600" />
-                  <h2 className="text-lg font-medium text-gray-800">대량 업로드 (텍스트 양식)</h2>
-                </div>
-
-                <div className="space-y-4">
-                  {/* 양식 안내 */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="text-sm font-medium text-blue-900 mb-2">📝 표준 양식</h3>
-                    <p className="text-sm text-blue-800 mb-3">
-                      아래 양식을 따라 문제를 입력하세요. 각 문제는 빈 줄로 구분됩니다.
-                    </p>
-                    <div className="bg-white rounded p-3 font-mono text-xs text-gray-700 overflow-x-auto">
-                      <pre>{
-`TITLE: SAT Practice Test 1
-TYPE: SAT
-SUBJECT: Reading and Writing
-MODULE: 1
-
-CATEGORY: 문법
-SUBCATEGORY: Punctuation Marks
-NUMBER: 1
-DIFFICULTY: 보통
-
-PASSAGE:
-The Apollo Moon landings (1969-1972) brought atmospheric sensors...
-
-QUESTION: Which choice completes the text?
-A) salvage
-B) improve
-C) amend
-D) simplify
-
-ANSWER: A
-EXPLANATION: 오래된 저장 기술에 있는 데이터를 "구출"...
-
-CATEGORY: 독해
-SUBCATEGORY: Central Ideas and Details
-NUMBER: 2
-DIFFICULTY: 어려움
-
-PASSAGE:
-Scientists have long debated...
-
-QUESTION: Which choice best describes the main idea?
-A) Option 1
-B) Option 2
-C) Option 3
-D) Option 4
-
-ANSWER: C
-EXPLANATION: 지문은 돌고래의 지능에 대한...
-
-CATEGORY: 수학
-SUBCATEGORY: Linear Functions
-NUMBER: 3
-DIFFICULTY: 쉬움
-
-QUESTION: If 3x + 5 = 20, what is x?
-A) 3
-B) 5
-C) 7
-D) 15
-
-ANSWER: B
-EXPLANATION: 3x = 15이므로 x = 5`
-                      }</pre>
-                    </div>
-                  </div>
-
-                  {/* 필드 설명 */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-800 mb-2">🔑 필수 필드</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                      <li><strong>헤더:</strong> TITLE, TYPE, SUBJECT, MODULE</li>
-                      <li><strong>각 문제:</strong> CATEGORY, NUMBER, QUESTION, A) B) C) D), ANSWER</li>
-                      <li><strong>선택 필드:</strong> SUBCATEGORY, DIFFICULTY, PASSAGE, EXPLANATION</li>
-                      <li><strong>구분자:</strong> 각 문제 사이는 빈 줄로 구분</li>
-                    </ul>
-                  </div>
-
-                  {/* 카테고리 안내 */}
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-medium text-yellow-900 mb-2">📚 SUBCATEGORY 옵션</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                      <div className="bg-white rounded-lg p-3">
-                        <p className="font-semibold text-blue-900 mb-2">독해 (Reading)</p>
-                        <ul className="space-y-1 text-gray-700">
-                          <li>• Central Ideas and Details</li>
-                          <li>• Command of Evidence (Textual)</li>
-                          <li>• Command of Evidence (Quantitative)</li>
-                          <li>• Inferences</li>
-                          <li>• Words in Context</li>
-                          <li>• Text Structure and Purpose</li>
-                          <li>• Cross-Text Connections</li>
-                        </ul>
-                      </div>
-                      <div className="bg-white rounded-lg p-3">
-                        <p className="font-semibold text-green-900 mb-2">문법 (Grammar)</p>
-                        <ul className="space-y-1 text-gray-700">
-                          <li>• Punctuation Marks</li>
-                          <li>• Sentence Connection</li>
-                          <li>• Verb Practice</li>
-                          <li>• Nouns, Pronouns</li>
-                          <li>• Adjectives</li>
-                          <li>• Attributive, Adverbial</li>
-                          <li>• Appositive</li>
-                          <li>• Transition</li>
-                          <li>• Rhetorical Synthesis</li>
-                        </ul>
-                      </div>
-                      <div className="bg-white rounded-lg p-3">
-                        <p className="font-semibold text-purple-900 mb-2">수학 (Math)</p>
-                        <ul className="space-y-1 text-gray-700">
-                          <li>• Basic Operations</li>
-                          <li>• Linear Functions</li>
-                          <li>• Quadratic Functions</li>
-                          <li>• Exponential Functions</li>
-                          <li>• Word Problems</li>
-                          <li>• Geometry</li>
-                          <li>• Circles</li>
-                          <li>• Trigonometric Functions</li>
-                          <li>• Statistics</li>
-                          <li>• Data Analysis</li>
-                          <li>• Basic Functions</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 텍스트 입력 영역 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      문제 입력 (위 양식대로 작성) *
-                    </label>
-                    <textarea
-                      value={bulkUploadText}
-                      onChange={(e) => setBulkUploadText(e.target.value)}
-                      placeholder="TITLE: SAT Practice Test 1&#10;TYPE: SAT&#10;SUBJECT: Reading and Writing&#10;MODULE: 1&#10;&#10;CATEGORY: 문법&#10;NUMBER: 1&#10;..."
-                      rows={20}
-                      className="w-full p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      {bulkUploadText.split('\n\n').filter(s => s.trim()).length - 1}개의 문제 블록 감지됨
-                    </p>
-                  </div>
-
-                  {/* 업로드 결과 */}
-                  {bulkUploadResult && (
-                    <div className={`rounded-lg p-4 ${
-                      bulkUploadResult.success 
-                        ? 'bg-green-50 border border-green-200' 
-                        : 'bg-red-50 border border-red-200'
-                    }`}>
-                      <p className={`text-sm font-medium ${
-                        bulkUploadResult.success ? 'text-green-900' : 'text-red-900'
-                      }`}>
-                        {bulkUploadResult.message}
-                      </p>
-                      {bulkUploadResult.parsedData && (
-                        <div className="mt-2 text-xs text-green-800">
-                          <p>제목: {bulkUploadResult.parsedData.headerInfo?.title}</p>
-                          <p>문제 수: {bulkUploadResult.parsedData.questions?.length}개</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 업로드 버튼 */}
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleBulkUploadSubmit}
-                      disabled={!bulkUploadText.trim() || !uploadSubcategory || isUploading}
-                      className="flex-1 bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      {isUploading ? '업로드 중...' : '대량 업로드'}
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setBulkUploadText('');
-                        setBulkUploadResult(null);
-                      }}
-                      variant="outline"
-                      className="px-6 py-3"
-                    >
-                      초기화
-                    </Button>
-                  </div>
-
-                  {!uploadSubcategory && (
-                    <p className="text-sm text-red-500">
-                      ⚠️ 업로드 위치와 세부 카테고리를 먼저 선택하세요
-                    </p>
-                  )}
-                </div>
-              </div>
+              <BulkUpload
+                onUploadSuccess={(files) => {
+                  setUploadedFiles(prev => [...prev, ...files]);
+                }}
+                uploadLocation={uploadLocation}
+                uploadSubcategory={uploadSubcategory}
+              />
             )}
 
             {/* Edit Form */}
@@ -1745,7 +1254,7 @@ EXPLANATION: 3x = 15이므로 x = 5`
                         '기출 및 공식 문제를 불러오시겠습니까?\n\n총 28개 문제 (기출 22개 + 공식 6개)\n불러온 문제는 편집하고 저장할 수 있습니다.'
                       );
                       if (confirmLoad) {
-                        // localStorage에서 문제 ���러오기
+                        // localStorage에서 문제 불러오기
                         const storedTests = loadTestsFromStorage();
                         
                         if (storedTests && storedTests.length > 0) {
@@ -1766,9 +1275,9 @@ EXPLANATION: 3x = 15이므로 x = 5`
                               difficulty: '보통',
                               uploadDate: new Date().toISOString().split('T')[0],
                               status: 'completed' as const,
-                              questionCount: isReading ? 54 : 44,
+                              questionCount: 54,
                               data: (() => {
-                                const questionsPerModule = isReading ? 27 : 22;
+                                const questionsPerModule = 27;
                                 const allQuestions = [];
                                 for (let module = 1; module <= 2; module++) {
                                   for (let q = 1; q <= questionsPerModule; q++) {
@@ -1954,6 +1463,118 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                       placeholder="정답 해설을 입력하세요"
                                     />
                                   </div>
+
+                                  {/* Training Classification Section */}
+                                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Tags className="h-5 w-5 text-purple-700" />
+                                      <h3 className="text-sm font-bold text-purple-900">📊 이 문제의 Training 분류</h3>
+                                    </div>
+                                    <p className="text-xs text-purple-700 mb-3">
+                                      Training 탭에서 필터링할 수 있도록 카테고리, 유형, 난이도, 출처를 설정하세요.
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {/* Training Category */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Training 카테고리</label>
+                                        <select 
+                                          className="w-full p-2 text-sm border border-purple-300 rounded-md bg-white"
+                                          value={editingTrainingCategory}
+                                          onChange={(e) => {
+                                            setEditingTrainingCategory(e.target.value);
+                                            setEditingTrainingType(''); // Reset type when category changes
+                                          }}
+                                        >
+                                          <option value="">선택하세요</option>
+                                          <option value="reading">독해 (Reading)</option>
+                                          <option value="grammar">문법 (Grammar)</option>
+                                          <option value="math">수학 (Math)</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Training Type */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">문제 유형</label>
+                                        <select 
+                                          className="w-full p-2 text-sm border border-purple-300 rounded-md bg-white"
+                                          value={editingTrainingType}
+                                          onChange={(e) => setEditingTrainingType(e.target.value)}
+                                          disabled={!editingTrainingCategory}
+                                        >
+                                          <option value="">선택하세요</option>
+                                          {editingTrainingCategory === 'reading' && [
+                                            { value: 'central-ideas', label: 'Central Ideas and Details' },
+                                            { value: 'evidence-textual', label: 'Command of Evidence (Textual)' },
+                                            { value: 'evidence-quantitative', label: 'Command of Evidence (Quantitative)' },
+                                            { value: 'inferences', label: 'Inferences' },
+                                            { value: 'words-context', label: 'Words in Context' },
+                                            { value: 'text-structure', label: 'Text Structure and Purpose' },
+                                            { value: 'cross-text', label: 'Cross-Text Connections' },
+                                          ].map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                          ))}
+                                          {editingTrainingCategory === 'grammar' && [
+                                            { value: 'punctuation-marks', label: 'Punctuation Marks' },
+                                            { value: 'sentence-connection', label: 'Sentence Connection' },
+                                            { value: 'verb-practice', label: 'Verb Practice' },
+                                            { value: 'nouns-pronouns', label: 'Nouns, Pronouns' },
+                                            { value: 'adjectives', label: 'Adjectives' },
+                                            { value: 'attributive-adverbial', label: 'Attributive, Adverbial' },
+                                            { value: 'appositive', label: 'Appositive' },
+                                            { value: 'transition', label: 'Transition' },
+                                            { value: 'rhetorical-synthesis', label: 'Rhetorical Synthesis' },
+                                          ].map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                          ))}
+                                          {editingTrainingCategory === 'math' && [
+                                            { value: 'basic-operations', label: 'Basic Operations' },
+                                            { value: 'linear-functions', label: 'Linear Functions' },
+                                            { value: 'quadratic-functions', label: 'Quadratic Functions' },
+                                            { value: 'exponential-functions', label: 'Exponential Functions' },
+                                            { value: 'word-problems', label: 'Word Problems' },
+                                            { value: 'geometry', label: 'Geometry' },
+                                            { value: 'circles', label: 'Circles' },
+                                            { value: 'trigonometric-functions', label: 'Trigonometric Functions' },
+                                            { value: 'statistics', label: 'Statistics' },
+                                            { value: 'data-analysis', label: 'Data Analysis' },
+                                            { value: 'basic-functions', label: 'Basic Functions' },
+                                          ].map(opt => (
+                                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      {/* Training Difficulty */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">난이도</label>
+                                        <select 
+                                          className="w-full p-2 text-sm border border-purple-300 rounded-md bg-white"
+                                          value={editingTrainingDifficulty}
+                                          onChange={(e) => setEditingTrainingDifficulty(e.target.value)}
+                                        >
+                                          <option value="">선택하세요</option>
+                                          <option value="Easy">Easy</option>
+                                          <option value="Medium">Medium</option>
+                                          <option value="Hard">Hard</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Training Source */}
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">출처</label>
+                                        <select 
+                                          className="w-full p-2 text-sm border border-purple-300 rounded-md bg-white"
+                                          value={editingTrainingSource}
+                                          onChange={(e) => setEditingTrainingSource(e.target.value)}
+                                        >
+                                          <option value="">선택하세요</option>
+                                          <option value="기출문제">기출문제</option>
+                                          <option value="공식문제">공식문제</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </>
                               )}
 
@@ -1988,7 +1609,11 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                               question: editingQuestion,
                                               choices: editingChoices,
                                               correctAnswer: editingCorrectAnswer,
-                                              explanation: editingExplanation
+                                              explanation: editingExplanation,
+                                              trainingCategory: editingTrainingCategory,
+                                              trainingType: editingTrainingType,
+                                              trainingDifficulty: editingTrainingDifficulty,
+                                              trainingSource: editingTrainingSource
                                             };
                                             return {
                                               ...f,
@@ -2006,7 +1631,11 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                                 question: editingQuestion,
                                                 choices: editingChoices,
                                                 correctAnswer: editingCorrectAnswer,
-                                                explanation: editingExplanation
+                                                explanation: editingExplanation,
+                                                trainingCategory: editingTrainingCategory,
+                                                trainingType: editingTrainingType,
+                                                trainingDifficulty: editingTrainingDifficulty,
+                                                trainingSource: editingTrainingSource
                                               }
                                             };
                                           }
@@ -2022,6 +1651,10 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                     setEditingChoices(['', '', '', '']);
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
+                                    setEditingTrainingCategory('');
+                                    setEditingTrainingType('');
+                                    setEditingTrainingDifficulty('');
+                                    setEditingTrainingSource('');
                                     toast.success('문제가 수정되었습니다!');
                                   }}
                                 >
@@ -2039,6 +1672,10 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                     setEditingChoices(['', '', '', '']);
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
+                                    setEditingTrainingCategory('');
+                                    setEditingTrainingType('');
+                                    setEditingTrainingDifficulty('');
+                                    setEditingTrainingSource('');
                                   }}
                                 >
                                   취소
@@ -2067,22 +1704,6 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                     <p className="text-xs text-gray-500">
                                       {file.location} • {getSubcategoryOptions().find(o => o.value === file.subcategory)?.label || file.subcategory}
                                     </p>
-                                    {(file.questionType || file.difficulty) && (
-                                      <div className="flex gap-1 mt-1.5 flex-wrap">
-                                        {file.questionType && (
-                                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                            {getQuestionTypeOptions().find(opt => opt.value === file.questionType)?.label || 
-                                             categories['전문 훈련']?.find(c => c.value === file.questionType)?.label || 
-                                             file.questionType}
-                                          </span>
-                                        )}
-                                        {file.difficulty && (
-                                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                            난이도: {file.difficulty}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
                                   </div>
                                   <div className="flex items-center gap-2 ml-3">
                                     <span className="text-xs text-gray-600 font-medium">{file.questionCount}문제</span>
@@ -2121,6 +1742,11 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                               setEditingChoices(q.choices || ['', '', '', '']);
                                               setEditingCorrectAnswer(q.correctAnswer || 'a');
                                               setEditingExplanation(q.explanation || '');
+                                              // Load training data
+                                              setEditingTrainingCategory(q.trainingCategory || '');
+                                              setEditingTrainingType(q.trainingType || '');
+                                              setEditingTrainingDifficulty(q.trainingDifficulty || '');
+                                              setEditingTrainingSource(q.trainingSource || '');
                                             }}
                                             className="px-2 py-1.5 text-xs font-medium bg-white border border-gray-300 rounded hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors"
                                           >
@@ -2177,6 +1803,11 @@ EXPLANATION: 3x = 15이므로 x = 5`
                                               setEditingChoices(file.data.choices);
                                               setEditingCorrectAnswer(file.data.correctAnswer);
                                               setEditingExplanation(file.data.explanation);
+                                              // Load training data
+                                              setEditingTrainingCategory(file.data.trainingCategory || '');
+                                              setEditingTrainingType(file.data.trainingType || '');
+                                              setEditingTrainingDifficulty(file.data.trainingDifficulty || '');
+                                              setEditingTrainingSource(file.data.trainingSource || '');
                                             }
                                           }}
                                         >

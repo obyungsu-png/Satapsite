@@ -148,29 +148,38 @@ export function ReviewQuestionPanel({
       </div>
 
       {/* Navigation Footer */}
-      <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
-        <Button
-          onClick={onPrevious}
-          disabled={!hasPrevious}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-        
-        <span className="text-sm text-gray-600">
-          Question {currentIndex + 1} of {totalQuestions}
-        </span>
+      <div className="px-6 py-0 bg-gray-50">
+        <div className="flex items-center justify-center mb-2">
+          <span className="text-sm text-gray-600">
+            Question {currentIndex + 1} of {totalQuestions}
+          </span>
+        </div>
+        <div className="border-t-2 border-dashed border-black" />
+        <div className="flex items-center justify-center gap-4 py-4" style={{ backgroundColor: '#E8EEF7' }}>
+          <Button
+            onClick={onPrevious}
+            disabled={!hasPrevious}
+            className={`flex items-center gap-3 px-8 py-2.5 rounded-full h-11 min-w-[130px] justify-center text-[15px] font-semibold ${!hasPrevious ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+            style={hasPrevious ? { backgroundColor: '#2B478B' } : undefined}
+            onMouseEnter={hasPrevious ? (e) => e.currentTarget.style.backgroundColor = '#1F3666' : undefined}
+            onMouseLeave={hasPrevious ? (e) => e.currentTarget.style.backgroundColor = '#2B478B' : undefined}
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Back
+          </Button>
 
-        <Button
-          onClick={onNext}
-          disabled={!hasNext}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          <Button
+            onClick={onNext}
+            disabled={!hasNext}
+            className={`flex items-center gap-3 px-8 py-2.5 rounded-full h-11 min-w-[130px] justify-center text-[15px] font-semibold ${!hasNext ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white'}`}
+            style={hasNext ? { backgroundColor: '#2B478B' } : undefined}
+            onMouseEnter={hasNext ? (e) => e.currentTarget.style.backgroundColor = '#1F3666' : undefined}
+            onMouseLeave={hasNext ? (e) => e.currentTarget.style.backgroundColor = '#2B478B' : undefined}
+          >
+            Next
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

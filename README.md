@@ -1,7 +1,7 @@
 
-  # SAT/AP Site (복사)
+  # SAT Allmyexam
 
-  This is a code bundle for SAT/AP Site (복사). The original project is available at https://www.figma.com/design/WwWioC0mA3za5BQuqZbf3e/SAT-AP-Site--%EB%B3%B5%EC%82%AC-.
+  This is a code bundle for SAT Allmyexam. The original project is available at https://www.figma.com/design/WwWioC0mA3za5BQuqZbf3e/SAT-Allmyexam.
 
   ## Running the code
 

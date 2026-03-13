@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "./ui/button";
 import { Trash2, Underline, FileText } from "lucide-react";
-import { ExpandIcon } from "./ExpandIcon";
 
 interface PassagePanelProps {
   content: string;
@@ -49,7 +47,11 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPosition, setToolbarPosition] = useState<ToolbarPosition>({ x: 0, y: 0 });
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number; text: string } | null>(null);
-  const [fontSize, setFontSize] = useState(18); // Increased from 16 to 18
+  // Responsive default: 21px on mobile for better readability, 18px on desktop
+  const [fontSize, setFontSize] = useState(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 21;
+    return 18;
+  });
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Mouse wheel zoom handler
@@ -336,7 +338,7 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
             {highlightedText.split('').map((char, i) => (
               <span key={`${highlight.id}-${i}`} data-char-index={safeStart + i}>{char}</span>
             ))}
-            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+            <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20 hidden md:block">
               Click to remove
             </span>
           </span>
@@ -363,10 +365,36 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
     return <>{parts}</>;
   };
 
+  // Calculate clamped toolbar position for mobile
+  const getClampedToolbarStyle = (): React.CSSProperties => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobile) {
+      // On mobile: fixed to bottom of the passage panel as a bottom sheet style toolbar
+      return {
+        left: '50%',
+        bottom: '12px',
+        top: 'auto',
+        transform: 'translateX(-50%)',
+        position: 'sticky' as const,
+      };
+    }
+    // Desktop: follow selection position, clamped to container
+    const containerWidth = contentRef.current?.clientWidth || 400;
+    const toolbarWidth = 300; // approximate toolbar width
+    const halfToolbar = toolbarWidth / 2;
+    const clampedX = Math.max(halfToolbar, Math.min(toolbarPosition.x, containerWidth - halfToolbar));
+    return {
+      left: `${clampedX}px`,
+      top: `${Math.max(10, toolbarPosition.y)}px`,
+      transform: 'translateX(-50%)',
+    };
+  };
+
   return (
     <div 
-      className="h-full px-6 md:px-12 py-12 md:py-16 bg-white overflow-y-auto relative" 
+      className="h-full px-5 md:px-10 pt-8 md:pt-16 pb-8 bg-white overflow-y-auto relative" 
       ref={contentRef}
+      style={{ WebkitTouchCallout: highlightsMode ? 'none' : 'default' } as React.CSSProperties}
       onMouseUp={() => {
         // Additional cleanup when mouse is released
         if (!highlightsMode) {
@@ -374,88 +402,83 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
           setSelectedRange(null);
         }
       }}
+      onTouchEnd={() => {
+        // On mobile, give a short delay for selection to register
+        if (highlightsMode) {
+          setTimeout(() => {
+            const selection = window.getSelection();
+            if (!selection || selection.toString().trim().length === 0) {
+              // Don't hide immediately - user may still be adjusting selection
+            }
+          }, 200);
+        }
+      }}
     >
       <div className="max-w-2xl">
-        <p className="leading-[1.8] text-gray-900 select-text" style={{ fontSize: `${fontSize}px`, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+        <p className="leading-[1.8] md:leading-[1.8] text-gray-900 select-text" style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
           {renderHighlightedText()}
         </p>
       </div>
 
-      {/* Highlight Toolbar */}
+      {/* Highlight Toolbar - Desktop: floating near selection, Mobile: bottom sticky bar */}
       {showToolbar && highlightsMode && (
         <div 
-          className="absolute z-10 bg-white border border-gray-300 rounded-full shadow-lg px-3 py-2 flex items-center gap-2"
-          style={{
-            left: `${toolbarPosition.x}px`,
-            top: `${toolbarPosition.y}px`,
-            transform: 'translateX(-50%)'
-          }}
+          className="absolute z-30 bg-white border border-gray-200 rounded-2xl md:rounded-full shadow-xl md:shadow-lg px-2 md:px-3 py-2 md:py-2 flex items-center justify-center gap-1 md:gap-2"
+          style={getClampedToolbarStyle()}
         >
           {/* Yellow highlight */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-yellow-100"
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-yellow-100 active:bg-yellow-200 flex items-center justify-center transition-colors"
             onClick={() => addHighlight('yellow')}
           >
-            <div className="w-5 h-5 rounded-full bg-yellow-300"></div>
-          </Button>
+            <div className="w-6 h-6 md:w-5 md:h-5 rounded-full bg-yellow-300 border-2 border-yellow-400"></div>
+          </button>
           
           {/* Blue highlight */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-blue-100"
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-blue-100 active:bg-blue-200 flex items-center justify-center transition-colors"
             onClick={() => addHighlight('blue')}
           >
-            <div className="w-5 h-5 rounded-full bg-blue-300"></div>
-          </Button>
+            <div className="w-6 h-6 md:w-5 md:h-5 rounded-full bg-blue-300 border-2 border-blue-400"></div>
+          </button>
           
           {/* Pink highlight */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-pink-100"
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-pink-100 active:bg-pink-200 flex items-center justify-center transition-colors"
             onClick={() => addHighlight('pink')}
           >
-            <div className="w-5 h-5 rounded-full bg-pink-300"></div>
-          </Button>
+            <div className="w-6 h-6 md:w-5 md:h-5 rounded-full bg-pink-300 border-2 border-pink-400"></div>
+          </button>
 
           {/* Underline */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-gray-100"
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-gray-100 active:bg-gray-200 flex items-center justify-center transition-colors"
             onClick={() => addHighlight('blue', 'underline')}
           >
-            <Underline className="h-4 w-4 text-gray-600" />
-          </Button>
+            <Underline className="h-5 w-5 md:h-4 md:w-4 text-gray-600" />
+          </button>
 
           {/* Separator */}
-          <div className="w-px h-6 bg-gray-300 mx-1"></div>
+          <div className="w-px h-7 md:h-6 bg-gray-300 mx-0.5 md:mx-1"></div>
 
-          {/* Delete */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-red-100 text-red-500"
+          {/* Delete / Cancel */}
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-red-100 active:bg-red-200 text-red-500 flex items-center justify-center transition-colors"
             onClick={() => {
               setShowToolbar(false);
               setSelectedRange(null);
               window.getSelection()?.removeAllRanges();
             }}
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+            <Trash2 className="h-5 w-5 md:h-4 md:w-4" />
+          </button>
 
           {/* Note */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 rounded-full hover:bg-gray-100 text-gray-600"
+          <button
+            className="w-10 h-10 md:w-8 md:h-8 p-0 rounded-full hover:bg-gray-100 active:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors"
           >
-            <FileText className="h-4 w-4" />
-          </Button>
+            <FileText className="h-5 w-5 md:h-4 md:w-4" />
+          </button>
         </div>
       )}
     </div>
