@@ -23,14 +23,13 @@ export function ScoreDetailModal({
   if (!isOpen) return null;
 
   const correctAnswers = questions.reduce((count, question) => {
-    const userAnswer = selectedAnswers[question.id];
-    const correctAnswer = question.id === 3 ? 'c' : question.id === 4 ? 'b' : question.id === 5 ? 'b' : 'a';
+    const userAnswer = selectedAnswers[question.id]?.toLowerCase();
+    const correctAnswer = question.correctAnswer?.toLowerCase();
     return userAnswer === correctAnswer ? count + 1 : count;
   }, 0);
 
-  const totalQuestions = 27 * 2;
+  const totalQuestions = questions.length;
   const incorrectAnswers = totalQuestions - correctAnswers;
-  const mathScore = 200;
 
   // Analysis by question type
   const analysisData = {
@@ -59,8 +58,8 @@ export function ScoreDetailModal({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-full flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-xl overflow-hidden bg-gray-50 flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="border-b border-gray-200 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
@@ -460,7 +459,7 @@ export function ScoreDetailModal({
                       <span className="text-center">Yours</span>
                     </div>
                     {questions.map((question) => {
-                      const correctAnswer = question.id === 3 ? 'C' : question.id === 4 ? 'B' : question.id === 5 ? 'B' : 'A';
+                      const correctAnswer = question.correctAnswer?.toUpperCase() || 'A';
                       const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
                       
                       return (
@@ -503,7 +502,7 @@ export function ScoreDetailModal({
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {questions.map((question) => {
-                          const correctAnswer = question.id === 3 ? 'C' : question.id === 4 ? 'B' : question.id === 5 ? 'B' : 'A';
+                          const correctAnswer = question.correctAnswer?.toUpperCase() || 'A';
                           const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
                           
                           return (

@@ -1754,7 +1754,29 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       test => !originalTitles.has(test.title)
     );
     
-    return [...subjectFilteredOriginal, ...uniqueUploadedTests];
+    const combined = [...subjectFilteredOriginal, ...uniqueUploadedTests];
+    
+    // Sort by date (newest first) - extract year and month from title
+    const sortedTests = combined.sort((a, b) => {
+      // Extract year and month from title
+      // Format examples: "2026년 3월 제1회 독해문법", "2025년 12월 제2회 수학"
+      const extractDate = (title: string) => {
+        const match = title.match(/(\d{4})년\s*(\d{1,2})월/);
+        if (match) {
+          const year = parseInt(match[1]);
+          const month = parseInt(match[2]);
+          return year * 100 + month; // e.g., 2026년 3월 -> 202603
+        }
+        return 0; // No date found, push to end
+      };
+      
+      const dateA = extractDate(a.title);
+      const dateB = extractDate(b.title);
+      
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    return sortedTests;
   };
 
   const allTests = getAllPracticeTests();

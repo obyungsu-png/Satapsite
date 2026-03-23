@@ -1164,7 +1164,7 @@ export default function App() {
               {/* Question Panel */}
               <div className="flex-1 flex justify-center items-start overflow-hidden">
                 <MathQuestionPanel
-                  questionNumber={currentQuestionId}
+                  questionNumber={currentQuestionIndex + 1}
                   question={currentQuestion.question}
                   choices={currentQuestion.choices}
                   selectedAnswer={selectedAnswers[currentQuestionId] || ""}
@@ -1182,7 +1182,7 @@ export default function App() {
             {/* Mobile Layout */}
             <div className="flex-1 flex flex-col md:hidden bg-white">
               <MathQuestionPanel
-                questionNumber={currentQuestionId}
+                questionNumber={currentQuestionIndex + 1}
                 question={currentQuestion.question}
                 choices={currentQuestion.choices}
                 selectedAnswer={selectedAnswers[currentQuestionId] || ""}
@@ -1296,7 +1296,7 @@ export default function App() {
               
               <div className="flex-1">
                 <QuestionPanel
-                  questionNumber={currentQuestionId}
+                  questionNumber={currentQuestionIndex + 1}
                   question={currentQuestion.question}
                   choices={currentQuestion.choices}
                   selectedAnswer={selectedAnswers[currentQuestionId] || ""}
@@ -1317,7 +1317,7 @@ export default function App() {
             <div className="flex-1 flex flex-col md:hidden overflow-hidden">
               <MobileExamTabs
                 passage={currentQuestion.passage}
-                questionNumber={currentQuestionId}
+                questionNumber={currentQuestionIndex + 1}
                 totalQuestions={totalQuestions}
                 question={currentQuestion.question}
                 choices={currentQuestion.choices}
@@ -1354,6 +1354,8 @@ export default function App() {
             markedForReview={markedForReview}
             onQuestionSelect={handleQuestionSelect}
             onClose={() => setShowOverview(false)}
+            currentModule={currentModule}
+            testType={currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'}
           />
         )}
 

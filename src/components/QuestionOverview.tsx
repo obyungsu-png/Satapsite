@@ -8,6 +8,8 @@ interface QuestionOverviewProps {
   markedForReview: Record<number, boolean>;
   onQuestionSelect: (questionNumber: number) => void;
   onClose: () => void;
+  currentModule?: number;
+  testType?: string;
 }
 
 export function QuestionOverview({
@@ -16,7 +18,9 @@ export function QuestionOverview({
   selectedAnswers,
   markedForReview,
   onQuestionSelect,
-  onClose
+  onClose,
+  currentModule = 1,
+  testType = 'Reading and Writing'
 }: QuestionOverviewProps) {
   // Generate array of question numbers
   const questions = Array.from({ length: totalQuestions }, (_, i) => i + 1);
@@ -58,7 +62,7 @@ export function QuestionOverview({
           {/* Header */}
           <div className="mb-3 md:mb-4">
             <h1 className="mb-2 md:mb-4" style={{ fontSize: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontWeight: '700', color: '#000' }}>
-              Section 1, Module 1: Reading and Writing Questions
+              Section 1, Module {currentModule}: {testType} Questions
             </h1>
             
             {/* Legend */}

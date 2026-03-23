@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import historyEmptyImage from "figma:asset/5fda86ab59ab70ac4b90ec46b644ce1cd9e29092.png";
 import { AdBannerDisplay, Advertisement } from './AdManagement';
+import { ScoreDetailModal } from './ScoreDetailModal';
+import { ReviewModal } from './ReviewModal';
 
 interface Question {
   id: number;
@@ -13,6 +15,8 @@ interface Question {
   userAnswer: string;
   isCorrect: boolean;
   difficulty: string;
+  questionType?: string;
+  passage?: string;
 }
 
 interface PracticeRecordItem {
@@ -103,6 +107,8 @@ export function PracticeRecord({
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [incompleteModalRecord, setIncompleteModalRecord] = useState<PracticeRecordItem | null>(null);
   const [supabaseRecords, setSupabaseRecords] = useState<PracticeRecordItem[]>([]);
+  const [showScoreDetailModal, setShowScoreDetailModal] = useState(false);
+  const [scoreDetailRecord, setScoreDetailRecord] = useState<PracticeRecordItem | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('studentQuestions');
@@ -463,352 +469,43 @@ export function PracticeRecord({
     const currentQuestionData = selectedRecord.questions?.[currentQuestionIndex];
     if (!currentQuestionData) return null;
 
-    const explanation = getExplanation(currentQuestionData);
-    const aiAnalysis = getAIAnalysis(currentQuestionData);
-    const similarData = getSimilarQuestions(currentQuestionData);
-    const similarQuestions = similarData.questions;
-    const isFromDB = similarData.fromDB;
-
-    const handleSimilarAnswer = (qIdx: number, answer: string, correct: string) => {
-      setSimilarAnswers(prev => ({ ...prev, [qIdx]: answer }));
-      setSimilarResults(prev => ({ ...prev, [qIdx]: answer === correct ? 'correct' : 'incorrect' }));
-    };
-
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
-          <div className="flex items-center gap-2 md:gap-4 mb-4 md:mb-6">
-            <Button onClick={() => { setSelectedQuestion(null); setOpenSections({ answer: true }); setSimilarAnswers({}); setSimilarResults({}); }} variant="ghost" size="sm" className="flex items-center gap-1 md:gap-2 px-2 md:px-3">
-              <ChevronLeft className="h-4 w-4" /> <span className="hidden md:inline">연습기록으로 돌아가기</span><span className="md:hidden text-xs">돌아가기</span>
-            </Button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-sm md:text-xl font-medium text-gray-800 truncate">{selectedRecord.testTitle}</h1>
-              <p className="text-xs md:text-sm text-gray-600">문제 {currentQuestionIndex + 1} / {selectedRecord.questions?.length || 0}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-            <div className="lg:col-span-2 space-y-3 md:space-y-4">
-              {/* Question Card */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-sm bg-gray-100 px-2 py-1 rounded font-medium">문제 {currentQuestionIndex + 1}</span>
-                  {currentQuestionData.isCorrect ? (
-                    <span className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">✓</span>
-                  ) : (
-                    <span className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-xs">✗</span>
-                  )}
-                  <span className={`text-sm px-2 py-1 rounded ${currentQuestionData.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {currentQuestionData.isCorrect ? '정답' : '오답'}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded ml-auto ${
-                    currentQuestionData.difficulty === '쉬움' ? 'bg-blue-100 text-blue-600' :
-                    currentQuestionData.difficulty === '중간' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'
-                  }`}>{currentQuestionData.difficulty}</span>
-                </div>
-                <p className="text-gray-800 leading-relaxed mb-6" style={{ fontFamily: "'Times New Roman', serif", fontSize: '18px' }}>{currentQuestionData.text}</p>
-                <div className="space-y-2">
-                  {currentQuestionData.options.map((option, idx) => {
-                    const isCorrectOption = option.startsWith(currentQuestionData.correctAnswer);
-                    const isUserAnswer = option.startsWith(currentQuestionData.userAnswer);
-                    return (
-                      <div key={idx} className={`p-3 rounded-lg border-2 transition-all ${
-                        isCorrectOption ? 'bg-green-50 border-green-400 text-green-800' :
-                        isUserAnswer && !currentQuestionData.isCorrect ? 'bg-red-50 border-red-300 text-red-800' : 'bg-gray-50 border-gray-200 text-gray-600'
-                      }`}>
-                        <div className="flex items-center gap-3">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                            isCorrectOption ? 'bg-green-500 text-white' :
-                            isUserAnswer && !currentQuestionData.isCorrect ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-600'
-                          }`}>
-                            {isCorrectOption ? '✓' : isUserAnswer && !currentQuestionData.isCorrect ? '✗' : String.fromCharCode(65 + idx)}
-                          </div>
-                          <span style={{ fontFamily: "'Times New Roman', serif", fontSize: '18px' }}>{option}</span>
-                          {isCorrectOption && <span className="ml-auto text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded">정답</span>}
-                          {isUserAnswer && !isCorrectOption && <span className="ml-auto text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded">내 선택</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 1. 정답 확인 Accordion */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <button onClick={() => toggleSection('answer')} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0"><CheckCircle size={16} className="text-green-600" /></div>
-                  <span className="text-sm font-semibold text-gray-900 flex-1 text-left">정답 확인</span>
-                  <motion.div animate={{ rotate: openSections.answer ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={16} className="text-gray-400" /></motion.div>
-                </button>
-                {openSections.answer && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="border-t border-gray-100 px-5 py-4">
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">내 답:</span>
-                        <span className={`text-sm font-bold px-3 py-1 rounded-full ${currentQuestionData.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{currentQuestionData.userAnswer}</span>
-                      </div>
-                      {!currentQuestionData.isCorrect && (
-                        <>
-                          <span className="text-gray-300">→</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">정답:</span>
-                            <span className="text-sm font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">{currentQuestionData.correctAnswer}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <p className={`text-sm leading-relaxed ${currentQuestionData.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                      {currentQuestionData.isCorrect ? '정답입니다! 훌륭합니다.' : `오답입니다. 정답은 '${currentQuestionData.correctAnswer}'입니다.`}
-                    </p>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* 2. 해설 Accordion */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <button onClick={() => toggleSection('explanation')} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0"><BookOpen size={16} className="text-blue-600" /></div>
-                  <span className="text-sm font-semibold text-gray-900 flex-1 text-left">해설</span>
-                  <motion.div animate={{ rotate: openSections.explanation ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={16} className="text-gray-400" /></motion.div>
-                </button>
-                {openSections.explanation && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="border-t border-gray-100 px-5 py-4">
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-                      <p className="text-sm text-gray-800 leading-relaxed">{explanation}</p>
-                    </div>
-                    {!currentQuestionData.isCorrect && (
-                      <div className="mt-3 bg-red-50 rounded-lg p-3 border border-red-100">
-                        <p className="text-xs font-semibold text-red-700 mb-1">왜 '{currentQuestionData.userAnswer}'이(가) 오답인가?</p>
-                        <p className="text-sm text-red-600 leading-relaxed">선택지 '{currentQuestionData.userAnswer}'은(는) 부분적으로 관련이 있지만, 문제의 핵심 요구사항을 완전히 충족하지 못합니다. 정답 '{currentQuestionData.correctAnswer}'이(가) 더 정확하고 완전한 답입니다.</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-
-              {/* 3. AI 도움 Accordion */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <button onClick={() => toggleSection('ai')} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0"><Brain size={16} className="text-purple-600" /></div>
-                  <span className="text-sm font-semibold text-gray-900 flex-1 text-left">AI 도움</span>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 mr-2">AI</span>
-                  <motion.div animate={{ rotate: openSections.ai ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={16} className="text-gray-400" /></motion.div>
-                </button>
-                {openSections.ai && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="border-t border-gray-100 px-5 py-4 space-y-3">
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                      <div className="flex items-center gap-2 mb-2"><Lightbulb size={14} className="text-purple-600" /><span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">풀이 전략</span></div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{aiAnalysis.strategy}</p>
-                    </div>
-                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-100">
-                      <div className="flex items-center gap-2 mb-2"><Sparkles size={14} className="text-amber-600" /><span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">학습 패턴 분석</span></div>
-                      <p className="text-sm text-gray-700 leading-relaxed">{aiAnalysis.pattern}</p>
-                    </div>
-                    <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg">
-                      <div className="w-6 h-6 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0"><span className="text-xs">💡</span></div>
-                      <p className="text-xs text-gray-600">{aiAnalysis.tip}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
-              {/* 4. 유사 문제 Accordion */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <button onClick={() => toggleSection('similar')} className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0"><Sparkles size={16} className="text-teal-600" /></div>
-                  <span className="text-sm font-semibold text-gray-900 flex-1 text-left">유사 문제</span>
-                  {isFromDB && <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 mr-1 flex items-center gap-1"><Database size={9} />실전 DB</span>}
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-teal-100 text-teal-600 mr-2">{similarQuestions.length}문제</span>
-                  <motion.div animate={{ rotate: openSections.similar ? 180 : 0 }} transition={{ duration: 0.2 }}><ChevronDown size={16} className="text-gray-400" /></motion.div>
-                </button>
-                {openSections.similar && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="border-t border-gray-100 px-5 py-4 space-y-4">
-                    {/* DB source indicator */}
-                    {isFromDB && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-lg border border-emerald-200">
-                        <Database size={13} className="text-emerald-600" />
-                        <span className="text-xs text-emerald-700 font-medium">실전 문제 DB에서 유사도 기반으로 매칭된 문제입니다</span>
-                      </div>
-                    )}
-                    {!isFromDB && questionPool.length === 0 && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
-                        <Lightbulb size={13} className="text-amber-600" />
-                        <span className="text-xs text-amber-700">업로드된 문제가 없어 샘플 유사 문제를 표시합니다. CMS에서 문제를 업로드하면 실전 DB 기반으로 매칭됩니다.</span>
-                      </div>
-                    )}
-
-                    {similarQuestions.map((sq: any, idx: number) => (
-                      <div key={sq.id} className={`rounded-lg border p-4 ${
-                        similarResults[idx] === 'correct' ? 'border-green-300 bg-green-50/50' :
-                        similarResults[idx] === 'incorrect' ? 'border-red-300 bg-red-50/50' : 'border-gray-200 bg-gray-50/30'
-                      }`}>
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className="text-xs font-bold text-white px-2 py-0.5 rounded" style={{ backgroundColor: '#0d6e6e' }}>유사 {idx + 1}</span>
-                          {isFromDB && sq.fileName && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{sq.fileName}</span>}
-                          {sq.difficulty && <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            sq.difficulty === '쉬움' || sq.difficulty === 'easy' ? 'bg-blue-100 text-blue-600' :
-                            sq.difficulty === '중간' || sq.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'
-                          }`}>{sq.difficulty}</span>}
-                          {similarResults[idx] === 'correct' && <span className="text-xs text-green-600 font-semibold ml-auto">✓ 정답!</span>}
-                          {similarResults[idx] === 'incorrect' && <span className="text-xs text-red-600 font-semibold ml-auto">✗ 오답 (정답: {sq.correctAnswer})</span>}
-                        </div>
-                        {/* Passage snippet for DB questions */}
-                        {isFromDB && sq.passage && sq.passage.length > 10 && (
-                          <div className="mb-3 p-2.5 bg-gray-50 rounded border border-gray-200 max-h-24 overflow-y-auto">
-                            <p className="text-[11px] text-gray-500 leading-relaxed italic">{sq.passage.length > 200 ? sq.passage.substring(0, 200) + '...' : sq.passage}</p>
-                          </div>
-                        )}
-                        <p className="text-sm text-gray-800 mb-3 leading-relaxed">{sq.text}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {sq.options.map((opt: string, optIdx: number) => {
-                            const letter = opt.charAt(0);
-                            const isSelected = similarAnswers[idx] === letter;
-                            const isRevealed = similarResults[idx] !== undefined && similarResults[idx] !== null;
-                            const isCorrectOpt = letter === sq.correctAnswer;
-                            let btnClass = 'border-gray-200 bg-white hover:border-teal-400 hover:bg-teal-50/50 cursor-pointer text-gray-700';
-                            if (isRevealed) {
-                              if (isCorrectOpt) btnClass = 'border-green-400 bg-green-50 text-green-800 cursor-default';
-                              else if (isSelected) btnClass = 'border-red-300 bg-red-50 text-red-700 cursor-default';
-                              else btnClass = 'border-gray-200 bg-gray-50 text-gray-400 cursor-default';
-                            } else if (isSelected) {
-                              btnClass = 'border-teal-500 bg-teal-50 text-teal-800 cursor-pointer';
-                            }
-                            return (
-                              <button key={optIdx} onClick={() => { if (!isRevealed) handleSimilarAnswer(idx, letter, sq.correctAnswer); }} disabled={isRevealed}
-                                className={`text-left px-3 py-2 rounded-md border text-xs transition-all ${btnClass}`}>{opt}</button>
-                            );
-                          })}
-                        </div>
-                        {/* Explanation after answering DB questions */}
-                        {isFromDB && sq.explanation && similarResults[idx] !== undefined && similarResults[idx] !== null && (
-                          <div className="mt-3 p-2.5 bg-blue-50 rounded border border-blue-100">
-                            <p className="text-xs text-blue-700 leading-relaxed"><strong>해설:</strong> {sq.explanation}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Score summary */}
-                    {Object.keys(similarResults).length === similarQuestions.length && similarQuestions.length > 0 && (
-                      <div className="flex items-center justify-center gap-3 py-3 px-4 rounded-lg" style={{ backgroundColor: '#f0fdf4' }}>
-                        <span className="text-sm font-semibold text-gray-700">유사 문제 결과:</span>
-                        <span className="text-sm font-bold" style={{ color: '#0d6e6e' }}>{Object.values(similarResults).filter(r => r === 'correct').length} / {similarQuestions.length} 정답</span>
-                      </div>
-                    )}
-
-                    {/* Bluebook Practice Launch */}
-                    {similarQuestions.length > 0 && (
-                      <button
-                        onClick={() => launchBluebookPractice(similarQuestions)}
-                        className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-lg text-white text-sm font-semibold transition-all hover:shadow-lg"
-                        style={{ background: 'linear-gradient(135deg, #0d6e6e 0%, #0a5a5a 100%)' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, #0a5a5a 0%, #084848 100%)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, #0d6e6e 0%, #0a5a5a 100%)')}
-                      >
-                        <Monitor size={16} />
-                        Bluebook 모드로 연습하기
-                        <span className="text-[10px] opacity-75 ml-1">({similarQuestions.length}문제 · 지문+문제 분할 화면)</span>
-                      </button>
-                    )}
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Question Form */}
-              {showQuestionForm && (
-                <div className="bg-white rounded-lg border border-gray-200 p-5">
-                  <h4 className="font-medium mb-3 text-gray-800 flex items-center gap-2"><MessageCircle className="h-4 w-4" />질문하기 - 문제 {currentQuestionIndex + 1}번</h4>
-                  {studentQuestions.filter(q => q.questionId === selectedQuestion.id && q.recordId === selectedQuestion.recordId).length > 0 && (
-                    <div className="mb-4">
-                      <h5 className="text-sm font-medium text-gray-600 mb-2">이전 질문들:</h5>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {studentQuestions.filter(q => q.questionId === selectedQuestion.id && q.recordId === selectedQuestion.recordId).map((q) => (
-                          <div key={q.id} className="bg-gray-50 rounded p-2 text-sm border">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-gray-600">{new Date(q.timestamp).toLocaleString('ko-KR')}</span>
-                              <span className={`px-2 py-1 rounded text-xs ${q.status === 'answered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{q.status === 'answered' ? '답변완료' : '답변대기'}</span>
-                            </div>
-                            <p className="text-gray-800 mb-2">Q: {q.studentQuestion}</p>
-                            {q.adminAnswer && (<div className="border-t pt-2"><p className="text-blue-700 text-sm">A: {q.adminAnswer}</p></div>)}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-3">
-                    <textarea value={studentQuestionText} onChange={(e) => setStudentQuestionText(e.target.value)} placeholder="이 문제에 대해 궁금한 점을 질문해주세요..." className="w-full p-3 border border-gray-300 rounded-md resize-none text-sm" rows={3} />
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-gray-500">💡 관리자가 답변을 확인하고 답변드립니다.</p>
-                      <Button onClick={() => { if (studentQuestionText.trim() && selectedQuestion) { const nq: StudentQuestion = { id: Math.random().toString(36).substr(2, 9), questionId: selectedQuestion.id, recordId: selectedQuestion.recordId, studentQuestion: studentQuestionText.trim(), timestamp: new Date().toISOString(), status: 'pending' }; setStudentQuestions(prev => [...prev, nq]); setStudentQuestionText(''); const s = localStorage.getItem('studentQuestions') || '[]'; localStorage.setItem('studentQuestions', JSON.stringify([...JSON.parse(s), nq])); }}} disabled={!studentQuestionText.trim()} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50" size="sm"><Send className="h-3 w-3 mr-1" /> 질문 전송</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sidebar */}
-            <div className="lg:col-span-1 space-y-3 md:space-y-4">
-              {/* Mobile: Horizontal question nav */}
-              <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
-                <h3 className="font-medium text-gray-800 mb-2 md:mb-4 text-sm">문제 목록</h3>
-                {/* Mobile: horizontal scroll */}
-                <div className="flex md:hidden overflow-x-auto gap-1.5 pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {selectedRecord.questions?.map((question, idx) => (
-                    <button key={question.id} onClick={() => { setSelectedQuestion({ ...question, recordId: selectedRecord.id }); setOpenSections({ answer: true }); setSimilarAnswers({}); setSimilarResults({}); }}
-                      className={`flex-shrink-0 w-9 h-9 rounded-lg text-xs font-medium flex items-center justify-center transition-colors relative ${
-                        selectedQuestion.id === question.id ? 'bg-teal-50 border-2 border-teal-400 text-teal-800 font-bold' : 'bg-gray-50 border border-gray-200 text-gray-600'
-                      }`}>
-                      {idx + 1}
-                      <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${question.isCorrect ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    </button>
-                  )) || []}
-                </div>
-                {/* Desktop: vertical list */}
-                <div className="hidden md:block space-y-1.5 max-h-60 overflow-y-auto">
-                  {selectedRecord.questions?.map((question, idx) => (
-                    <button key={question.id} onClick={() => { setSelectedQuestion({ ...question, recordId: selectedRecord.id }); setOpenSections({ answer: true }); setSimilarAnswers({}); setSimilarResults({}); }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm flex items-center justify-between transition-colors ${
-                        selectedQuestion.id === question.id ? 'bg-teal-50 border border-teal-200 text-teal-800 font-semibold' : 'hover:bg-gray-50 border border-transparent'
-                      }`}>
-                      <span>문제 {idx + 1}</span>
-                      <span className={`w-3 h-3 rounded-full ${question.isCorrect ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    </button>
-                  )) || []}
-                </div>
-              </div>
-
-              {/* Mobile: compact exam summary row */}
-              <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
-                <h3 className="font-medium text-gray-800 mb-2 md:mb-3 text-sm">시험 요약</h3>
-                <div className="md:hidden">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex-1">
-                      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${selectedRecord.score}%`, backgroundColor: '#0d6e6e' }} /></div>
-                    </div>
-                    <span className="text-sm font-bold flex-shrink-0" style={{ color: '#0d6e6e' }}>{selectedRecord.score}%</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>맞은 문제: <strong className="text-green-600">{selectedRecord.correctAnswers}/{selectedRecord.totalQuestions}</strong></span>
-                    <span>소요: <strong className="text-gray-700">{selectedRecord.duration}</strong></span>
-                  </div>
-                </div>
-                <div className="hidden md:block space-y-3">
-                  <div className="flex justify-between text-sm"><span className="text-gray-500">정답률</span><span className="font-bold" style={{ color: '#0d6e6e' }}>{selectedRecord.score}%</span></div>
-                  <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${selectedRecord.score}%`, backgroundColor: '#0d6e6e' }} /></div>
-                  <div className="flex justify-between text-sm"><span className="text-gray-500">맞은 문제</span><span className="font-semibold text-green-600">{selectedRecord.correctAnswers} / {selectedRecord.totalQuestions}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-gray-500">소요 시간</span><span className="font-semibold text-gray-700">{selectedRecord.duration}</span></div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
-                <button onClick={() => setShowQuestionForm(!showQuestionForm)} className="w-full flex items-center justify-center gap-2 px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                  <MessageCircle size={14} />{showQuestionForm ? '질문 닫기' : '질문하기'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ReviewModal
+        isOpen={true}
+        onClose={() => {
+          setSelectedQuestion(null);
+          setOpenSections({ answer: true });
+          setSimilarAnswers({});
+          setSimilarResults({});
+        }}
+        question={{
+          id: currentQuestionData.id,
+          passage: currentQuestionData.passage || currentQuestionData.text,
+          question: currentQuestionData.text,
+          choices: currentQuestionData.options.map((opt, idx) => ({
+            id: String.fromCharCode(97 + idx),
+            text: opt.replace(/^[A-D]\)\s*/, ''),
+          })),
+        }}
+        selectedAnswer={currentQuestionData.userAnswer}
+        correctAnswer={currentQuestionData.correctAnswer}
+        onPrevious={() => {
+          const currentIdx = selectedRecord.questions?.findIndex(q => q.id === selectedQuestion.id) || 0;
+          if (currentIdx > 0 && selectedRecord.questions) {
+            setSelectedQuestion({ ...selectedRecord.questions[currentIdx - 1], recordId: selectedRecord.id });
+          }
+        }}
+        onNext={() => {
+          const currentIdx = selectedRecord.questions?.findIndex(q => q.id === selectedQuestion.id) || 0;
+          if (currentIdx < (selectedRecord.questions?.length || 0) - 1 && selectedRecord.questions) {
+            setSelectedQuestion({ ...selectedRecord.questions[currentIdx + 1], recordId: selectedRecord.id });
+          }
+        }}
+        canGoPrevious={(selectedRecord.questions?.findIndex(q => q.id === selectedQuestion.id) || 0) > 0}
+        canGoNext={(selectedRecord.questions?.findIndex(q => q.id === selectedQuestion.id) || 0) < (selectedRecord.questions?.length || 0) - 1}
+        questionType={currentQuestionData.questionType || 'Central Ideas and Details'}
+        difficulty={currentQuestionData.difficulty || '중간'}
+      />
     );
   }
 
@@ -1015,12 +712,9 @@ export function PracticeRecord({
                                         setIncompleteModalRecord(record);
                                         setShowIncompleteModal(true);
                                       } else if (record.questions && record.questions.length > 0) {
-                                        if (practiceRecordCategory === '틀린문제') {
-                                          const firstIncorrect = record.questions.find(q => !q.isCorrect);
-                                          if (firstIncorrect) setSelectedQuestion({ ...firstIncorrect, recordId: record.id });
-                                        } else {
-                                          setSelectedQuestion({ ...record.questions[0], recordId: record.id });
-                                        }
+                                        // Show ScoreDetailModal first
+                                        setScoreDetailRecord(record);
+                                        setShowScoreDetailModal(true);
                                       }
                                     }}
                                     className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -1079,12 +773,9 @@ export function PracticeRecord({
                                           setIncompleteModalRecord(record);
                                           setShowIncompleteModal(true);
                                         } else if (record.questions && record.questions.length > 0) {
-                                          if (practiceRecordCategory === '틀린문제') {
-                                            const firstIncorrect = record.questions.find(q => !q.isCorrect);
-                                            if (firstIncorrect) setSelectedQuestion({ ...firstIncorrect, recordId: record.id });
-                                          } else {
-                                            setSelectedQuestion({ ...record.questions[0], recordId: record.id });
-                                          }
+                                          // Show ScoreDetailModal first
+                                          setScoreDetailRecord(record);
+                                          setShowScoreDetailModal(true);
                                         }
                                       }}
                                       className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -1327,12 +1018,9 @@ export function PracticeRecord({
                 onClick={() => {
                   setShowIncompleteModal(false);
                   if (incompleteModalRecord.questions && incompleteModalRecord.questions.length > 0) {
-                    if (practiceRecordCategory === '틀린문제') {
-                      const firstIncorrect = incompleteModalRecord.questions.find(q => !q.isCorrect);
-                      if (firstIncorrect) setSelectedQuestion({ ...firstIncorrect, recordId: incompleteModalRecord.id });
-                    } else {
-                      setSelectedQuestion({ ...incompleteModalRecord.questions[0], recordId: incompleteModalRecord.id });
-                    }
+                    // Show ScoreDetailModal for incomplete records too
+                    setScoreDetailRecord(incompleteModalRecord);
+                    setShowScoreDetailModal(true);
                   }
                 }}
                 className="flex-1 py-3 px-4 text-sm font-medium rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 transition-colors"
@@ -1357,6 +1045,34 @@ export function PracticeRecord({
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Score Detail Modal */}
+      {showScoreDetailModal && scoreDetailRecord && (
+        <ScoreDetailModal
+          isOpen={showScoreDetailModal}
+          onClose={() => {
+            setShowScoreDetailModal(false);
+            setScoreDetailRecord(null);
+          }}
+          questions={scoreDetailRecord.questions || []}
+          selectedAnswers={
+            // Convert questions to selectedAnswers format
+            (scoreDetailRecord.questions || []).reduce((acc, q) => {
+              acc[q.id] = q.userAnswer?.toLowerCase() || '';
+              return acc;
+            }, {} as Record<number, string>)
+          }
+          onReviewQuestion={(questionId: number) => {
+            // Close modal and open individual question review
+            setShowScoreDetailModal(false);
+            const question = scoreDetailRecord.questions?.find(q => q.id === questionId);
+            if (question) {
+              setSelectedQuestion({ ...question, recordId: scoreDetailRecord.id });
+            }
+            setScoreDetailRecord(null);
+          }}
+        />
       )}
     </div>
   );

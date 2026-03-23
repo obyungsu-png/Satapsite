@@ -5,15 +5,53 @@ import { toast } from 'sonner@2.0.3';
 
 interface BulkUploadProps {
   onUploadSuccess: (files: any[]) => void;
-  uploadLocation: string;
-  uploadSubcategory: string;
+  uploadLocation?: string;
+  uploadSubcategory?: string;
 }
 
-export function BulkUpload({ onUploadSuccess, uploadLocation, uploadSubcategory }: BulkUploadProps) {
+export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation, uploadSubcategory: propUploadSubcategory }: BulkUploadProps) {
   const [cardTitle, setCardTitle] = useState('');
   const [textInput, setTextInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [moduleNumber, setModuleNumber] = useState<'1' | '2'>('1');
+  
+  // Add category selection state
+  const [uploadLocation, setUploadLocation] = useState(propUploadLocation || '스마트 연습');
+  const [uploadSubcategory, setUploadSubcategory] = useState(propUploadSubcategory || '');
+
+  // Category options
+  const categoryOptions: Record<string, Array<{value: string, label: string}>> = {
+    '스마트 연습': [
+      { value: 'past-exams', label: '기출문제' },
+      { value: 'official-samples', label: '공식문제' },
+    ],
+    '전문 훈련': [
+      { value: 'reading', label: '독해 (Reading)' },
+      { value: 'grammar', label: '문법 (Grammar)' },
+      { value: 'math', label: '수학 (Math)' },
+    ],
+  };
+
+  // Subcategory options for Training
+  const trainingSubcategories: Record<string, Array<{value: string, label: string}>> = {
+    'reading': [
+      { value: 'central-ideas', label: 'Central Ideas and Details' },
+      { value: 'command-evidence', label: 'Command of Evidence' },
+      { value: 'inferences', label: 'Inferences' },
+      { value: 'craft-structure', label: 'Craft and Structure' },
+    ],
+    'grammar': [
+      { value: 'boundaries', label: 'Boundaries' },
+      { value: 'form-structure', label: 'Form, Structure, and Sense' },
+      { value: 'transitions', label: 'Transitions' },
+      { value: 'rhetorical-synthesis', label: 'Rhetorical Synthesis' },
+    ],
+    'math': [
+      { value: 'algebra', label: 'Algebra' },
+      { value: 'advanced-math', label: 'Advanced Math' },
+      { value: 'problem-solving', label: 'Problem-Solving and Data Analysis' },
+      { value: 'geometry', label: 'Geometry and Trigonometry' },
+    ],
+  };
 
   // Simple template for copy
   const getTemplate = () => {
@@ -33,13 +71,23 @@ C: 선택지 C
 D: 선택지 D
 ANSWER: A
 
-PASSAGE: 세 번째 지문...
-QUESTION: 세 번째 질문
+_____
+
+PASSAGE: Module 2 첫 번째 지문...
+QUESTION: Module 2 첫 번째 질문
 A: 선택지 A
 B: 선택지 B
 C: 선택지 C
 D: 선택지 D
-ANSWER: C`;
+ANSWER: C
+
+PASSAGE: Module 2 두 번째 지문...
+QUESTION: Module 2 두 번째 질문
+A: 선택지 A
+B: 선택지 B
+C: 선택지 C
+D: 선택지 D
+ANSWER: B`;
   };
 
   const downloadTemplate = () => {
@@ -63,55 +111,74 @@ ANSWER: C`;
 
   const parseTextUpload = (text: string) => {
     try {
-      const lines = text.split('\n').map(line => line.trim());
-      const questions = [];
-      let currentQuestion: any = {};
+      // Check if there's a module separator
+      const hasSeparator = text.includes('_____');
+      let module1Text = text;
+      let module2Text = '';
+      
+      if (hasSeparator) {
+        const parts = text.split('_____');
+        module1Text = parts[0];
+        module2Text = parts.slice(1).join('_____'); // In case there are multiple separators
+      }
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      const parseModule = (moduleText: string) => {
+        const lines = moduleText.split('\n').map(line => line.trim());
+        const questions = [];
+        let currentQuestion: any = {};
 
-        // Skip empty lines
-        if (!line) {
-          // Empty line indicates end of current question
-          if (Object.keys(currentQuestion).length > 0) {
-            questions.push({ ...currentQuestion });
-            currentQuestion = {};
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+
+          // Skip empty lines
+          if (!line) {
+            // Empty line indicates end of current question
+            if (Object.keys(currentQuestion).length > 0) {
+              questions.push({ ...currentQuestion });
+              currentQuestion = {};
+            }
+            continue;
           }
-          continue;
+
+          if (line.startsWith('PASSAGE:')) {
+            currentQuestion.passage = line.substring(8).trim();
+          } else if (line.startsWith('QUESTION:')) {
+            currentQuestion.question = line.substring(9).trim();
+          } else if (line.startsWith('A:')) {
+            currentQuestion.choiceA = line.substring(2).trim();
+          } else if (line.startsWith('B:')) {
+            currentQuestion.choiceB = line.substring(2).trim();
+          } else if (line.startsWith('C:')) {
+            currentQuestion.choiceC = line.substring(2).trim();
+          } else if (line.startsWith('D:')) {
+            currentQuestion.choiceD = line.substring(2).trim();
+          } else if (line.startsWith('ANSWER:')) {
+            currentQuestion.answer = line.substring(7).trim().toLowerCase();
+          }
         }
 
-        if (line.startsWith('PASSAGE:')) {
-          currentQuestion.passage = line.substring(8).trim();
-        } else if (line.startsWith('QUESTION:')) {
-          currentQuestion.question = line.substring(9).trim();
-        } else if (line.startsWith('A:')) {
-          currentQuestion.choiceA = line.substring(2).trim();
-        } else if (line.startsWith('B:')) {
-          currentQuestion.choiceB = line.substring(2).trim();
-        } else if (line.startsWith('C:')) {
-          currentQuestion.choiceC = line.substring(2).trim();
-        } else if (line.startsWith('D:')) {
-          currentQuestion.choiceD = line.substring(2).trim();
-        } else if (line.startsWith('ANSWER:')) {
-          currentQuestion.answer = line.substring(7).trim().toLowerCase();
+        // Add last question if exists
+        if (Object.keys(currentQuestion).length > 0) {
+          questions.push(currentQuestion);
         }
-      }
 
-      // Add last question if exists
-      if (Object.keys(currentQuestion).length > 0) {
-        questions.push(currentQuestion);
-      }
+        return questions;
+      };
 
-      if (questions.length === 0) {
+      const module1Questions = parseModule(module1Text);
+      const module2Questions = module2Text ? parseModule(module2Text) : [];
+      const allQuestions = [...module1Questions, ...module2Questions];
+
+      if (allQuestions.length === 0) {
         throw new Error('문제를 찾을 수 없습니다. 형식을 확인해주세요.');
       }
 
-      if (questions.length > 54) {
-        throw new Error(`총 ${questions.length}개 문제가 있습니다. 최대 54문제까지만 가능합니다.`);
+      if (allQuestions.length > 54) {
+        throw new Error(`총 ${allQuestions.length}개 문제가 있습니다. 최대 54문제까지만 가능합니다.`);
       }
 
       // Convert to proper format with auto-incrementing numbers
-      const formattedQuestions = questions.map((q: any, idx: number) => ({
+      const formattedQuestions = allQuestions.map((q: any, idx: number) => ({
         title: `문제 ${idx + 1}`,
         passage: q.passage || '',
         question: q.question || '',
@@ -257,6 +324,50 @@ ANSWER: C`;
         </p>
       </div>
 
+      {/* Category Selection */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">📂 업로드 위치 선택</h3>
+        
+        {/* Main Category */}
+        <div className="mb-4">
+          <label className="block text-sm text-gray-600 mb-2">메인 카테고리</label>
+          <select
+            value={uploadLocation}
+            onChange={(e) => {
+              setUploadLocation(e.target.value);
+              setUploadSubcategory('');
+            }}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="">선택하세요</option>
+            {Object.keys(categoryOptions).map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Sub Category */}
+        {uploadLocation && (
+          <div>
+            <label className="block text-sm text-gray-600 mb-2">세부 카테고리</label>
+            <select
+              value={uploadSubcategory}
+              onChange={(e) => setUploadSubcategory(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="">선택하세요</option>
+              {categoryOptions[uploadLocation]?.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Text Input Area */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
@@ -293,8 +404,9 @@ ANSWER: A`}
           <ul className="list-disc list-inside space-y-0.5 ml-2">
             <li>각 필드는 대문자로 시작: PASSAGE:, QUESTION:, A:, B:, C:, D:, ANSWER:</li>
             <li>문제 구분은 빈 줄 1칸 띄우기</li>
+            <li><strong>Module 구분:</strong> _____ (밑줄 5개)로 Module 1과 Module 2 구분 가능</li>
             <li>문제 번호는 자동 생성됨 (===문제=== 불필요)</li>
-            <li>최대 54문제까지 업로드 가능</li>
+            <li>최대 54문제까지 업로드 가능 (리딩 27+27, 수학 22+22)</li>
           </ul>
         </div>
       </div>
