@@ -27,6 +27,7 @@ import { Download } from "lucide-react";
 import { BluebookExpandButton } from "./components/BluebookExpandButton";
 import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
 import { MobileExamTabs } from "./components/MobileExamTabs";
+import { mathQuestions } from "./mathQuestions";
 import expandIconsSprite from "figma:asset/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
 import dragHandleImg from "figma:asset/af403f2609b757e96b427cbfdd300891837f3bc7.png";
 import expandRightIcon from "figma:asset/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
