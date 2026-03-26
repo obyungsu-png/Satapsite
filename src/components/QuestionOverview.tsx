@@ -4,6 +4,7 @@ import { MapPin, Square, Bookmark } from "lucide-react";
 interface QuestionOverviewProps {
   currentQuestion: number;
   totalQuestions: number;
+  moduleQuestions?: any[];
   selectedAnswers: Record<number, string>;
   markedForReview: Record<number, boolean>;
   onQuestionSelect: (questionNumber: number) => void;
@@ -15,6 +16,7 @@ interface QuestionOverviewProps {
 export function QuestionOverview({
   currentQuestion,
   totalQuestions,
+  moduleQuestions,
   selectedAnswers,
   markedForReview,
   onQuestionSelect,
@@ -23,11 +25,14 @@ export function QuestionOverview({
   testType = 'Reading and Writing'
 }: QuestionOverviewProps) {
   // Generate array of question numbers
-  const questions = Array.from({ length: totalQuestions }, (_, i) => i + 1);
+  const questionIndices = Array.from({ length: totalQuestions }, (_, i) => i);
 
-  const getQuestionStatus = (questionNumber: number) => {
-    const isAnswered = Boolean(selectedAnswers[questionNumber]);
-    const isMarked = Boolean(markedForReview[questionNumber]);
+  const getQuestionStatus = (index: number) => {
+    const questionNumber = index + 1;
+    const qId = moduleQuestions ? moduleQuestions[index]?.id : questionNumber;
+    
+    const isAnswered = Boolean(selectedAnswers[qId]);
+    const isMarked = Boolean(markedForReview[qId]);
     const isCurrent = questionNumber === currentQuestion;
 
     if (isCurrent) return 'current';
@@ -36,8 +41,8 @@ export function QuestionOverview({
     return 'unanswered';
   };
 
-  const getQuestionStyles = (questionNumber: number) => {
-    const status = getQuestionStatus(questionNumber);
+  const getQuestionStyles = (index: number) => {
+    const status = getQuestionStatus(index);
     
     switch (status) {
       case 'current':
@@ -62,7 +67,7 @@ export function QuestionOverview({
           {/* Header */}
           <div className="mb-3 md:mb-4">
             <h1 className="mb-2 md:mb-4" style={{ fontSize: '20px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontWeight: '700', color: '#000' }}>
-              Section 1, Module {currentModule}: {testType} Questions
+              Section {testType === 'Math' ? '2' : '1'}, Module {currentModule}: {testType} Questions
             </h1>
             
             {/* Legend */}
@@ -84,13 +89,14 @@ export function QuestionOverview({
 
           {/* Questions Grid */}
           <div className="grid grid-cols-6 sm:grid-cols-7 md:grid-cols-9 gap-2 md:gap-3 mb-4 md:mb-6">
-            {questions.map((questionNumber) => {
-              const status = getQuestionStatus(questionNumber);
+            {questionIndices.map((index) => {
+              const questionNumber = index + 1;
+              const status = getQuestionStatus(index);
               return (
                 <div key={questionNumber} className="relative">
                   <Button
                     variant="outline"
-                    className={`w-10 h-10 md:w-12 md:h-12 text-xs md:text-sm ${getQuestionStyles(questionNumber)} hover:scale-105 transition-transform`}
+                    className={`w-10 h-10 md:w-12 md:h-12 text-xs md:text-sm ${getQuestionStyles(index)} hover:scale-105 transition-transform`}
                     onClick={() => {
                       onQuestionSelect(questionNumber);
                       onClose();

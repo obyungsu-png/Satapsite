@@ -24,10 +24,10 @@ export const mathQuestions = [
     ],
     type: "Math"
   },
-  // Add more placeholder math questions
-  ...Array.from({ length: 20 }, (_, i) => ({
+  // Add more placeholder math questions to ensure 44 questions (2 modules of 22)
+  ...Array.from({ length: 42 }, (_, i) => ({
     id: i + 3,
-    question: `Math problem ${i + 3}: This is a placeholder for a math question.`,
+    question: `Math problem ${i + 3}: This is a placeholder for a math question for Module ${i + 3 > 22 ? 2 : 1}.`,
     choices: [
       { id: "a", text: "Option A" },
       { id: "b", text: "Option B" },

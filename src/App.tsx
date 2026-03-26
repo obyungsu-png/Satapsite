@@ -192,13 +192,13 @@ const generateQuestions = () => {
   ];
 
   const questions = [];
-  for (let i = 1; i <= 27; i++) {
+  for (let i = 1; i <= 54; i++) {
     if (i === 3 || i === 4 || i === 5) {
       questions.push(baseQuestions.find(q => q.id === i)!);
     } else {
       questions.push({
         id: i,
-        passage: `Sample passage for question ${i}. This is a placeholder passage that would contain the reading material for this question.`,
+        passage: `Sample passage for question ${i}. This is a placeholder passage that would contain the reading material for this question for Module ${i > 27 ? 2 : 1}.`,
         question: `Question ${i}: Which choice completes the text with the most logical and precise word or phrase?`,
         choices: [
           { id: "a", text: "Option A" },
@@ -358,7 +358,7 @@ export default function App() {
         // Move to Module 2
         setCurrentModule(2);
         setCurrentQuestionIndex(0);
-        setTimeRemaining(32 * 60); // Reset timer for Module 2
+        setTimeRemaining(currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 35 * 60 : 32 * 60); // Reset timer for Module 2
         setGameState('exam');
       } else if (currentModule === 2) {
         // All modules completed - go to finished screen
@@ -373,7 +373,7 @@ export default function App() {
             source: currentTestInfo.source || '기출문제',
             date: new Date().toISOString().split('T')[0],
             time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-            totalQuestions: totalQuestions * 2, // Module 1 + Module 2
+            totalQuestions: totalQuestions, // Total questions (Module 1 + Module 2)
             answeredQuestions: Object.keys(selectedAnswers).length,
             correctAnswers: 0, // Will be calculated in score report
             score: 0, // Will be calculated in score report
@@ -492,6 +492,11 @@ export default function App() {
     }
     
     setCurrentTestInfo(testInfo);
+    setCurrentModule(1);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setMarkedForReview({});
+    setTimeRemaining(testInfo?.type === 'Math' || testInfo?.title?.includes('수학') ? 35 * 60 : 32 * 60);
     
     // Check if testInfo has uploaded data
     if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
@@ -703,8 +708,8 @@ export default function App() {
         <div className="bg-white px-3 md:px-10 py-2 md:py-4 flex items-center justify-between" style={{ borderBottom: '2px dotted #999' }}>
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <h1 className="truncate" style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>
-              <span className="md:hidden">Section 2, Module 1</span>
-              <span className="hidden md:inline">Section 2, Module 1: Math</span>
+              <span className="md:hidden">Section {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? '2' : '1'}, Module {currentModule}</span>
+              <span className="hidden md:inline">Section {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? '2' : '1'}, Module {currentModule}: {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'}</span>
             </h1>
             <button className="px-2 md:px-3 py-1 text-xs shrink-0" style={{ border: '1px solid #999', borderRadius: '4px', background: 'white' }}>
               Directions
@@ -733,8 +738,8 @@ export default function App() {
               {/* Section title and legend */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 md:mb-6">
                 <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#333' }}>
-                  <span className="md:hidden">Section 2, Module 1:<br/>Math Questions</span>
-                  <span className="hidden md:inline">Section 2, Module 1: Math Questions</span>
+                  <span className="md:hidden">Section {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? '2' : '1'}, Module {currentModule}:<br/>{currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'} Questions</span>
+                  <span className="hidden md:inline">Section {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? '2' : '1'}, Module {currentModule}: {currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'} Questions</span>
                 </h3>
                 <div className="flex items-center gap-4 md:gap-5 text-xs md:text-sm">
                   <span className="flex items-center gap-1.5">
@@ -750,14 +755,14 @@ export default function App() {
 
               {/* Question grid - responsive columns */}
               <div className="grid grid-cols-6 sm:grid-cols-9 md:grid-cols-12 gap-2 md:gap-3">
-                {Array.from({ length: 27 }, (_, i) => {
+                {currentModuleQuestions.map((q, i) => {
                   const questionNum = i + 1;
-                  const isAnswered = selectedAnswers[questionNum];
-                  const isMarked = markedForReview[questionNum];
+                  const isAnswered = selectedAnswers[q.id];
+                  const isMarked = markedForReview[q.id];
                   
                   return (
                     <button
-                      key={questionNum}
+                      key={q.id}
                       onClick={() => {
                         setGameState('exam');
                         handleQuestionSelect(questionNum);
@@ -1132,7 +1137,7 @@ export default function App() {
     <>
       <div className="h-screen flex flex-col bg-gray-50">
         <ExamHeader
-          sectionTitle={`Section 1, Module ${currentModule}: ${currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'}`}
+          sectionTitle={`Section ${currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? '2' : '1'}, Module ${currentModule}: ${currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading and Writing'}`}
           timeRemaining={formatTime(timeRemaining)}
           isHidden={isHidden}
           onToggleHide={handleToggleHide}
@@ -1351,6 +1356,7 @@ export default function App() {
           <QuestionOverview
             currentQuestion={currentQuestionIndex + 1}
             totalQuestions={currentModuleTotalQuestions}
+            moduleQuestions={currentModuleQuestions}
             selectedAnswers={selectedAnswers}
             markedForReview={markedForReview}
             onQuestionSelect={handleQuestionSelect}

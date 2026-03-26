@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, Globe, Search, BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface ScoreDetailModalProps {
@@ -19,8 +19,11 @@ export function ScoreDetailModal({
 }: ScoreDetailModalProps) {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showScore, setShowScore] = useState(false);
+  const [reviewingQuestion, setReviewingQuestion] = useState<any | null>(null);
+  const [activeDetailTab, setActiveDetailTab] = useState<'translation' | 'analysis' | 'vocabulary' | null>(null);
 
   if (!isOpen) return null;
+  if (!questions || !Array.isArray(questions)) return null;
 
   const correctAnswers = questions.reduce((count, question) => {
     const userAnswer = selectedAnswers[question.id]?.toLowerCase();
@@ -28,7 +31,7 @@ export function ScoreDetailModal({
     return userAnswer === correctAnswer ? count + 1 : count;
   }, 0);
 
-  const totalQuestions = questions.length;
+  const totalQuestions = questions?.length || 0;
   const incorrectAnswers = totalQuestions - correctAnswers;
 
   // Analysis by question type
@@ -57,13 +60,254 @@ export function ScoreDetailModal({
     }
   };
 
+  const handleReviewClick = (question: any) => {
+    setReviewingQuestion(question);
+    setActiveDetailTab(null); // Reset tabs when switching questions
+  };
+
+  const handlePrevQuestion = () => {
+    if (!reviewingQuestion) return;
+    const currentIndex = questions.findIndex(q => q.id === reviewingQuestion.id);
+    if (currentIndex > 0) {
+      setReviewingQuestion(questions[currentIndex - 1]);
+      setActiveDetailTab(null);
+    }
+  };
+
+  const handleNextQuestion = () => {
+    if (!reviewingQuestion) return;
+    const currentIndex = questions.findIndex(q => q.id === reviewingQuestion.id);
+    if (currentIndex < questions.length - 1) {
+      setReviewingQuestion(questions[currentIndex + 1]);
+      setActiveDetailTab(null);
+    }
+  };
+
+  if (reviewingQuestion) {
+    const userAnswer = selectedAnswers[reviewingQuestion.id] ? selectedAnswers[reviewingQuestion.id].toUpperCase() : null;
+    const correctAnswer = reviewingQuestion.correctAnswer?.toUpperCase() || 'A';
+    const isCorrect = userAnswer === correctAnswer;
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-xl overflow-hidden bg-white flex flex-col">
+          {/* Review Header */}
+          <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setReviewingQuestion(null)}
+                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="text-sm font-medium font-sans">돌아가기</span>
+              </button>
+              <div className="h-4 w-px bg-gray-300" />
+              <div>
+                <h2 className="text-base text-gray-900 font-medium">
+                  Reading and Writing: Question {reviewingQuestion.id}
+                </h2>
+              </div>
+            </div>
+            
+            {/* Question Navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrevQuestion}
+                disabled={questions.findIndex(q => q.id === reviewingQuestion.id) === 0}
+                className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
+                title="이전 문제"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <span className="text-sm font-medium text-gray-500 tabular-nums">
+                {questions.findIndex(q => q.id === reviewingQuestion.id) + 1} / {questions.length}
+              </span>
+              <button
+                onClick={handleNextQuestion}
+                disabled={questions.findIndex(q => q.id === reviewingQuestion.id) === questions.length - 1}
+                className="p-2 rounded-full hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-600"
+                title="다음 문제"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Review Content */}
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left: Passage */}
+            <div className="w-[60%] border-r border-gray-200 overflow-y-auto p-8 bg-white">
+              <div className="prose prose-sm max-w-none">
+                <p className="text-gray-800 leading-relaxed whitespace-pre-line text-[17px] font-serif" style={{ fontFamily: 'Times New Roman, serif' }}>
+                  {reviewingQuestion.passage}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Question and Explanation */}
+            <div className="w-[40%] overflow-y-auto p-8 bg-gray-50">
+              <div className="mb-6">
+                <div className="flex items-start gap-3 mb-6">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                    {reviewingQuestion.id}
+                  </div>
+                  <p className="text-gray-900 text-[16px] leading-relaxed font-medium">
+                    {reviewingQuestion.question}
+                  </p>
+                </div>
+
+                {/* Choices */}
+                <div className="space-y-3 mb-8">
+                  {reviewingQuestion.choices?.map((choice: any) => {
+                    const choiceUpper = choice.id.toUpperCase();
+                    const isUserChoice = userAnswer === choiceUpper;
+                    const isCorrectChoice = correctAnswer === choiceUpper;
+
+                    return (
+                      <div
+                        key={choice.id}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          isCorrectChoice
+                            ? "border-green-500 bg-green-50"
+                            : isUserChoice
+                            ? "border-red-500 bg-red-50"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="text-sm text-gray-700 font-bold">
+                            {choiceUpper}.
+                          </span>
+                          <span className="text-sm text-gray-900 flex-1">
+                            {choice.text}
+                          </span>
+                          {isCorrectChoice && (
+                            <span className="text-xs text-green-700 font-bold">
+                              ✓ Correct
+                            </span>
+                          )}
+                          {isUserChoice && !isCorrectChoice && (
+                            <span className="text-xs text-red-700 font-bold">
+                              ✗ Your Answer
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Result Summary */}
+                <div className={`p-4 rounded-lg mb-8 ${isCorrect ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-red-100 border border-red-200 text-red-800'}`}>
+                  <p className="text-sm font-bold">
+                    {isCorrect ? '정답입니다!' : `오답입니다. 정답은 (${correctAnswer})입니다.`}
+                  </p>
+                </div>
+
+                {/* Tabs for Explanation */}
+                <div className="border-t border-gray-200 pt-6">
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setActiveDetailTab(activeDetailTab === 'translation' ? null : 'translation')}
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
+                        activeDetailTab === 'translation'
+                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
+                      }`}
+                    >
+                      <Globe className="h-4 w-4" />
+                      해석
+                    </button>
+                    <button
+                      onClick={() => setActiveDetailTab(activeDetailTab === 'analysis' ? null : 'analysis')}
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
+                        activeDetailTab === 'analysis'
+                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
+                      }`}
+                    >
+                      <Search className="h-4 w-4" />
+                      해설
+                    </button>
+                    <button
+                      onClick={() => setActiveDetailTab(activeDetailTab === 'vocabulary' ? null : 'vocabulary')}
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
+                        activeDetailTab === 'vocabulary'
+                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
+                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
+                      }`}
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      단어
+                    </button>
+                  </div>
+
+                  {activeDetailTab && (
+                    <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
+                      {activeDetailTab === 'translation' && (
+                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
+                          <p className="font-bold mb-2 text-[#00bcd4]">지문 해석</p>
+                          <p className="whitespace-pre-line">
+                            {reviewingQuestion.id === 3 ? 
+                              `"응집 경제(agglomeration economies)"라는 용어는 특정 지역에 집중된(concentrate) 동일 산업군 내의 기업들이 누리는 경제적 이익을 의미합니다. 예를 들어, 영국의 컴퓨터 제조업체들이 서로 가깝게 위치하면 기업 간 정보 공유 가능성이 높아져 더 큰 기술 혁신을 촉진할 수 있고, 이를 더 쉽게 활용할 수 있습니다.` :
+                              reviewingQuestion.translation || "이 지문에 대한 한국어 해석이 준비 중입니다. 원문의 문맥과 구조를 분석하여 정확한 해석을 제공해 드립니다."}
+                          </p>
+                        </div>
+                      )}
+                      {activeDetailTab === 'analysis' && (
+                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
+                          <p className="font-bold mb-2 text-[#00bcd4]">정답 해설</p>
+                          <p className="mb-3">
+                            정답은 <strong>({correctAnswer})</strong>입니다.
+                          </p>
+                          <p>
+                            {reviewingQuestion.id === 3 ? 
+                              `문맥상 기업들이 특정 지역에 '모여 있다'는 의미가 필요합니다. 'concentrate'는 '집중시키다, 모으다'는 의미로, 뒤에 오는 'locate near one another'(서로 가깝게 위치하다)라는 문구와 가장 잘 어울립니다. 다른 선택지인 recur(재발하다), dissipate(소멸시키다), terminate(종료하다)는 문맥상 적절하지 않습니다.` :
+                              reviewingQuestion.explanation || "이 문제의 정답에 대한 논리적 근거와 오답 분석이 준비 중입니다. 문맥상의 단서와 논리적 흐름을 바탕으로 상세한 설명을 제공합니다."}
+                          </p>
+                        </div>
+                      )}
+                      {activeDetailTab === 'vocabulary' && (
+                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
+                          <p className="font-bold mb-2 text-[#00bcd4]">주요 어휘</p>
+                          <ul className="space-y-3">
+                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">agglomeration:</span> <span>응집, 덩어리 - 기업이나 시설이 한 곳에 모이는 현상을 설명할 때 자주 쓰이는 SAT 빈출 어휘입니다.</span></li>
+                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">foster:</span> <span>육성하다, 촉진하다 - 아이디어나 환경을 조성하고 발전시키는 긍정적인 맥락에서 사용됩니다.</span></li>
+                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">innovation:</span> <span>혁신 - 새로운 기술이나 아이디어의 도입을 의미하며, 과학/기술 관련 지문에서 핵심어가 됩니다.</span></li>
+                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">autonomous:</span> <span>자율적인, 독립적인 - 정치적 독립이나 스스로 제어하는 기계 등을 설명할 때 사용됩니다.</span></li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div className="w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-xl overflow-hidden bg-gray-50 flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="border-b border-gray-200 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
-            <h2 className="text-base md:text-xl text-gray-900 whitespace-nowrap">SAT Scores</h2>
+            {(showScore || showAnalysis) && (
+              <button
+                onClick={() => {
+                  setShowScore(false);
+                  setShowAnalysis(false);
+                }}
+                className="flex items-center gap-1.5 md:gap-2 text-[#00bcd4] hover:text-cyan-600 transition-colors mr-1 md:mr-2 shrink-0"
+              >
+                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="text-xs md:text-sm font-medium font-sans">돌아가기</span>
+              </button>
+            )}
+            <h2 className="text-sm md:text-xl text-gray-900 whitespace-nowrap">SAT Scores</h2>
             <Button
               onClick={() => {
                 setShowScore(!showScore);
@@ -71,7 +315,8 @@ export function ScoreDetailModal({
               }}
               variant="outline"
               size="sm"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 text-xs md:text-sm px-2 md:px-4"
+              className={`border-[#00bcd4] text-[#00bcd4] hover:bg-cyan-50 text-xs md:text-sm px-2 md:px-4 ${showScore ? 'bg-cyan-50 font-bold' : ''}`}
+              style={{ borderColor: '#00bcd4', color: showScore ? 'white' : '#00bcd4', backgroundColor: showScore ? '#00bcd4' : 'transparent' }}
             >
               Score
             </Button>
@@ -82,7 +327,8 @@ export function ScoreDetailModal({
               }}
               variant="outline"
               size="sm"
-              className="border-blue-600 text-blue-600 hover:bg-blue-50 text-xs md:text-sm px-2 md:px-4"
+              className={`border-[#00bcd4] text-[#00bcd4] hover:bg-cyan-50 text-xs md:text-sm px-2 md:px-4 ${showAnalysis ? 'bg-cyan-50 font-bold' : ''}`}
+              style={{ borderColor: '#00bcd4', color: showAnalysis ? 'white' : '#00bcd4', backgroundColor: showAnalysis ? '#00bcd4' : 'transparent' }}
             >
               분석
             </Button>
@@ -94,6 +340,7 @@ export function ScoreDetailModal({
             <X className="h-5 w-5" />
           </button>
         </div>
+
 
         {/* Blue Info Banner - Only show when Score tab is active */}
         {showScore && (
@@ -458,86 +705,80 @@ export function ScoreDetailModal({
                       <span className="text-center">Correct</span>
                       <span className="text-center">Yours</span>
                     </div>
-                    {questions.map((question) => {
-                      const correctAnswer = question.correctAnswer?.toUpperCase() || 'A';
-                      const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
-                      
-                      return (
-                        <button
-                          key={question.id}
-                          onClick={() => {
-                            onReviewQuestion(question.id);
-                            onClose();
-                          }}
-                          className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 grid grid-cols-4 items-center text-sm hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                        >
-                          <span className="text-gray-900 font-medium">{question.id}</span>
-                          <span className="text-gray-500 text-xs">R&W</span>
-                          <span className="text-center text-gray-900">{correctAnswer}</span>
-                          <span className="text-center">
-                            {userAnswer ? (
-                              <span className={`font-semibold ${userAnswer === correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
-                                {userAnswer}
-                              </span>
-                            ) : (
-                              <span className="text-red-500 font-medium text-xs">Omitted</span>
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Desktop: full table */}
-                  <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
-                    <table className="w-full">
-                      <thead className="bg-gray-700 text-white">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-sm">Question</th>
-                          <th className="px-4 py-3 text-left text-sm">Section</th>
-                          <th className="px-4 py-3 text-left text-sm">Correct Answer</th>
-                          <th className="px-4 py-3 text-left text-sm">Your Answer</th>
-                          <th className="px-4 py-3 text-center text-sm">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {questions.map((question) => {
+                        {questions?.map((question) => {
                           const correctAnswer = question.correctAnswer?.toUpperCase() || 'A';
                           const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
                           
                           return (
-                            <tr key={question.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 text-sm text-gray-900">{question.id}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">Reading and Writing</td>
-                              <td className="px-4 py-3 text-sm text-gray-900">{correctAnswer}</td>
-                              <td className="px-4 py-3 text-sm">
+                            <button
+                              key={question.id}
+                              onClick={() => handleReviewClick(question)}
+                              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 grid grid-cols-4 items-center text-sm hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                            >
+                              <span className="text-gray-900 font-medium">{question.id}</span>
+                              <span className="text-gray-500 text-xs">R&W</span>
+                              <span className="text-center text-gray-900">{correctAnswer}</span>
+                              <span className="text-center">
                                 {userAnswer ? (
-                                  <span className={userAnswer === correctAnswer ? 'text-green-600' : 'text-red-600'}>
+                                  <span className={`font-semibold ${userAnswer === correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
                                     {userAnswer}
                                   </span>
                                 ) : (
-                                  <span className="text-red-600">Omitted</span>
+                                  <span className="text-red-500 font-medium text-xs">Omitted</span>
                                 )}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <Button
-                                  onClick={() => {
-                                    onReviewQuestion(question.id);
-                                    onClose();
-                                  }}
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                                >
-                                  Review
-                                </Button>
-                              </td>
-                            </tr>
+                              </span>
+                            </button>
                           );
                         })}
-                      </tbody>
-                    </table>
-                  </div>
+                      </div>
+
+                      {/* Desktop: full table */}
+                      <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
+                        <table className="w-full">
+                          <thead className="bg-gray-700 text-white">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-sm">Question</th>
+                              <th className="px-4 py-3 text-left text-sm">Section</th>
+                              <th className="px-4 py-3 text-left text-sm">Correct Answer</th>
+                              <th className="px-4 py-3 text-left text-sm">Your Answer</th>
+                              <th className="px-4 py-3 text-center text-sm">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {questions?.map((question) => {
+                              const correctAnswer = question.correctAnswer?.toUpperCase() || 'A';
+                              const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
+                              
+                              return (
+                                <tr key={question.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 text-sm text-gray-900">{question.id}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">Reading and Writing</td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">{correctAnswer}</td>
+                                  <td className="px-4 py-3 text-sm">
+                                    {userAnswer ? (
+                                      <span className={userAnswer === correctAnswer ? 'text-green-600' : 'text-red-600'}>
+                                        {userAnswer}
+                                      </span>
+                                    ) : (
+                                      <span className="text-red-600">Omitted</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-center">
+                                    <Button
+                                      onClick={() => handleReviewClick(question)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                                    >
+                                      Review
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                 </div>
               )}
             </div>
