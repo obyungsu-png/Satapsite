@@ -25,6 +25,8 @@ import { BulkUpload } from './BulkUpload';
 
 interface DashboardProps {
   onStartTest: (testInfo?: any) => void;
+  onStartReview: (testInfo?: any) => void;
+  onViewHistoryDetail?: (record: any) => void;
   learnedWords?: any[];
   practiceRecords?: any[];
   currentUser?: any;
@@ -133,11 +135,11 @@ const saveTestsBoth = async (tests: any[]) => {
 };
 
 // TestCard Component with hover effect for Practice
-function TestCard({ test, index, onStartTest, onViewWords, isUnlocked, onNavigateToPricing }: { 
+function TestCard({ test, index, onStartTest, onStartReview, isUnlocked, onNavigateToPricing }: { 
   test: any; 
   index: number; 
   onStartTest: () => void;
-  onViewWords: () => void;
+  onStartReview: () => void;
   isUnlocked?: boolean;
   onNavigateToPricing?: () => void;
 }) {
@@ -209,7 +211,8 @@ function TestCard({ test, index, onStartTest, onViewWords, isUnlocked, onNavigat
               className="w-full py-2 rounded transition-colors text-xs"
               style={{ 
                 backgroundColor: '#3D5AA1',
-                color: '#FFFFFF'
+                color: '#FFFFFF',
+                fontWeight: 700
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#2F4A85';
@@ -222,15 +225,22 @@ function TestCard({ test, index, onStartTest, onViewWords, isUnlocked, onNavigat
               시작하기
             </Button>
             <Button
-              onClick={onViewWords}
-              variant="outline"
+              onClick={onStartReview}
+              className="w-full py-2 rounded transition-colors text-xs"
+              style={{ 
+                backgroundColor: '#3D5AA1',
+                color: '#FFFFFF',
+                fontWeight: 700
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F4A85';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#3D5AA1';
+              }}
               size="sm"
-              className="w-full flex items-center gap-1.5 justify-center text-xs py-2"
             >
-              <div className="w-3.5 h-3.5 bg-gray-400 rounded flex items-center justify-center">
-                <BookOpen className="w-2 h-2 text-white" />
-              </div>
-              문제 단어 보기
+              시작하기(복습용)
             </Button>
           </div>
         )}
@@ -260,86 +270,97 @@ function TestCard({ test, index, onStartTest, onViewWords, isUnlocked, onNavigat
 }
 
 // CourseCard Component with hover effect for Lectures
-// TestCard Component with hover effect for Practice
-function TestCard({ test, index, onStartTest, onViewWords, isUnlocked, onNavigateToPricing }: { 
-  test: any; 
+function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateToPricing }: { 
+  course: any; 
   index: number; 
-  onStartTest: () => void;
-  onViewWords: () => void;
+  category: string;
+  onAction: () => void;
   isUnlocked?: boolean;
   onNavigateToPricing?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const isLocked = false; 
+  const Icon = category === 'basic' ? BookOpen : category === 'pastExams' ? BookOpen : Target;
+  const isLocked = false; // 모든 잠금 해제
   
   return (
-    <div
-      className={`bg-white rounded-3xl p-6 shadow-sm border transition-all duration-300 transform ${
-        isLocked ? 'opacity-70 bg-gray-50 border-gray-100 cursor-not-allowed' :
-        isHovered ? 'shadow-lg border-[#425486] -translate-y-1 cursor-pointer' : 'border-gray-100'
-      } relative`}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      className="rounded-lg transition-all duration-300 relative"
+      style={{
+        backgroundColor: isLocked ? '#f5f5f5' : (isHovered ? '#FFE0B2' : '#F5F5F5'),
+        boxShadow: isHovered ? '0 3px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.06)',
+        opacity: isLocked ? 0.6 : 1
+      }}
+      whileHover={{ scale: isLocked ? 1 : 1.015, y: isLocked ? 0 : -2 }}
     >
-      <div className="flex items-start gap-4 mb-6">
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-          isLocked ? 'bg-gray-200 text-gray-400' : 'bg-[#EEF2F6] text-[#425486]'
-        }`}>
-          {isLocked ? <Lock className="w-5 h-5" /> : <BookOpen className="w-6 h-6" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className={`font-bold mb-1 leading-tight line-clamp-2 ${isLocked ? 'text-gray-500' : 'text-[#2C3E50]'}`}>
-            {test.title}
-          </h3>
-          <p className={`text-sm font-medium ${isLocked ? 'text-gray-400' : 'text-[#425486]'}`}>
-            {test.type}
-          </p>
-        </div>
+      <div className="p-4 text-center">
+        <motion.div 
+          className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5"
+          style={{ backgroundColor: isLocked ? '#d1d5db' : 'white' }}
+        >
+          {isLocked ? (
+            <Lock className="w-5 h-5 text-gray-500" />
+          ) : (
+            <Icon className="w-5 h-5" style={{ color: '#FF9800' }} />
+          )}
+        </motion.div>
+        
+        <h3 className="mb-1 text-sm" style={{ color: isLocked ? '#6b7280' : '#000', fontWeight: 700 }}>
+          {course.title || course.testTitle}
+        </h3>
+        
+        <p className="text-[10px] mb-3" style={{ color: isLocked ? '#9ca3af' : '#666', fontWeight: 600 }}>
+          {course.category || course.type}
+        </p>
+
+        {!isLocked && (
+          <Button
+            onClick={onAction}
+            className="w-full py-1.5 rounded transition-colors text-xs"
+            style={{ 
+              backgroundColor: '#3D5AA1',
+              color: '#FFFFFF'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#2F4A85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#3D5AA1';
+            }}
+            size="sm"
+          >
+            {category === 'pastExams' ? '시작하기' : '동영상 강의'}
+          </Button>
+        )}
       </div>
-
-      {test.isUploaded && !isLocked && (
-        <div className="mb-4">
-          <span className="text-xs px-2.5 py-1 rounded-md bg-[#EEF2F6] text-[#425486] font-medium inline-flex items-center">
-            <Upload className="w-3 h-3 mr-1" /> 업로드됨
-          </span>
-        </div>
-      )}
-
-      {!isLocked && (
-        <div className="space-y-3 mt-auto">
-          <button
-            onClick={onStartTest}
-            className="w-full bg-[#425486] text-white rounded-xl py-3 font-semibold hover:bg-[#2C3E50] transition-colors shadow-sm"
-          >
-            시작하기
-          </button>
-          <button
-            onClick={onViewWords}
-            className="w-full bg-white border border-gray-200 text-gray-600 rounded-xl py-3 font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
-          >
-            <BookmarkPlus className="w-4 h-4" /> 문제 단어 보기
-          </button>
-        </div>
-      )}
-
+      
       {/* Unlock Button Overlay */}
       {isLocked && (
-        <div
+        <motion.button
           onClick={(e) => {
             e.stopPropagation();
-            if (onNavigateToPricing) onNavigateToPricing();
+            if (onNavigateToPricing) {
+              onNavigateToPricing();
+            }
           }}
-          className="absolute inset-0 flex items-center justify-center bg-white/60 rounded-3xl opacity-0 hover:opacity-100 transition-opacity"
+          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-[#D4EDFF] text-[#3D5AA1] font-bold shadow-md cursor-pointer">
-            <Lock size={16} />
-            Unlock Now
+          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
+            <Lock size={14} className="md:w-4 md:h-4" />
+            <span className="whitespace-nowrap">Unlock Now</span>
           </div>
-        </div>
+        </motion.button>
       )}
-    </div>
+    </motion.div>
   );
 }
+
 // TrainingCard Component with hover effect for Training
 function TrainingCard({ type, index, uploadedCount, onStartTraining }: { 
   type: any; 
@@ -510,7 +531,7 @@ function PracticeRecordCard({ record, index, onViewDetail, onRetry }: {
       <div className="p-4 flex items-start gap-4">
         {/* Record Icon */}
         <motion.div 
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-blue-700"
+          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-blue-700 text-xs"
           style={{ 
             backgroundColor: isHovered ? 'white' : '#BBDEFB',
             fontWeight: 700
@@ -519,7 +540,7 @@ function PracticeRecordCard({ record, index, onViewDetail, onRetry }: {
             backgroundColor: isHovered ? 'white' : '#BBDEFB'
           }}
         >
-          {record.id}
+          {index + 1}
         </motion.div>
 
         {/* Record Details */}
@@ -527,10 +548,10 @@ function PracticeRecordCard({ record, index, onViewDetail, onRetry }: {
           <h3 className="font-medium text-gray-800 mb-1">{record.title}</h3>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
             <span>{record.date}</span>
-            <span>문제 수: {record.questionsCount}</span>
+            <span>문제 수: {record.totalQuestions || record.questionsCount}</span>
             <span className="text-green-600 font-medium">정답률: {record.accuracy}%</span>
           </div>
-          <p className="text-xs text-gray-500">소요 시간: {record.timeUsed}</p>
+          <p className="text-xs text-gray-500">점수: {record.score}점 • 시간: {record.time || record.timeUsed}</p>
         </div>
 
         {/* Action Buttons */}
@@ -590,7 +611,7 @@ const extractWordsFromTests = () => {
   return keyWords;
 };
 
-export function Dashboard({ onStartTest, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
+export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('Home');
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
@@ -2525,90 +2546,174 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     };
 
     return (
-      return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10">
-        
-        {/* 상단 배너 (광고) */}
-        <div className="mb-6">
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero Banner */}
+        <div className="relative overflow-hidden" style={{ backgroundColor: '#1e3a8a' }}>
+          {/* Decorative circles */}
+          <div className="absolute top-6 left-12 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
+          <div className="absolute bottom-6 right-12 w-32 h-32 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
+          <div className="absolute top-16 right-1/4 w-20 h-20 rounded-full opacity-15" style={{ backgroundColor: 'white' }}></div>
+          <div className="absolute bottom-10 left-1/3 w-16 h-16 rounded-full opacity-10" style={{ backgroundColor: 'white' }}></div>
+          
+          <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
+            <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">SAT Preparation</h1>
+            <p className="text-sm md:text-base text-blue-100 text-center">Your Path to Success</p>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-6">
+
+          {/* Advertisement Banner */}
           <AdBannerDisplay advertisements={advertisements} location="practice" />
-        </div>
 
-        {/* 1. 제목 영역 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#2C3E50] mb-2">스마트 연습</h1>
-          <p className="text-gray-500">AI가 분석한 개인 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
-        </div>
-
-        {/* 2. 메인 탭 영역 */}
-        <div className="mb-10">
-          <div className="flex flex-wrap gap-2 bg-white p-2 rounded-2xl shadow-sm inline-flex border border-gray-100">
-            {['기출문제', '공식문제', '단어관리', 'SAT VOCA'].map((tab) => (
+          {/* Tab Selection */}
+          <div className="mb-6">
+            {/* Desktop Tabs */}
+            <div className="hidden md:flex gap-2 border-b border-gray-200">
               <button
-                key={tab}
-                onClick={() => setSmartPracticeTab(tab)}
-                className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-                  smartPracticeTab === tab
-                    ? 'bg-[#425486] text-white shadow-md'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                onClick={() => setSmartPracticeTab('기출문제')} 
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '기출문제'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                 }`}
+                style={smartPracticeTab === '기출문제' ? { backgroundColor: '#3D5AA1' } : {}}
               >
-                {tab}
+                기출문제
               </button>
-            ))}
-          </div>
-        </div>
+              <button
+                onClick={() => setSmartPracticeTab('��식문제')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '공식문제'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === '공식문제' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                공식문제
+              </button>
+              <button
+                onClick={() => setSmartPracticeTab('단어관리')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '단어관리'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === '단어관리' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                단어관리
+              </button>
+              <button
+                onClick={() => setSmartPracticeTab('SAT VOCA')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === 'SAT VOCA'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === 'SAT VOCA' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                SAT VOCA
+              </button>
+            </div>
 
-        {/* 3. 필터 영역 (단어관리가 아닐 때만 표시) */}
-        {smartPracticeTab !== 'SAT VOCA' && smartPracticeTab !== '단어관리' && (
-          <div className="bg-white rounded-3xl p-8 mb-10 shadow-sm border border-gray-100">
-            {/* 과목 필터 */}
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-4 bg-[#425486] rounded-full"></div>
-                <span className="text-sm font-bold text-gray-700">과목</span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {['전체', 'Reading', 'Math'].map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setSmartPracticeSubject(item)}
-                    className={`px-5 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
-                      smartPracticeSubject === item
-                        ? 'bg-[#425486] text-white border-[#425486] shadow-sm'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#425486] hover:text-[#425486]'
-                    }`}
-                  >
-                    {item === 'Reading' ? '독해문법' : item === 'Math' ? '수학' : item}
-                  </button>
-                ))}
+            {/* Mobile Tabs - Two Rows Grid */}
+            <div className="md:hidden -mx-4 px-4 pb-1">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setSmartPracticeTab('기출문제')} 
+                  className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
+                    smartPracticeTab === '기출문제'
+                      ? 'text-white'
+                      : 'text-gray-700 bg-white border border-gray-200 hover:border-orange-300'
+                  }`}
+                  style={smartPracticeTab === '기출문제' ? { backgroundColor: '#FF6B35' } : {}}
+                >
+                  기출문제
+                </button>
+                <button
+                  onClick={() => setSmartPracticeTab('공식문제')}
+                  className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
+                    smartPracticeTab === '공식문제'
+                      ? 'text-white'
+                      : 'text-gray-700 bg-white border border-gray-200 hover:border-orange-300'
+                  }`}
+                  style={smartPracticeTab === '공식문제' ? { backgroundColor: '#FF6B35' } : {}}
+                >
+                  공식문제
+                </button>
+                <button
+                  onClick={() => setSmartPracticeTab('단어관리')}
+                  className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
+                    smartPracticeTab === '단어관리'
+                      ? 'text-white'
+                      : 'text-gray-700 bg-white border border-gray-200 hover:border-orange-300'
+                  }`}
+                  style={smartPracticeTab === '단어관리' ? { backgroundColor: '#FF6B35' } : {}}
+                >
+                  단어관리
+                </button>
+                <button
+                  onClick={() => setSmartPracticeTab('SAT VOCA')}
+                  className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all shadow-sm ${
+                    smartPracticeTab === 'SAT VOCA'
+                      ? 'text-white'
+                      : 'text-gray-700 bg-white border border-gray-200 hover:border-orange-300'
+                  }`}
+                  style={smartPracticeTab === 'SAT VOCA' ? { backgroundColor: '#FF6B35' } : {}}
+                >
+                  SAT VOCA
+                </button>
               </div>
             </div>
 
-            {/* 정렬 필터 */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-4 bg-[#425486] rounded-full"></div>
-                <span className="text-sm font-bold text-gray-700">정렬</span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {['시간순 정렬', '모의고사 연습 적합', '보충 연습 적합'].map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => setPracticeOrder(item)}
-                    className={`px-5 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
-                      practiceOrder === item
-                        ? 'bg-[#425486] text-white border-[#425486] shadow-sm'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-[#425486] hover:text-[#425486]'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
-        )}
+
+          {/* Filters for Tests */}
+          {smartPracticeTab !== 'SAT VOCA' && smartPracticeTab !== '단어관리' && (
+            <>
+              {/* Subject Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">과목:</h3>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSmartPracticeSubject('전체')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === '전체'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === '전체' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    전체
+                  </button>
+                  <button
+                    onClick={() => setSmartPracticeSubject('Reading')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === 'Reading'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === 'Reading' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    독해문법
+                  </button>
+                  <button
+                    onClick={() => setSmartPracticeSubject('Math')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === 'Math'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === 'Math' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    수학
+                  </button>
+                </div>
+              </div>
+
+
+            </>
+          )}
 
           {/* Word Management Filters */}
           {smartPracticeTab === '단어관리' && !selectedWordList && !showWordBrowseView && (
@@ -3238,13 +3343,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             )
           ) : (
             // Practice Tests Grid
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
               {currentTests.map((test, index) => (
                 <TestCard
                   key={`${test.id}-${test.title}-${index}`}
                   test={test}
                   index={index}
                   onStartTest={() => onStartTest(test)}
+                  onStartReview={() => onStartReview(test)}
                   onViewWords={() => {
                     // Show words from this test
                     const testWords = allWordsFromTests.filter(w => w.testId === test.id);
@@ -4459,8 +4565,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       key={record.id}
                       record={record}
                       index={index}
-                      onViewDetail={() => {}}
-                      onRetry={onStartTest}
+                      onViewDetail={() => {
+                        if (onViewHistoryDetail) onViewHistoryDetail(record);
+                      }}
+                      onRetry={() => onStartTest(record)} // Reuse record info to retry
                     />
                   ))}
                 </div>

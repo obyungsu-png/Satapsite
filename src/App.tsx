@@ -160,6 +160,7 @@ const generateQuestions = () => {
       id: 3,
       passage: `The term "agglomeration economies" refers to the economic benefits enjoyed by firms in the same industry that _______ in a region. For example, in the computer manufacturing industry in the United Kingdom, firms that locate near one another can more readily take advantage of increased potential for information sharing among firms that fosters greater technological innovation.`,
       question: "Which choice completes the text with the most logical and precise word or phrase?",
+      correctAnswer: "c",
       choices: [
         { id: "a", text: "recur" },
         { id: "b", text: "dissipate" },
@@ -171,6 +172,7 @@ const generateQuestions = () => {
       id: 4,
       passage: `In the decades after Mexico won its independence from Spain, literature became a medium through which the new nation _______ its autonomous identity, with authors like Manuel Payno and Justo Sierra Méndez helping to shape what would become a distinctly Mexican literary tradition.`,
       question: "Which choice completes the text with the most logical and precise word or phrase?",
+      correctAnswer: "b",
       choices: [
         { id: "a", text: "overcame" },
         { id: "b", text: "realized" },
@@ -182,6 +184,7 @@ const generateQuestions = () => {
       id: 5,
       passage: `Researchers examining data from the New Horizons space probe, which passed Pluto in 2015, were surprised to find 23-mile-long crater on the planet. Although Pluto is mostly covered in frozen methane and nitrogen, the surface near the crater seemed to show the presence of water ice and ammonia—both of which are associated with eruptions from ice volcanoes. Additionally, the shape and appearance of the crater did not suggest that it was formed by impact. Based on this evidence, scientist Dale Cruikshank and his team hypothesized that the crater was likely once a massive ice volcano.`,
       question: "Which choice best describes the function of the underlined sentence in the text as a whole?",
+      correctAnswer: "b",
       choices: [
         { id: "a", text: "It introduces previous findings that suggested a research method for Cruikshank and his team." },
         { id: "b", text: "It implies that the research team eliminated an alternative explanation for the crater based on available evidence." },
@@ -200,6 +203,7 @@ const generateQuestions = () => {
         id: i,
         passage: `Sample passage for question ${i}. This is a placeholder passage that would contain the reading material for this question for Module ${i > 27 ? 2 : 1}.`,
         question: `Question ${i}: Which choice completes the text with the most logical and precise word or phrase?`,
+        correctAnswer: "a", // default for placeholders
         choices: [
           { id: "a", text: "Option A" },
           { id: "b", text: "Option B" },
@@ -278,9 +282,11 @@ export default function App() {
   const [currentModule, setCurrentModule] = useState(1); // Current module (1 or 2)
   const [gameState, setGameState] = useState<'dashboard' | 'preparing' | 'practice-info' | 'time-mode' | 'intro' | 'exam' | 'check-work' | 'module-over' | 'finished' | 'score-report' | 'review'>('dashboard'); // Game state
   const [reviewMode, setReviewMode] = useState(false); // Review mode state
+  const [isPracticeReview, setIsPracticeReview] = useState(false); // New state for "시작하기(복습용)"
   const [showDirections, setShowDirections] = useState(false); // Directions modal state
   const [panelWidth, setPanelWidth] = useState(50); // Panel width percentage
   const [expandDirection, setExpandDirection] = useState<'left' | 'right' | null>(null); // Expansion direction
+  const [historyRecordToReview, setHistoryRecordToReview] = useState<any | null>(null);
   const [learnedWords, setLearnedWords] = useState<any[]>(loadLearnedWords()); // User's learned vocabulary
   const [processedQuestions, setProcessedQuestions] = useState<Set<number>>(new Set()); // Track which questions had words extracted
   const [practiceRecords, setPracticeRecords] = useState<any[]>(loadPracticeRecords()); // User's practice records
@@ -364,8 +370,18 @@ export default function App() {
         // All modules completed - go to finished screen
         setGameState('finished');
         
-        // Save practice record when test is completed
-        if (currentTestInfo) {
+        // Save practice record when test is completed (but NOT in review mode)
+        if (currentTestInfo && !isPracticeReview) {
+          // Calculate correct answers for the record
+          const correctCount = questions.reduce((count, question) => {
+            const userAnswer = selectedAnswers[question.id]?.toLowerCase();
+            const correctAnswer = (question.correctAnswer || 'a').toLowerCase();
+            return userAnswer === correctAnswer ? count + 1 : count;
+          }, 0);
+          
+          const accuracy = Math.round((correctCount / totalQuestions) * 100);
+          const score = 200 + (correctCount * 10); // Simple mock score calculation
+
           const newRecord = {
             id: Date.now().toString(),
             title: currentTestInfo.title || 'SAT Practice Test',
@@ -373,15 +389,17 @@ export default function App() {
             source: currentTestInfo.source || '기출문제',
             date: new Date().toISOString().split('T')[0],
             time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-            totalQuestions: totalQuestions, // Total questions (Module 1 + Module 2)
+            totalQuestions: totalQuestions,
             answeredQuestions: Object.keys(selectedAnswers).length,
-            correctAnswers: 0, // Will be calculated in score report
-            score: 0, // Will be calculated in score report
+            correctAnswers: correctCount,
+            accuracy: accuracy,
+            score: score,
             difficulty: currentTestInfo.difficulty,
             trainingType: currentTestInfo.trainingType,
             questionCount: currentTestInfo.questionCount,
             answers: selectedAnswers,
             markedForReview: markedForReview,
+            questions: questions, // Store questions to review later
             studentId: currentUser?.id || null,
             studentEmail: currentUser?.email || null,
             studentName: currentUser?.name || currentUser?.username || null
@@ -395,7 +413,7 @@ export default function App() {
     }, 3000);
     
     return () => clearTimeout(timer);
-  }, [gameState, currentModule, currentTestInfo, selectedAnswers, markedForReview, totalQuestions]);
+  }, [gameState, currentModule, currentTestInfo, selectedAnswers, markedForReview, totalQuestions, isPracticeReview]);
 
   // Format time for display
   const formatTime = (seconds: number) => {
@@ -465,7 +483,34 @@ export default function App() {
     setGameState('practice-info'); // Time Mode 선택 후 Practice Info로
   };
 
+  const handleStartReview = (testInfo?: any) => {
+    // Reset test state but for review only
+    setCurrentTestInfo(testInfo);
+    setCurrentModule(1);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setMarkedForReview({});
+    setTimeRemaining(testInfo?.type === 'Math' || testInfo?.title?.includes('수학') ? 35 * 60 : 32 * 60);
+    setIsPracticeReview(true); // Flag for "시작하기(복습용)"
+    setIsTimed(false); // Review mode is usually untimed
+
+    // Check if testInfo has uploaded data
+    if (testInfo?.questions && Array.isArray(testInfo.questions) && testInfo.questions.length > 0) {
+      setQuestions(testInfo.questions);
+    } else if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
+      setQuestions(testInfo.uploadedData);
+    } else if (testInfo?.type === 'Math' || testInfo?.title?.includes('수학')) {
+      setQuestions(mathQuestions);
+    } else {
+      setQuestions(defaultQuestions);
+    }
+
+    setGameState('exam'); // Skip Preparing/Time-Mode screens
+    toast.success('복습 모드를 시작합니다.');
+  };
+
   const handleStartTest = (testInfo?: any) => {
+    setIsPracticeReview(false); // Normal test saves to history
     // Check if there's a saved exam state
     const savedState = localStorage.getItem('savedExamState');
     if (savedState && testInfo?.resumeSaved) {
@@ -499,7 +544,12 @@ export default function App() {
     setTimeRemaining(testInfo?.type === 'Math' || testInfo?.title?.includes('수학') ? 35 * 60 : 32 * 60);
     
     // Check if testInfo has uploaded data
-    if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
+    if (testInfo?.questions && Array.isArray(testInfo.questions) && testInfo.questions.length > 0) {
+      // Use questions from history record
+      console.log('✅ 히스토리 문제 데이터 사용:', testInfo.questions.length, '문항');
+      setQuestions(testInfo.questions);
+      toast.success('이전 시험 문제를 불러왔습니다.');
+    } else if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
       // Use uploaded questions
       console.log('✅ 업로드된 문제 데이터 사용:', testInfo.uploadedData.length, '문항');
       setQuestions(testInfo.uploadedData);
@@ -642,7 +692,7 @@ export default function App() {
     
     try {
       localStorage.setItem('savedExamState', JSON.stringify(savedExamState));
-      toast.success('진행 상황이 저장되었습니다. 나중에 계속할 수 있습니다.');
+      toast.success('진��� 상황이 저장되었습니다. 나중에 계속할 수 있습니다.');
       
       // Return to dashboard
       setGameState('dashboard');
@@ -656,13 +706,31 @@ export default function App() {
 
   // Show dashboard
   if (gameState === 'dashboard') {
-    return <Dashboard 
-      onStartTest={handleStartTest} 
-      learnedWords={learnedWords} 
-      practiceRecords={practiceRecords}
-      currentUser={currentUser}
-      setCurrentUser={setCurrentUser}
-    />;
+    return (
+      <>
+        <Dashboard 
+          onStartTest={handleStartTest} 
+          onStartReview={handleStartReview}
+          learnedWords={learnedWords} 
+          practiceRecords={practiceRecords}
+          currentUser={currentUser}
+          setCurrentUser={setCurrentUser}
+          onViewHistoryDetail={(record) => setHistoryRecordToReview(record)}
+        />
+        {historyRecordToReview && (
+          <ScoreDetailModal
+            isOpen={true}
+            onClose={() => setHistoryRecordToReview(null)}
+            questions={historyRecordToReview.questions || []}
+            selectedAnswers={historyRecordToReview.answers || {}}
+            onReviewQuestion={(questionId) => {
+              // Optionally handle question review from history
+              console.log('Reviewing question:', questionId);
+            }}
+          />
+        )}
+      </>
+    );
   }
 
   // Show preparing screen
@@ -1130,7 +1198,7 @@ export default function App() {
   }
 
   if (!currentQuestion) {
-    return <div>Loading...</div>;
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
   }
 
   return (
@@ -1261,8 +1329,6 @@ export default function App() {
                           onClick={(e) => { e.stopPropagation(); handleExpandLeft(); }}
                           isExpanded={isExpanded && expandDirection === 'left'}
                           className="scale-[0.85]"
-                          // Initial (Expand): Points Top-Right (Base)
-                          // Pressed (Collapse): Points Bottom-Left (Base)
                           flipX={false}
                           flipY={false}
                         />
@@ -1273,8 +1339,6 @@ export default function App() {
                           onClick={(e) => { e.stopPropagation(); handleExpandRight(); }}
                           isExpanded={isExpanded && expandDirection === 'right'}
                           className="scale-[0.85]"
-                          // Initial (Expand): Points Top-Left (FlipX)
-                          // Pressed (Collapse): Points Bottom-Right (FlipX)
                           flipX={true}
                           flipY={false}
                         />
@@ -1315,6 +1379,30 @@ export default function App() {
                   testInfo={currentTestInfo}
                   onShowVideoLecture={handleShowVideoLecture}
                   imageUrl={currentQuestion.imageUrl}
+                  isPracticeReview={isPracticeReview}
+                  correctAnswer={currentQuestion.correctAnswer}
+                  explanation={currentQuestion.explanation}
+                  passage={currentQuestion.passage}
+                  onShowSimilarProblems={() => {
+                    toast.info('동일 유형 유사 문항 3개를 불러옵니다...');
+                    const pool = [...defaultQuestions, ...mathQuestions];
+                    const similar = pool
+                      .filter(q => q.id !== currentQuestion.id && (q.category === currentQuestion.category || q.trainingType === currentQuestion.trainingType))
+                      .slice(0, 3);
+                    
+                    if (similar.length > 0) {
+                      const similarTest = {
+                        title: `${currentQuestionIndex + 1}번 유사 문항 연습`,
+                        type: currentTestInfo?.type || 'Review',
+                        source: '유사문제',
+                        questions: similar,
+                        isReview: true
+                      };
+                      handleStartReview(similarTest);
+                    } else {
+                      toast.error('유사한 유형의 문제를 더 찾을 수 없습니다.');
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -1336,6 +1424,29 @@ export default function App() {
                 imageUrl={currentQuestion.imageUrl}
                 sectionLabel={currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading'}
                 highlightsMode={highlightsMode}
+                isPracticeReview={isPracticeReview}
+                correctAnswer={currentQuestion.correctAnswer}
+                explanation={currentQuestion.explanation}
+                onShowSimilarProblems={() => {
+                  toast.info('동일 유형 유사 문항 3개를 불러옵니다...');
+                  const pool = [...defaultQuestions, ...mathQuestions];
+                  const similar = pool
+                    .filter(q => q.id !== currentQuestion.id && (q.category === currentQuestion.category || q.trainingType === currentQuestion.trainingType))
+                    .slice(0, 3);
+                  
+                  if (similar.length > 0) {
+                    const similarTest = {
+                      title: `${currentQuestionIndex + 1}번 유사 문항 연습`,
+                      type: currentTestInfo?.type || 'Review',
+                      source: '유사문제',
+                      questions: similar,
+                      isReview: true
+                    };
+                    handleStartReview(similarTest);
+                  } else {
+                    toast.error('유사한 유형의 문제를 더 찾을 수 없습니다.');
+                  }
+                }}
               />
             </div>
           </>
@@ -1384,12 +1495,7 @@ export default function App() {
         <DirectionsModal
           isOpen={showDirections}
           onClose={() => setShowDirections(false)}
-          isMathTest={(() => {
-            const isMath = currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학');
-            console.log('App.tsx - currentTestInfo:', currentTestInfo);
-            console.log('App.tsx - isMath:', isMath);
-            return isMath;
-          })()}
+          isMathTest={currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학')}
         />
 
         {/* Reference Modal */}

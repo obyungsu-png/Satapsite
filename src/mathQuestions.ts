@@ -3,6 +3,7 @@ export const mathQuestions = [
   {
     id: 1,
     question: "The graph of a system of linear equations is shown. What is the solution (x, y) to the system?",
+    correctAnswer: "c",
     choices: [
       { id: "a", text: "(-1, 4)" },
       { id: "b", text: "(0, -1)" },
@@ -16,6 +17,7 @@ export const mathQuestions = [
   {
     id: 2,
     question: "The area of a rectangle is 108 square inches. The length of the longest side of the rectangle is 18 inches. What is the length, in inches, of the shortest side of this rectangle?",
+    correctAnswer: "a",
     choices: [
       { id: "a", text: "6" },
       { id: "b", text: "18" },
@@ -28,6 +30,7 @@ export const mathQuestions = [
   ...Array.from({ length: 42 }, (_, i) => ({
     id: i + 3,
     question: `Math problem ${i + 3}: This is a placeholder for a math question for Module ${i + 3 > 22 ? 2 : 1}.`,
+    correctAnswer: "a",
     choices: [
       { id: "a", text: "Option A" },
       { id: "b", text: "Option B" },

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Globe, Search } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Globe, Search, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 
@@ -46,7 +46,7 @@ export function ReviewModal({
   if (!isOpen) return null;
 
   const userAnswer = selectedAnswer ? selectedAnswer.toUpperCase() : null;
-  const correctAnswerUpper = correctAnswer.toUpperCase();
+  const correctAnswerUpper = (correctAnswer || 'A').toUpperCase();
   const isCorrect = userAnswer === correctAnswerUpper;
   const isOmitted = !userAnswer;
 
@@ -352,7 +352,7 @@ export function ReviewModal({
                     <div className="space-y-3">
                       <div className="text-sm text-gray-700 leading-relaxed">
                         <p className="mb-3">
-                          <strong>문제 분석:</strong>
+                          <strong>문제 해설:</strong>
                         </p>
                         <p className="mb-3">
                           이 문제는 {questionType || 'Central Ideas and Details'} 유형으로,
@@ -512,31 +512,31 @@ export function ReviewModal({
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setActiveTab(activeTab === 'translation' ? null : 'translation')}
-                  className={`px-4 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'translation'
                       ? 'bg-white text-gray-900 border-2 border-gray-300'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                   }`}
                   style={{ fontWeight: activeTab === 'translation' ? '600' : '400' }}
                 >
-                  <span>🌐</span>
+                  <Globe className="h-4 w-4" />
                   해석
                 </button>
                 <button
                   onClick={() => setActiveTab(activeTab === 'analysis' ? null : 'analysis')}
-                  className={`px-4 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'analysis'
                       ? 'bg-white text-gray-900 border-2 border-gray-300'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                   }`}
                   style={{ fontWeight: activeTab === 'analysis' ? '600' : '400' }}
                 >
-                  <span>🔍</span>
-                  분석
+                  <Search className="h-4 w-4" />
+                  해설
                 </button>
                 <button
                   onClick={() => setActiveTab(activeTab === 'vocabulary' ? null : 'vocabulary')}
-                  className={`px-4 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'vocabulary'
                       ? 'bg-white text-gray-900 border-2 border-gray-300'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
@@ -555,14 +555,14 @@ export function ReviewModal({
                       setIsFullScreen(true);
                     }
                   }}
-                  className={`px-4 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'similarProblems'
                       ? 'bg-white text-gray-900 border-2 border-gray-300'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                   }`}
                   style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
                 >
-                  <span>📋</span>
+                  <FileText className="h-4 w-4" />
                   유형문제
                 </button>
               </div>
@@ -589,7 +589,7 @@ export function ReviewModal({
                     <div className="space-y-3">
                       <div className="text-sm text-gray-700 leading-relaxed">
                         <p className="mb-3">
-                          <strong>문제 분석:</strong>
+                          <strong>문제 해설:</strong>
                         </p>
                         <p className="mb-3">
                           이 문제는 {questionType || 'Central Ideas and Details'} 유형으로,

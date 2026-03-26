@@ -23,6 +23,10 @@ interface MobileExamTabsProps {
   imageUrl?: string;
   sectionLabel?: string;
   highlightsMode?: boolean;
+  isPracticeReview?: boolean;
+  correctAnswer?: string;
+  explanation?: string;
+  onShowSimilarProblems?: () => void;
 }
 
 export function MobileExamTabs({
@@ -40,6 +44,10 @@ export function MobileExamTabs({
   imageUrl,
   sectionLabel = "Reading",
   highlightsMode = false,
+  isPracticeReview = false,
+  correctAnswer,
+  explanation,
+  onShowSimilarProblems
 }: MobileExamTabsProps) {
   const [activeTab, setActiveTab] = useState<"passage" | "questions">("passage");
   const [passageExpanded, setPassageExpanded] = useState(false);
@@ -157,6 +165,11 @@ export function MobileExamTabs({
                 testInfo={testInfo}
                 onShowVideoLecture={onShowVideoLecture}
                 imageUrl={imageUrl}
+                isPracticeReview={isPracticeReview}
+                correctAnswer={correctAnswer}
+                explanation={explanation}
+                passage={passage}
+                onShowSimilarProblems={onShowSimilarProblems}
               />
             </div>
           </div>

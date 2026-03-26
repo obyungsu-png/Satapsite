@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { RadioGroup } from "./ui/radio-group";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Bookmark, Play, Zap } from "lucide-react";
+import { Bookmark, Play, Zap, Target, BookOpen, Globe, Search, FileText } from "lucide-react";
+import { motion } from "motion/react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 interface Choice {
@@ -24,6 +25,11 @@ interface QuestionPanelProps {
   testInfo?: any;
   onShowVideoLecture?: (questionId: number) => void;
   imageUrl?: string;
+  isPracticeReview?: boolean;
+  correctAnswer?: string;
+  explanation?: string;
+  passage?: string;
+  onShowSimilarProblems?: () => void;
 }
 
 export function QuestionPanel({ 
@@ -39,11 +45,17 @@ export function QuestionPanel({
   expandDirection = null,
   testInfo,
   onShowVideoLecture,
-  imageUrl
+  imageUrl,
+  isPracticeReview = false,
+  correctAnswer,
+  explanation,
+  passage,
+  onShowSimilarProblems
 }: QuestionPanelProps) {
   const [abcMode, setAbcMode] = useState(false); // ABC mode inactive by default
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set()); // B is eliminated by default
   const [fontSize, setFontSize] = useState(18); // Visually match Mark for Review size
+  const [activeReviewTab, setActiveReviewTab] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleEliminateChoice = (choiceId: string) => {
@@ -222,9 +234,83 @@ export function QuestionPanel({
             })}
           </RadioGroup>
         </div>
+        
+        {/* Review Tabs (for 시작하기(복습용) mode) */}
+        {isPracticeReview && (
+          <div className="mt-8 border-t border-gray-200 pt-6">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {[
+                { id: 'translation', label: '해석', icon: <Globe className="w-4 h-4" /> },
+                { id: 'explanation', label: '해설', icon: <Search className="w-4 h-4" /> },
+                { id: 'vocabulary', label: '단어', icon: <BookOpen className="w-4 h-4" /> },
+                { id: 'similar', label: '유형문제', icon: <FileText className="w-4 h-4" /> }
+              ].map((tab) => (
+                <Button
+                  key={tab.id}
+                  onClick={() => {
+                    if (tab.id === 'similar') {
+                      onShowSimilarProblems?.();
+                    } else {
+                      setActiveReviewTab(activeReviewTab === tab.id ? null : tab.id);
+                    }
+                  }}
+                  variant={activeReviewTab === tab.id ? 'default' : 'outline'}
+                  size="sm"
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
+                    activeReviewTab === tab.id
+                      ? 'bg-white text-gray-900 border-2 border-gray-300'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={{ fontWeight: activeReviewTab === tab.id ? '600' : '400' }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            {activeReviewTab && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-8"
+              >
+                {activeReviewTab === 'translation' && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-bold text-[#3D5AA1]">지문 해석</h4>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                      {passage || "해석 정보가 없습니다."}
+                    </p>
+                  </div>
+                )}
+                {activeReviewTab === 'explanation' && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-bold text-[#3D5AA1]">문제 해설</h4>
+                    <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 mb-3">
+                      <p className="text-sm font-bold text-blue-800">정답: {correctAnswer?.toUpperCase()}</p>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                      {explanation || "해설 정보가 없습니다."}
+                    </p>
+                  </div>
+                )}
+                {activeReviewTab === 'vocabulary' && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-bold text-[#3D5AA1]">핵심 단어</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      <p className="text-sm text-gray-500">지문에서 추출된 학습 단어들입니다.</p>
+                      {/* We could potentially extract words here if needed */}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+        )}
 
         {/* Video Lecture Button - Only show for past exam questions */}
-        {testInfo?.source === "기출문제" && (
+        {testInfo?.source === "기출문제" && !isPracticeReview && (
           <div className="mt-6 pt-4 border-t border-gray-200">
             <Button
               onClick={() => onShowVideoLecture?.(questionNumber)}

@@ -227,8 +227,12 @@ export function PracticeRecord({
     totalQuestions: record.totalQuestions || 0,
     correctAnswers: record.correctAnswers || 0,
     duration: record.time || '0분',
-    questions: record.questions || [],
-    source: record.source,
+    questions: (record.questions || []).map((q: any) => ({
+      ...q,
+      userAnswer: (record.answers && (record.answers[q.id] || record.answers[String(q.id)])) || null,
+      isCorrect: (record.answers && (record.answers[q.id] || record.answers[String(q.id)])) === (q.correctAnswer || 'a').toLowerCase()
+    })),
+    source: record.source || '기출문제',
     timestamp: record.timestamp || record.date,
     readingScore: record.readingScore || '—',
     writingScore: record.writingScore || '—',
@@ -246,13 +250,14 @@ export function PracticeRecord({
     let filtered: PracticeRecordItem[] = practiceRecordData;
 
     if (practiceRecordCategory === '기출문제') {
-      filtered = practiceRecordData.filter(r => r.source === '기출문제');
+      // Show records where source is '기출문제', or 'Homepage', or unspecified, but exclude other explicit categories
+      filtered = practiceRecordData.filter(r => r.source === '기출문제' || r.source === 'Homepage' || !r.source || !['공식문제', '전문훈련'].includes(r.source));
       if (filtered.length === 0) filtered = sampleGichul;
     } else if (practiceRecordCategory === '공식문제') {
       filtered = practiceRecordData.filter(r => r.source === '공식문제');
       if (filtered.length === 0) filtered = sampleGongsik;
     } else if (practiceRecordCategory === 'Training') {
-      filtered = practiceRecordData.filter(r => r.source === '전문훈련');
+      filtered = practiceRecordData.filter(r => r.source === '전문훈련' || r.source === '유사문제' || r.source === 'Training');
       if (filtered.length === 0) filtered = sampleTraining;
     } else if (practiceRecordCategory === '틀린문제') {
       filtered = practiceRecordData.filter(r => r.questions?.some(q => !q.isCorrect));
