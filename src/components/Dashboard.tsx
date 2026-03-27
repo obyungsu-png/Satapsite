@@ -2556,45 +2556,27 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Filters for Tests */}
           {smartPracticeTab !== 'SAT VOCA' && smartPracticeTab !== '단어관리' && (
             <>
-              {/* Subject Filter */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">과목:</h3>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setSmartPracticeSubject('전체')}
-                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                      smartPracticeSubject === '전체'
-                        ? 'text-white font-medium'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={smartPracticeSubject === '전체' ? { backgroundColor: '#3D5AA1' } : {}}
-                  >
-                    전체
-                  </button>
-                  <button
-                    onClick={() => setSmartPracticeSubject('Reading')}
-                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                      smartPracticeSubject === 'Reading'
-                        ? 'text-white font-medium'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={smartPracticeSubject === 'Reading' ? { backgroundColor: '#3D5AA1' } : {}}
-                  >
-                    독해문법
-                  </button>
-                  <button
-                    onClick={() => setSmartPracticeSubject('Math')}
-                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
-                      smartPracticeSubject === 'Math'
-                        ? 'text-white font-medium'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={smartPracticeSubject === 'Math' ? { backgroundColor: '#3D5AA1' } : {}}
-                  >
-                    수학
-                  </button>
+            {/* 필터 그룹 컨테이너 - 화이트 박스 스타일 적용 */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Subject</span>
+                <div className="flex gap-2">
+                  {['전체', 'Reading', 'Math'].map((sub) => (
+                    <button
+                      key={sub}
+                      onClick={() => setSmartPracticeSubject(sub)}
+                      className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                        smartPracticeSubject === sub
+                          ? 'bg-[#3D5AA1] text-white'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {sub === 'Reading' ? '독해문법' : sub === 'Math' ? '수학' : sub}
+                    </button>
+                  ))}
                 </div>
               </div>
+            </div>
 
 
             </>
