@@ -2585,108 +2585,129 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Word Management Filters */}
           {smartPracticeTab === '단어관리' && !selectedWordList && !showWordBrowseView && (
             <>
-              {/* 단어 유형 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">단어 유형:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['���체', '기출문제', '공식문제'].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setWordListType(type)}
-                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: wordListType === type ? '#3D5AA1' : 'white',
-                        color: wordListType === type ? 'white' : '#374151',
-                        border: `1px solid ${wordListType === type ? '#3D5AA1' : '#D1D5DB'}`
-                      }}
-                    >
-                      {type}
-                    </button>
-                  ))}
+              {/* 단어 관리 필터 그룹 - 화이트 박스 틀 적용 */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
+                {/* 단어 유형 */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <BookOpen size={16} className="text-[#3D5AA1]" />
+                    단어 유형
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['전체', '기출문제', '공식문제'].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setWordListType(type)}
+                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                          wordListType === type
+                            ? 'bg-[#3D5AA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 카테고리 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">카테고리:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['전체', 'Reading', 'Math'].map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setWordCategory(category)}
-                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: wordCategory === category ? '#3D5AA1' : 'white',
-                        color: wordCategory === category ? 'white' : '#374151',
-                        border: `1px solid ${wordCategory === category ? '#3D5AA1' : '#D1D5DB'}`
-                      }}
-                    >
-                      {category}
-                    </button>
-                  ))}
+                <div className="border-t border-gray-100"></div>
+
+                {/* 카테고리 */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Target size={16} className="text-[#3D5AA1]" />
+                    카테고리
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['전체', 'Reading', 'Math'].map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setWordCategory(category)}
+                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                          wordCategory === category
+                            ? 'bg-[#3D5AA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 난이도 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">난이도:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['전체', '쉬움', '보통', '어려움'].map((difficulty) => (
-                    <button
-                      key={difficulty}
-                      onClick={() => setWordDifficulty(difficulty)}
-                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: wordDifficulty === difficulty ? '#3D5AA1' : 'white',
-                        color: wordDifficulty === difficulty ? 'white' : '#374151',
-                        border: `1px solid ${wordDifficulty === difficulty ? '#3D5AA1' : '#D1D5DB'}`
-                      }}
-                    >
-                      {difficulty}
-                    </button>
-                  ))}
+                <div className="border-t border-gray-100"></div>
+
+                {/* 난이도 */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <Zap size={16} className="text-[#3D5AA1]" />
+                    난이도
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['전체', '쉬움', '보통', '어려움'].map((difficulty) => (
+                      <button
+                        key={difficulty}
+                        onClick={() => setWordDifficulty(difficulty)}
+                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                          wordDifficulty === difficulty
+                            ? 'bg-[#3D5AA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {difficulty}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 문항수 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">문항수:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['10', '30', '50', '100'].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => setWordQuestionCount(count)}
-                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: wordQuestionCount === count ? '#3D5AA1' : 'white',
-                        color: wordQuestionCount === count ? 'white' : '#374151',
-                        border: `1px solid ${wordQuestionCount === count ? '#3D5AA1' : '#D1D5DB'}`
-                      }}
-                    >
-                      {count}
-                    </button>
-                  ))}
+                <div className="border-t border-gray-100"></div>
+
+                {/* 문항수 */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <FileText size={16} className="text-[#3D5AA1]" />
+                    문항수
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['10', '30', '50', '100'].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => setWordQuestionCount(count)}
+                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                          wordQuestionCount === count
+                            ? 'bg-[#3D5AA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {count}개
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* 연습 유형 */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-800 mb-3">연습 유형:</h3>
-                <div className="flex flex-wrap gap-2">
-                  {['전체', '미연습', '한 번 틀린 문제', '두 번 이상 틀린 문제'].map((attempt) => (
-                    <button
-                      key={attempt}
-                      onClick={() => setWordAttemptFilter(attempt)}
-                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
-                      style={{
-                        backgroundColor: wordAttemptFilter === attempt ? '#3D5AA1' : 'white',
-                        color: wordAttemptFilter === attempt ? 'white' : '#374151',
-                        border: `1px solid ${wordAttemptFilter === attempt ? '#3D5AA1' : '#D1D5DB'}`
-                      }}
-                    >
-                      {attempt}
-                    </button>
-                  ))}
+                <div className="border-t border-gray-100"></div>
+
+                {/* 연습 유형 */}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <TrendingUp size={16} className="text-[#3D5AA1]" />
+                    연습 유형
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {['전체', '미연습', '한 번 틀린 문제', '두 번 이상 틀린 문제'].map((attempt) => (
+                      <button
+                        key={attempt}
+                        onClick={() => setWordAttemptFilter(attempt)}
+                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                          wordAttemptFilter === attempt
+                            ? 'bg-[#3D5AA1] text-white shadow-sm'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {attempt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
