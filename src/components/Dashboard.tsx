@@ -3740,46 +3740,39 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <p className="text-gray-600">AI가 분석한 개��� 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
           </div>
 
-          {/* Category Tabs - Updated to match Training page style */}
-          <div className="mb-6">
-            <div className="flex gap-2 border-b border-gray-200">
-              {courseCategories.map((category) => {
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryChange(category.id)}
-                    className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                      selectedCourseCategory === category.id
-                        ? 'text-white font-medium'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                    }`}
-                    style={selectedCourseCategory === category.id ? { backgroundColor: '#3D5AA1' } : {}}
-                  >
-                    {category.name}
-                  </button>
-                );
-              })}
-            </div>
+          {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 */}
+          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit">
+            {courseCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategoryChange(category.id)}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  selectedCourseCategory === category.id
+                    ? 'bg-[#3D5AA1] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))}
           </div>
 
-          {/* Filters - for all categories */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-            <div className="flex flex-wrap gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">정렬</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  <option>시간순</option>
-                  <option>인기순</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">과목</label>
-                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
-                  <option>전체</option>
-                  <option>독해문법</option>
-                  <option>수학</option>
-                </select>
-              </div>
+          {/* Filters - 화이트 박스 틀 적용 */}
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-8">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-700">정렬</span>
+              <select className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:border-[#3D5AA1] bg-gray-50">
+                <option>시간순</option>
+                <option>인기순</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-gray-700">과목</span>
+              <select className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:border-[#3D5AA1] bg-gray-50">
+                <option>전체</option>
+                <option>독해문법</option>
+                <option>수학</option>
+              </select>
             </div>
           </div>
 
