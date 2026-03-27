@@ -2711,27 +2711,45 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </div>
               </div>
 
-             {/* Start Button */}
-              <div className="flex justify-end pt-4">
+            {/* Start Button */}
+              <div className="flex justify-center pt-8 pb-4">
                 <button
                   onClick={() => {
-                    // Create a new word study session with timestamp
                     const now = new Date();
                     const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, "0");
+                    const day = String(now.getDate()).padStart(2, "0");
+                    const hours = String(now.getHours()).padStart(2, "0");
+                    const minutes = String(now.getMinutes()).padStart(2, "0");
+                    const mobileTimestamp = `${month}.${day} ${hours}:${minutes}`;
+                    const desktopTimestamp = `${year}.${month}.${day} ${hours}:${minutes}`;
                     
-                    // ... (중간 코드 생략) ...
+                    const newSession = {
+                      id: `session-${Date.now()}`,
+                      title: `단어 학습`,
+                      mobileTimestamp,
+                      desktopTimestamp,
+                      description: `${wordListType} - ${wordCategory} - ${wordDifficulty}`,
+                      category: wordCategory,
+                      difficulty: wordDifficulty,
+                      type: wordListType,
+                      createdAt: now.toISOString(),
+                      attemptCount: 0,
+                      filters: {
+                        type: wordListType,
+                        category: wordCategory,
+                        difficulty: wordDifficulty,
+                        questionCount: wordQuestionCount,
+                        attemptFilter: wordAttemptFilter
+                      }
+                    };
                     
-                    // Add to viewed word lists
-                    setViewedWordLists(prev =>[newSession, ...prev]);
-                    
-                    // Show browse view with session list
+                    setViewedWordLists(prev => [newSession, ...prev]);
                     setShowWordBrowseView(true);
                     setWordStudyMode('browse');
                   }}
-                  className="px-8 sm:px-16 py-3 text-sm text-white rounded-lg transition-colors"
-                  style={{ backgroundColor: '#3D5AA1' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3D5AA1'}
+                  className="px-16 sm:px-24 py-3.5 text-base font-bold text-white rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1"
+                  style={{ backgroundColor: '#425486' }}
                 >
                   시작
                 </button>
