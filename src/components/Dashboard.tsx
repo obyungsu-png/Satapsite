@@ -2484,53 +2484,22 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
           {/* Tab Selection */}
           <div className="mb-6">
-            {/* Desktop Tabs */}
-            <div className="hidden md:flex gap-2 border-b border-gray-200">
+           {/* Desktop Tabs - 둥근 캡슐 탭 디자인 적용 */}
+          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit">
+            {['기출문제', '공식문제', '단어관리', 'SAT VOCA'].map((tab) => (
               <button
-                onClick={() => setSmartPracticeTab('기출문제')} 
-                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                  smartPracticeTab === '기출문제'
-                    ? 'text-white font-medium'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                key={tab}
+                onClick={() => setSmartPracticeTab(tab as any)}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  smartPracticeTab === tab
+                    ? 'bg-[#3D5AA1] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 }`}
-                style={smartPracticeTab === '기출문제' ? { backgroundColor: '#3D5AA1' } : {}}
               >
-                기출문제
+                {tab}
               </button>
-              <button
-                onClick={() => setSmartPracticeTab('��식문제')}
-                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                  smartPracticeTab === '공식문제'
-                    ? 'text-white font-medium'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                }`}
-                style={smartPracticeTab === '공식문제' ? { backgroundColor: '#3D5AA1' } : {}}
-              >
-                공식문제
-              </button>
-              <button
-                onClick={() => setSmartPracticeTab('단어관리')}
-                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                  smartPracticeTab === '단어관리'
-                    ? 'text-white font-medium'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                }`}
-                style={smartPracticeTab === '단어관리' ? { backgroundColor: '#3D5AA1' } : {}}
-              >
-                단어관리
-              </button>
-              <button
-                onClick={() => setSmartPracticeTab('SAT VOCA')}
-                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
-                  smartPracticeTab === 'SAT VOCA'
-                    ? 'text-white font-medium'
-                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                }`}
-                style={smartPracticeTab === 'SAT VOCA' ? { backgroundColor: '#3D5AA1' } : {}}
-              >
-                SAT VOCA
-              </button>
-            </div>
+            ))}
+          </div>
 
             {/* Mobile Tabs - Two Rows Grid */}
             <div className="md:hidden -mx-4 px-4 pb-1">
