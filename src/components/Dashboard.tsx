@@ -2764,186 +2764,188 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             // Word Management Content
             showWordBrowseView ? (
               // Browse Mode - Show word study session list
-              <div className="space-y-6">
-                {/* Back to normal view button */}
-                <div className="flex items-start sm:items-center justify-between mb-4 gap-2">
-                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <Button
-                      onClick={() => {
-                        setShowWordBrowseView(false);
-                        setWordStudyMode('list');
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="flex-shrink-0 text-xs sm:text-sm"
-                    >
-                      ←
-                    </Button>
-                    <h2 className="text-sm sm:text-xl font-medium text-gray-800 leading-tight">
-                      단어 목록 <span className="text-gray-500 text-xs sm:text-base">({wordListType} · {wordCategory} · {wordDifficulty})</span>
-                    </h2>
-                  </div>
+            <div className="space-y-4 mb-8">
+              {/* Back to normal view button & Header */}
+              <div className="flex items-start gap-4 mb-6">
+                <button
+                  onClick={() => {
+                    setShowWordBrowseView(false);
+                    setWordStudyMode('list');
+                  }}
+                  className="mt-1 text-gray-400 hover:text-gray-800 transition-colors p-1"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <div>
+                  <h2 className="text-xl font-bold text-[#2C3E50] mb-1">
+                    단어 학습 목록
+                  </h2>
+                  <p className="text-sm text-gray-500 font-medium">
+                    {wordListType} · {wordCategory} · {wordDifficulty}
+                  </p>
                 </div>
+              </div>
 
-                {/* Word Study Sessions List */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">목록보기</h3>
-                  <div className="space-y-3">
-                    {viewedWordLists.length > 0 ? (
-                      <>
-                        {(() => {
-                          const itemsPerPage = 5;
-                          const totalPages = Math.ceil(viewedWordLists.length / itemsPerPage);
-                          const startIndex = (wordListPage - 1) * itemsPerPage;
-                          const endIndex = startIndex + itemsPerPage;
-                          const currentItems = viewedWordLists.slice(startIndex, endIndex);
-                          
-                          return (
-                            <>
-                              {currentItems.map((session: any) => (
-                                <div key={session.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
-                                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
-                                    <div className="flex-1 cursor-pointer"
-                                      onClick={() => {
-                                        // Select this session to view its words
-                                        const filteredWords = getAllWords();
-                                        const selectedCount = parseInt(session.filters?.questionCount || '10');
-                                        const wordsToShow = filteredWords.slice(0, selectedCount);
-                                        
-                                        setSelectedWordList({
-                                          ...session,
-                                          words: wordsToShow
-                                        });
-                                        setShowWordBrowseView(false);
-                                        setWordStudyMode('list');
-                                      }}
-                                    >
-                                      <div className="flex items-start sm:items-center justify-between gap-2 mb-1.5">
-                                        <h4 className="text-sm sm:text-base font-medium text-gray-800 flex-1 min-w-0" style={{ wordBreak: 'keep-all' }}>
-                                          {session.title}
-                                        </h4>
-                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
-                                            {session.type}
-                                          </span>
-                                          {!session.attemptCount || session.attemptCount === 0 ? (
-                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-green-100 text-green-600 font-medium whitespace-nowrap">
-                                              new
-                                            </span>
-                                          ) : (
-                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
-                                              {session.attemptCount}회
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">{session.description}</p>
-                                      <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-600 flex-wrap">
-                                        <span className="hidden sm:inline">생성일: {new Date(session.createdAt).toLocaleDateString('ko-KR')}</span>
-                                        {session.filters && (
-                                          <span>문항수: {session.filters.questionCount}개</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {/* Action Buttons */}
-                                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                                      <Button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          const filteredWords = getAllWords();
-                                          const selectedCount = parseInt(session.filters?.questionCount || '10');
-                                          const wordsToShow = filteredWords.slice(0, selectedCount);
-                                          
-                                          setSelectedWordList({
-                                            ...session,
-                                            words: wordsToShow
-                                          });
-                                          setShowWordBrowseView(false);
-                                          setWordStudyMode('test');
-                                          setCurrentWordIndex(0);
-                                          setTestAnswers({});
-                                          setShowTestResult({});
-                                        }}
-                                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-md transition-colors whitespace-nowrap"
-                                        style={{ backgroundColor: '#2B478B' }}
-                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3666'}
-                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
-                                      >
-                                        테스트 시작
-                                      </Button>
-                                      <Button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (confirm(`"${session.title}" 목록을 삭제하시겠습니까?`)) {
-                                            setViewedWordLists(prev => prev.filter(s => s.id !== session.id));
-                                            toast.success('단어 목록이 삭제되었습니다.');
-                                          }
-                                        }}
-                                        variant="outline"
-                                        size="sm"
-                                        className="text-red-600 border-red-300 hover:bg-red-50 flex-shrink-0"
-                                      >
-                                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                      </Button>
-                                    </div>
+              {/* Word Study Sessions List */}
+              <div>
+                {viewedWordLists.length > 0 ? (
+                  <>
+                    {(() => {
+                      const itemsPerPage = 5;
+                      const totalPages = Math.ceil(viewedWordLists.length / itemsPerPage);
+                      const startIndex = (wordListPage - 1) * itemsPerPage;
+                      const endIndex = startIndex + itemsPerPage;
+                      const currentItems = viewedWordLists.slice(startIndex, endIndex);
+                      
+                      return (
+                        <div className="space-y-3">
+                          {currentItems.map((session: any) => (
+                            <div key={session.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                              
+                              {/* Left Icon */}
+                              <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-[#EEF2F6] items-center justify-center text-[#425486] shrink-0">
+                                <BookOpen className="w-6 h-6" />
+                              </div>
+
+                              {/* Middle Content */}
+                              <div className="flex-1 cursor-pointer w-full"
+                                onClick={() => {
+                                  const filteredWords = getAllWords();
+                                  const selectedCount = parseInt(session.filters?.questionCount || '10');
+                                  const wordsToShow = filteredWords.slice(0, selectedCount);
+                                  
+                                  setSelectedWordList({
+                                    ...session,
+                                    words: wordsToShow
+                                  });
+                                  setShowWordBrowseView(false);
+                                  setWordStudyMode('list');
+                                }}
+                              >
+                                <div className="flex items-center flex-wrap gap-2 mb-2">
+                                  <div className="sm:hidden w-8 h-8 rounded-xl bg-[#EEF2F6] flex items-center justify-center text-[#425486] shrink-0">
+                                    <BookOpen className="w-4 h-4" />
                                   </div>
+                                  <h4 className="text-base font-bold text-[#2C3E50]">
+                                    {session.title}
+                                  </h4>
+                                  <span className="text-xs text-gray-400 font-medium">
+                                    {session.desktopTimestamp || new Date(session.createdAt).toLocaleDateString('ko-KR')}
+                                  </span>
+                                  {!session.attemptCount || session.attemptCount === 0 ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold tracking-wide">
+                                      NEW
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-bold tracking-wide">
+                                      {session.attemptCount}회
+                                    </span>
+                                  )}
                                 </div>
+                                
+                                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                  <span className="px-2.5 py-1 bg-gray-50 rounded-md border border-gray-100">
+                                    {session.type}
+                                  </span>
+                                  <span>
+                                    {session.filters?.questionCount || session.words?.length}개 단어
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right Action Buttons */}
+                              <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end shrink-0">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const filteredWords = getAllWords();
+                                    const selectedCount = parseInt(session.filters?.questionCount || '10');
+                                    const wordsToShow = filteredWords.slice(0, selectedCount);
+                                    
+                                    setSelectedWordList({
+                                      ...session,
+                                      words: wordsToShow
+                                    });
+                                    setShowWordBrowseView(false);
+                                    setWordStudyMode('test');
+                                    setCurrentWordIndex(0);
+                                    setTestAnswers({});
+                                    setShowTestResult({});
+                                  }}
+                                  className="flex-1 sm:flex-none px-6 py-2 text-sm font-bold text-white rounded-xl transition-colors shadow-sm"
+                                  style={{ backgroundColor: '#425486' }}
+                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2C3E50'}
+                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#425486'}
+                                >
+                                  테스트
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (confirm(`"${session.title}" 목록을 삭제하시겠습니까?`)) {
+                                      setViewedWordLists(prev => prev.filter(s => s.id !== session.id));
+                                      toast.success('단어 목록이 삭제되었습니다.');
+                                    }
+                                  }}
+                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                                >
+                                  <Trash2 className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          
+                          {/* Pagination */}
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-8 pt-4">
+                              <Button
+                                onClick={() => setWordListPage(prev => Math.max(1, prev - 1))}
+                                disabled={wordListPage === 1}
+                                className="w-10 h-10 p-0 rounded-xl bg-[#8E9BBA] hover:bg-[#7A88A8] text-white disabled:opacity-50 border-none transition-colors"
+                              >
+                                <ChevronLeft className="w-5 h-5" />
+                              </Button>
+                              
+                              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <Button
+                                  key={page}
+                                  onClick={() => setWordListPage(page)}
+                                  className={`w-10 h-10 p-0 rounded-xl font-bold border-none transition-colors ${
+                                    wordListPage === page 
+                                      ? "bg-[#425486] text-white shadow-md" 
+                                      : "bg-[#8E9BBA] hover:bg-[#7A88A8] text-white"
+                                  }`}
+                                >
+                                  {page}
+                                </Button>
                               ))}
                               
-                              {/* Pagination */}
-                              {totalPages > 1 && (
-                                <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
-                                  <Button
-                                    onClick={() => setWordListPage(prev => Math.max(1, prev - 1))}
-                                    disabled={wordListPage === 1}
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-8 h-8 p-0"
-                                  >
-                                    <ChevronLeft className="w-4 h-4" />
-                                  </Button>
-                                  
-                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                    <Button
-                                      key={page}
-                                      onClick={() => setWordListPage(page)}
-                                      variant={wordListPage === page ? "default" : "outline"}
-                                      size="sm"
-                                      className="w-8 h-8 p-0"
-                                      style={wordListPage === page ? { backgroundColor: '#2B478B' } : {}}
-                                    >
-                                      {page}
-                                    </Button>
-                                  ))}
-                                  
-                                  <Button
-                                    onClick={() => setWordListPage(prev => Math.min(totalPages, prev + 1))}
-                                    disabled={wordListPage === totalPages}
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-8 h-8 p-0"
-                                  >
-                                    <ChevronRight className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </>
-                    ) : (
-                      <div className="text-center py-12">
-                        <BookmarkPlus className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                        <h4 className="text-lg font-medium text-gray-500 mb-2">
-                          학습한 단어 목록이 없습니다
-                        </h4>
-                        <p className="text-sm text-gray-400">
-                          Start 버튼을 눌러 단어 학습을 시작하세요.
-                        </p>
-                      </div>
-                    )}
+                              <Button
+                                onClick={() => setWordListPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={wordListPage === totalPages}
+                                className="w-10 h-10 p-0 rounded-xl bg-[#8E9BBA] hover:bg-[#7A88A8] text-white disabled:opacity-50 border-none transition-colors"
+                              >
+                                <ChevronRight className="w-5 h-5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                    <BookmarkPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h4 className="text-lg font-bold text-gray-500 mb-2">
+                      학습한 단어 목록이 없습니다
+                    </h4>
+                    <p className="text-sm text-gray-400">
+                      Start 버튼을 눌러 단어 학습을 시작하세요.
+                    </p>
                   </div>
-                </div>
+                )}
+              </div>
+            </div>
 
                 {/* Completed Tests Section */}
                 {completedWordTests.length > 0 && (
