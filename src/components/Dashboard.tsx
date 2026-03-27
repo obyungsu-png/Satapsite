@@ -135,136 +135,52 @@ const saveTestsBoth = async (tests: any[]) => {
 };
 
 // TestCard Component with hover effect for Practice
-function TestCard({ test, index, onStartTest, onStartReview, isUnlocked, onNavigateToPricing }: { 
+function TestCard({ test, index, onStartTest, onStartReview }: { 
   test: any; 
   index: number; 
   onStartTest: () => void;
   onStartReview: () => void;
-  isUnlocked?: boolean;
-  onNavigateToPricing?: () => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const isLocked = false; // 모든 잠금 해제
-  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="rounded-lg transition-all duration-300 relative"
-      style={{
-        backgroundColor: isLocked ? '#f5f5f5' : (isHovered ? '#E8EAF6' : '#F5F5F5'),
-        boxShadow: isHovered ? '0 3px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.06)',
-        opacity: isLocked ? 0.6 : 1
-      }}
-      whileHover={{ scale: isLocked ? 1 : 1.015, y: isLocked ? 0 : -2 }}
+      className="bg-white rounded-[20px] p-5 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 flex flex-col h-full relative"
     >
-      <div className="p-3.5">
-        {/* Icon and Title */}
-        <div className="flex items-start gap-2.5 mb-3">
-          <motion.div 
-            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: isLocked ? '#d1d5db' : '#E8EAF6' }}
-          >
-            {isLocked ? (
-              <Lock className="w-4.5 h-4.5 text-gray-500" />
-            ) : (
-              <BookOpen className="w-4.5 h-4.5" style={{ color: '#3D5AA1' }} />
-            )}
-          </motion.div>
-          <div className="flex-1 min-w-0">
-            <h3 
-              className="text-sm line-clamp-2 mb-1"
-              style={{ color: isLocked ? '#6b7280' : '#000', fontWeight: 700 }}
-            >
-              {test.title}
-            </h3>
-            <p 
-              className="text-xs transition-colors duration-300"
-              style={{ 
-                color: isLocked ? '#9ca3af' : (isHovered ? '#3D5AA1' : '#666'),
-                fontWeight: 700
-              }}
-            >
-              {test.type}
-            </p>
-          </div>
-        </div>
-
-        {/* Badges */}
-        {test.isUploaded && !isLocked && (
-          <div className="mb-3">
-            <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#EBE9F5', color: '#2B478B' }}>
-              <Upload className="w-3 h-3 inline-block mr-1" />
-              업로드됨
+      <div className="mb-4 flex-grow">
+        <div className="flex justify-between items-start mb-3">
+          <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] rounded-full font-bold tracking-wide uppercase">
+            {test.type || 'Practice'}
+          </span>
+          {test.isUploaded && (
+            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+              <Upload size={10} /> 업로드됨
             </span>
-          </div>
-        )}
-        
-        {/* Buttons */}
-        {!isLocked && (
-          <div className="space-y-2">
-            <Button
-              onClick={onStartTest}
-              className="w-full py-2 rounded transition-colors text-xs"
-              style={{ 
-                backgroundColor: '#3D5AA1',
-                color: '#FFFFFF',
-                fontWeight: 700
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#2F4A85';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#3D5AA1';
-              }}
-              size="sm"
-            >
-              시작하기
-            </Button>
-            <Button
-              onClick={onStartReview}
-              className="w-full py-2 rounded transition-colors text-xs"
-              style={{ 
-                backgroundColor: '#3D5AA1',
-                color: '#FFFFFF',
-                fontWeight: 700
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#2F4A85';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#3D5AA1';
-              }}
-              size="sm"
-            >
-              시작하기(복습용)
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
+        <h3 className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug mb-2">
+          {test.title}
+        </h3>
+        <p className="text-[11px] text-gray-500 line-clamp-2 font-medium">
+          {test.description || '실전 감각을 익히기 위한 연습 세이션입니다.'}
+        </p>
       </div>
-      
-      {/* Unlock Button Overlay */}
-      {isLocked && (
-        <motion.button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onNavigateToPricing) {
-              onNavigateToPricing();
-            }
-          }}
-          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+
+      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
+        <button
+          onClick={onStartTest}
+          className="flex-1 bg-[#3D5AA1] hover:bg-[#2F4A85] text-white text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
         >
-          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
-            <Lock size={14} className="md:w-4 md:h-4" />
-            <span className="whitespace-nowrap">Unlock Now</span>
-          </div>
-        </motion.button>
-      )}
+          시작하기
+        </button>
+        <button
+          onClick={onStartReview}
+          className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-[#3D5AA1] text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+        >
+          복습용
+        </button>
+      </div>
     </motion.div>
   );
 }
