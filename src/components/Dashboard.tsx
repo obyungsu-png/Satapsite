@@ -2945,8 +2945,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   </div>
                 )}
               </div>
-            </div>
-
+            
                 {/* Completed Tests Section */}
                 {completedWordTests.length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
