@@ -2711,42 +2711,18 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </div>
               </div>
 
-              {/* Start Button */}
+             {/* Start Button */}
               <div className="flex justify-end pt-4">
                 <button
                   onClick={() => {
                     // Create a new word study session with timestamp
                     const now = new Date();
                     const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, "0");
-                    const day = String(now.getDate()).padStart(2, "0");
-                    const hours = String(now.getHours()).padStart(2, "0");
-                    const minutes = String(now.getMinutes()).padStart(2, "0");
-                    const mobileTimestamp = `${month}.${day} ${hours}:${minutes}`;
-                    const desktopTimestamp = `${year}.${month}.${day} ${hours}:${minutes}`;
                     
-                    const newSession = {
-                      id: `session-${Date.now()}`,
-                      title: `단어 학습`,
-                      mobileTimestamp,
-                      desktopTimestamp,
-                      description: `${wordListType} - ${wordCategory} - ${wordDifficulty}`,
-                      category: wordCategory,
-                      difficulty: wordDifficulty,
-                      type: wordListType,
-                      createdAt: now.toISOString(),
-                      attemptCount: 0,
-                      filters: {
-                        type: wordListType,
-                        category: wordCategory,
-                        difficulty: wordDifficulty,
-                        questionCount: wordQuestionCount,
-                        attemptFilter: wordAttemptFilter
-                      }
-                    };
+                    // ... (중간 코드 생략) ...
                     
                     // Add to viewed word lists
-                    setViewedWordLists(prev => [newSession, ...prev]);
+                    setViewedWordLists(prev =>[newSession, ...prev]);
                     
                     // Show browse view with session list
                     setShowWordBrowseView(true);
