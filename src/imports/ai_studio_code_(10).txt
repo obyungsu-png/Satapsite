@@ -1,0 +1,2 @@
+apple 사과 a_fruit 빨간_사과 풋사과
+abandon 포기하다 give_up 버리다 단념하다

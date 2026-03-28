@@ -21,6 +21,7 @@ interface SATVocaPageProps {
 }
 
 export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
+  const [vocaCategory, setVocaCategory] = useState<'general' | 'yearly'>('general');
   const [step, setStep] = useState(1); // 1: DAY 선택, 2: 단어 확인, 3: 저장 및 다운로드
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -57,46 +58,57 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   const [isTestActive, setIsTestActive] = useState(false);
   const [activeTestInfo, setActiveTestInfo] = useState<any>(null);
 
-  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const availableDays = useMemo(() => {
+    const savedDays = localStorage.getItem('satVocaDays');
+    if (!savedDays) return Array.from({ length: 30 }, (_, i) => ({ day: i + 1, name: `DAY ${i + 1}`, wordCount: 0 }));
+    const allDays = JSON.parse(savedDays);
+    return allDays.filter((d: any) => (d.category || 'general') === vocaCategory);
+  }, [vocaCategory]);
 
-  // Calculate totals
-  const totalQuestions = engToKorTableCount + engToKorSynonymCount + korToEngTableCount + korToEngSynonymCount + defToEngCount;
-  
-  // Calculate headword and synonym totals for display
-  const totalHeadwordQuestions = engToKorTableCount + korToEngTableCount;
-  const totalSynonymQuestions = engToKorSynonymCount + korToEngSynonymCount;
+  const totalAvailableWordsCount = useMemo(() => {
+    const savedWords = localStorage.getItem('satVocaWords');
+    if (!savedWords) return 0;
+    const allWords = JSON.parse(savedWords);
+    return allWords.filter((w: any) => (w.category || 'general') === vocaCategory).length;
+  }, [vocaCategory]);
 
-  // Get available words based on selected days
+  // Get available words based on selected days and category
   const availableWords = useMemo(() => {
+    const savedWords = localStorage.getItem('satVocaWords');
+    if (!savedWords) return [];
+    
+    const allWords = JSON.parse(savedWords);
+    const categoryWords = allWords.filter((w: any) => (w.category || 'general') === vocaCategory);
+    
     if (selectedDays.length === 0) return [];
     
     const words: SATWord[] = [];
     let globalId = 1;
     
     selectedDays.forEach(day => {
-      const dayWords = generateSATWordsForDay(day);
-      dayWords.forEach((word, index) => {
-        // 단어를 표제어로 분류 (synonyms는 동의어로)
+      const dayWords = categoryWords.filter((w: any) => w.day === day);
+      dayWords.forEach((word: any) => {
+        // 단어를 표제어로 분류
         words.push({
           id: globalId++,
           english: word.english,
           korean: word.korean,
           definition: word.definition,
-          synonyms: word.synonyms,
+          synonyms: word.synonym || '',
           day: day,
           category: "표제어"
         });
         
         // 동의어도 추가
-        if (word.synonyms) {
-          const synonymList = word.synonyms.split(',').map(s => s.trim());
-          synonymList.slice(0, 2).forEach((syn) => {
+        if (word.synonym) {
+          const synonymList = word.synonym.split(/[,/ ]+/).map((s: string) => s.trim()).filter(Boolean);
+          synonymList.slice(0, 2).forEach((syn: string) => {
             words.push({
               id: globalId++,
               english: syn,
               korean: word.korean,
               definition: word.definition,
-              synonyms: word.synonyms,
+              synonyms: word.synonym,
               day: day,
               category: "동의어"
             });
@@ -106,13 +118,21 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     });
     
     return words;
-  }, [selectedDays]);
+  }, [selectedDays, vocaCategory]);
 
   const maxAvailable = availableWords.length;
 
   // Calculate available headwords and synonyms
   const availableHeadwords = availableWords.filter(w => w.category === "표제어").length;
   const availableSynonyms = availableWords.filter(w => w.category === "동의어").length;
+
+  const totalQuestions = useMemo(() => {
+    return engToKorTableCount + engToKorSynonymCount + korToEngTableCount + korToEngSynonymCount + defToEngCount;
+  }, [engToKorTableCount, engToKorSynonymCount, korToEngTableCount, korToEngSynonymCount, defToEngCount]);
+
+  const days = useMemo(() => {
+    return availableDays.map(d => d.day);
+  }, [availableDays]);
 
   const handleDayClick = (dayNum: number) => {
     setSelectedDays(prev => {
@@ -132,19 +152,27 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
       if (part.includes('-')) {
         const [start, end] = part.split('-').map(n => parseInt(n.trim()));
         for (let i = start; i <= end; i++) {
-          if (i >= 1 && i <= 30 && !newDays.includes(i)) {
+          if (!newDays.includes(i)) {
             newDays.push(i);
           }
         }
       } else {
         const num = parseInt(part);
-        if (!isNaN(num) && num >= 1 && num <= 30 && !newDays.includes(num)) {
+        if (!isNaN(num) && !newDays.includes(num)) {
           newDays.push(num);
         }
       }
     });
     
     setSelectedDays(newDays.sort((a, b) => a - b));
+  };
+
+  const handleAllDaysToggle = () => {
+    if (selectedDays.length === availableDays.length) {
+      setSelectedDays([]);
+    } else {
+      setSelectedDays(availableDays.map(d => d.day));
+    }
   };
 
   const handleRemoveFromSelected = (wordId: number) => {
@@ -566,13 +594,39 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             </h2>
           </div>
 
+          {/* Category Tabs */}
+          <div className="flex gap-4 mb-8 border-b border-gray-100">
+            <button
+              onClick={() => {
+                setVocaCategory('general');
+                setSelectedDays([]);
+                setInputValue("");
+              }}
+              className={`pb-3 px-2 font-bold text-lg transition-colors border-b-2 ${vocaCategory === 'general' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              SAT 어휘 출제
+            </button>
+            <button
+              onClick={() => {
+                setVocaCategory('yearly');
+                setSelectedDays([]);
+                setInputValue("");
+              }}
+              className={`pb-3 px-2 font-bold text-lg transition-colors border-b-2 ${vocaCategory === 'yearly' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              연도별 단어
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
             {/* Left: Day Selection */}
             <div>
               <div className="mb-4">
                 <h3 className="mb-3 text-base md:text-lg font-medium">
                   <span className="text-gray-900">출제범위</span>{' '}
-                  <span className="text-gray-400 text-sm">(예: 1-2)</span>
+                  <span className="text-gray-400 text-sm">
+                    {vocaCategory === 'general' ? '(예: 1-2)' : '(직접 입력 가능)'}
+                  </span>
                 </h3>
                 <div className="flex gap-2 mb-4">
                   <input
@@ -591,42 +645,49 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setSelectedDays([])}
+                    onClick={handleAllDaysToggle}
                     className="hidden md:inline-flex px-6 border-gray-300 rounded-lg"
                   >
-                    전체선택
+                    {selectedDays.length === availableDays.length ? '전체해제' : '전체선택'}
                   </Button>
                 </div>
               </div>
 
               {/* Day List with Scroll */}
               <div className="border border-gray-300 rounded-xl p-3 md:p-4 overflow-y-auto bg-gradient-to-b from-gray-50 to-white h-[350px] md:h-[500px]">
-                {days.map((dayNum) => (
-                  <div
-                    key={dayNum}
-                    onClick={() => handleDayClick(dayNum)}
-                    className={`flex items-center justify-between px-3 md:px-4 py-2.5 md:py-2 mb-1.5 rounded-lg cursor-pointer transition-all ${
-                      selectedDays.includes(dayNum) 
-                        ? 'bg-white border-2 shadow-sm'
-                        : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                    }`}
-                    style={selectedDays.includes(dayNum) ? { borderColor: '#3DB89E' } : {}}
-                  >
-                    <div className="flex items-center gap-2 md:gap-4">
-                      <span className="text-gray-400 w-5 md:w-6 text-sm">{dayNum}</span>
-                      <span className="text-gray-300 hidden md:inline">|</span>
-                      <span className={`text-sm md:text-base ${selectedDays.includes(dayNum) ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                        DAY {String(dayNum).padStart(2, '0')}
-                      </span>
-                      <span className="text-xs text-gray-400">(50개)</span>
-                    </div>
-                    {selectedDays.includes(dayNum) && (
-                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: '#3DB89E' }}>
-                        <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
-                      </div>
-                    )}
+                {availableDays.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <p>등록된 {vocaCategory === 'general' ? 'DAY' : '연도'}가 없습니다.</p>
+                    <p className="text-xs">CMS 관리자 페이지에서 추가해주세요.</p>
                   </div>
-                ))}
+                ) : (
+                  availableDays.map((dayInfo) => (
+                    <div
+                      key={dayInfo.day}
+                      onClick={() => handleDayClick(dayInfo.day)}
+                      className={`flex items-center justify-between px-3 md:px-4 py-2.5 md:py-2 mb-1.5 rounded-lg cursor-pointer transition-all ${
+                        selectedDays.includes(dayInfo.day) 
+                          ? 'bg-white border-2 shadow-sm'
+                          : 'bg-white border border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      }`}
+                      style={selectedDays.includes(dayInfo.day) ? { borderColor: '#3DB89E' } : {}}
+                    >
+                      <div className="flex items-center gap-2 md:gap-4">
+                        <span className="text-gray-400 w-5 md:w-6 text-sm">{dayInfo.day}</span>
+                        <span className="text-gray-300 hidden md:inline">|</span>
+                        <span className={`text-sm md:text-base ${selectedDays.includes(dayInfo.day) ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                          {dayInfo.name}
+                        </span>
+                        <span className="text-xs text-gray-400">({dayInfo.wordCount}개)</span>
+                      </div>
+                      {selectedDays.includes(dayInfo.day) && (
+                        <div className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: '#3DB89E' }}>
+                          <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -638,7 +699,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                   출제 가능 문제수
                 </h3>
                 <div className="mb-1">
-                  <span className="text-3xl md:text-4xl font-bold" style={{ color: '#3DB89E' }}>{availableWords.length}</span>
+                  <span className="text-3xl md:text-4xl font-bold" style={{ color: '#3DB89E' }}>{totalAvailableWordsCount > 0 ? availableWords.length : 0}</span>
                   <span className="text-sm md:text-base text-gray-600 ml-1 font-medium">문제</span>
                 </div>
                 <p className="text-xs text-gray-600">

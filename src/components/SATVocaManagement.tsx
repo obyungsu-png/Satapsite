@@ -13,21 +13,26 @@ interface VocaWord {
   synonym?: string;
   antonym?: string;
   example?: string;
+  category?: 'general' | 'yearly';
 }
 
 interface DayInfo {
   day: number;
   name: string;
   wordCount: number;
+  category?: 'general' | 'yearly';
 }
 
 export function SATVocaManagement() {
   const [words, setWords] = useState<VocaWord[]>([]);
   const [days, setDays] = useState<DayInfo[]>([]);
+  const [vocaCategory, setVocaCategory] = useState<'general' | 'yearly'>('general');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDayManagement, setShowDayManagement] = useState(false);
+  const [isBulkUpload, setIsBulkUpload] = useState(false);
+  const [bulkText, setBulkText] = useState('');
   
   // Day management state
   const [editingDayNumber, setEditingDayNumber] = useState<number | null>(null);
@@ -55,8 +60,10 @@ export function SATVocaManagement() {
     const savedDays = localStorage.getItem('satVocaDays');
     
     if (savedWords && savedDays) {
-      setWords(JSON.parse(savedWords));
-      setDays(JSON.parse(savedDays));
+      const parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+      const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
+      setWords(parsedWords);
+      setDays(parsedDays);
     } else {
       // Initialize with existing SAT VOCA data (1,500 words)
       const initialWords: VocaWord[] = [];
@@ -74,14 +81,16 @@ export function SATVocaManagement() {
             definition: word.definition,
             synonym: word.synonyms,
             antonym: '',
-            example: ''
+            example: '',
+            category: 'general'
           });
         });
         
         initialDays.push({
           day,
           name: `DAY ${day}`,
-          wordCount: dayWords.length
+          wordCount: dayWords.length,
+          category: 'general'
         });
       }
       
@@ -117,6 +126,41 @@ export function SATVocaManagement() {
     localStorage.setItem('satVocaDays', JSON.stringify(updatedDays));
   };
 
+  // Bulk upload words
+  const handleBulkUpload = () => {
+    if (!bulkText.trim() || !newWord.day) {
+      toast.error("내용과 DAY를 모두 선택해주세요.");
+      return;
+    }
+
+    const lines = bulkText.split('\n').filter(line => line.trim() !== '');
+    const parsedData: VocaWord[] = lines.map((line, index) => {
+      const parts = line.trim().split(/\s+/);
+      return {
+        id: `${newWord.day}-${Date.now()}-${index}`,
+        day: newWord.day as number,
+        english: parts[0] || "",
+        korean: parts[1] || "",
+        definition: parts[2] || "",
+        synonym: parts.slice(3).join(" "),
+        antonym: '',
+        example: '',
+        category: vocaCategory
+      };
+    });
+
+    if (parsedData.length === 0) {
+      toast.error("추가할 단어가 없습니다.");
+      return;
+    }
+
+    const updatedWords = [...words, ...parsedData];
+    saveWords(updatedWords);
+    setBulkText('');
+    setIsBulkUpload(false);
+    toast.success(`${parsedData.length}개의 단어가 추가되었습니다!`);
+  };
+
   // Add new word
   const handleAddWord = () => {
     if (!newWord.english || !newWord.korean || !newWord.day) {
@@ -132,7 +176,8 @@ export function SATVocaManagement() {
       definition: newWord.definition || '',
       synonym: newWord.synonym || '',
       antonym: newWord.antonym || '',
-      example: newWord.example || ''
+      example: newWord.example || '',
+      category: vocaCategory
     };
 
     const updatedWords = [...words, word];
@@ -205,13 +250,16 @@ export function SATVocaManagement() {
     const newDay: DayInfo = {
       day: newDayNumber,
       name: newDayName,
-      wordCount: 0
+      wordCount: 0,
+      category: vocaCategory
     };
 
     const updatedDays = [...days, newDay].sort((a, b) => a.day - b.day);
     saveDays(updatedDays);
     
-    setNewDayNumber(Math.max(...updatedDays.map(d => d.day)) + 1);
+    // Find next day number for current category
+    const categoryDays = updatedDays.filter(d => d.category === vocaCategory);
+    setNewDayNumber(categoryDays.length > 0 ? Math.max(...categoryDays.map(d => d.day)) + 1 : 1);
     setNewDayName('');
     toast.success(`${newDayName}이(가) 추가되었습니다!`);
   };
@@ -341,13 +389,17 @@ export function SATVocaManagement() {
     e.target.value = '';
   };
 
+  // Filter days by category
+  const filteredDays = days.filter(d => d.category === vocaCategory);
+
   // Filter words
   const filteredWords = words.filter(w => {
+    const matchesCategory = w.category === vocaCategory;
     const matchesDay = selectedDay === null || w.day === selectedDay;
     const matchesSearch = !searchTerm || 
       w.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
       w.korean.includes(searchTerm);
-    return matchesDay && matchesSearch;
+    return matchesCategory && matchesDay && matchesSearch;
   });
 
   return (
@@ -357,6 +409,31 @@ export function SATVocaManagement() {
         <div className="max-w-7xl mx-auto">
           <h1 className="text-xl sm:text-2xl mb-1 sm:mb-2">SAT VOCA 단어 관리</h1>
           <p className="text-sm sm:text-base text-gray-600">DAY별로 단어를 추가하고 편집할 수 있습니다. (총 {words.length}개 단어)</p>
+          
+          <div className="flex gap-4 mt-6">
+            <button
+              onClick={() => {
+                setVocaCategory('general');
+                setSelectedDay(null);
+                const categoryDays = days.filter(d => d.category === 'general');
+                setNewDayNumber(categoryDays.length > 0 ? Math.max(...categoryDays.map(d => d.day)) + 1 : 1);
+              }}
+              className={`px-4 py-2 font-bold border-b-2 transition-colors ${vocaCategory === 'general' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              SAT 어휘 출제
+            </button>
+            <button
+              onClick={() => {
+                setVocaCategory('yearly');
+                setSelectedDay(null);
+                const categoryDays = days.filter(d => d.category === 'yearly');
+                setNewDayNumber(categoryDays.length > 0 ? Math.max(...categoryDays.map(d => d.day)) + 1 : 1);
+              }}
+              className={`px-4 py-2 font-bold border-b-2 transition-colors ${vocaCategory === 'yearly' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            >
+              연도별 단어
+            </button>
+          </div>
         </div>
       </div>
 
@@ -383,7 +460,7 @@ export function SATVocaManagement() {
               className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-white w-full sm:w-auto"
             >
               <option value="">전체 DAY</option>
-              {days.map(day => (
+              {filteredDays.map(day => (
                 <option key={day.day} value={day.day}>
                   {day.name} ({day.wordCount}개)
                 </option>
@@ -439,7 +516,7 @@ export function SATVocaManagement() {
 
               {/* Add New DAY */}
               <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <h3 className="text-sm mb-3">새 DAY 추가</h3>
+                <h3 className="text-sm mb-3">새 {vocaCategory === 'general' ? 'DAY' : '연도/제목'} 추가</h3>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -454,7 +531,7 @@ export function SATVocaManagement() {
                     value={newDayName}
                     onChange={(e) => setNewDayName(e.target.value)}
                     className="flex-1 p-2 border border-gray-300 rounded"
-                    placeholder="DAY 이름 (예: DAY 31)"
+                    placeholder={vocaCategory === 'general' ? "DAY 이름 (예: DAY 31)" : "연도/제목 (예: 2024 March)"}
                   />
                   <Button
                     onClick={handleAddDay}
@@ -468,7 +545,7 @@ export function SATVocaManagement() {
 
               {/* DAY List */}
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {days.map((day) => (
+                {filteredDays.map((day) => (
                   <div
                     key={day.day}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors"
@@ -538,8 +615,23 @@ export function SATVocaManagement() {
             <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-6">
               <h2 className="text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
-                새 단어 추가
+                {vocaCategory === 'general' ? '새 단어 추가' : '연도별 단어 추가'}
               </h2>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setIsBulkUpload(false)}
+                  className={`flex-1 py-1.5 text-xs rounded-md border transition-colors ${!isBulkUpload ? 'bg-teal-50 border-teal-200 text-teal-700 font-bold' : 'bg-white border-gray-200 text-gray-500'}`}
+                >
+                  직접 입력
+                </button>
+                <button
+                  onClick={() => setIsBulkUpload(true)}
+                  className={`flex-1 py-1.5 text-xs rounded-md border transition-colors ${isBulkUpload ? 'bg-teal-50 border-teal-200 text-teal-700 font-bold' : 'bg-white border-gray-200 text-gray-500'}`}
+                >
+                  대량 업로드
+                </button>
+              </div>
 
               <div className="space-y-3 sm:space-y-4">
                 <div>
@@ -549,22 +641,48 @@ export function SATVocaManagement() {
                     onChange={(e) => setNewWord({ ...newWord, day: parseInt(e.target.value) })}
                     className="w-full p-2 text-sm sm:text-base border border-gray-300 rounded-lg"
                   >
-                    {days.map(day => (
+                    {filteredDays.map(day => (
                       <option key={day.day} value={day.day}>{day.name}</option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs sm:text-sm mb-1 sm:mb-2">영어 단어 *</label>
-                  <input
-                    type="text"
-                    value={newWord.english || ''}
-                    onChange={(e) => setNewWord({ ...newWord, english: e.target.value })}
-                    className="w-full p-2 text-sm sm:text-base border border-gray-300 rounded-lg"
-                    placeholder="e.g., abandon"
-                  />
-                </div>
+                {isBulkUpload ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs sm:text-sm mb-1 sm:mb-2">단어 데이터 입력 (단어 뜻 영영 동의어)</label>
+                      <textarea
+                        value={bulkText}
+                        onChange={(e) => setBulkText(e.target.value)}
+                        className="w-full p-2 text-xs sm:text-sm border border-gray-300 rounded-lg font-mono"
+                        rows={12}
+                        placeholder="예시)&#10;abandon 포기하다 give_up_something forsake, stop, throw out&#10;apple 사과 a_fruit 빨간_사과, 풋사과"
+                      />
+                      <p className="text-[10px] text-gray-500 mt-1 leading-tight">
+                        * 줄바꿈으로 여러 단어를 입력할 수 있습니다. <br/>
+                        * 단어, 뜻, 영영, 동의어 순서로 입력해주세요. (공백 구분)
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleBulkUpload}
+                      className="w-full py-2 text-sm sm:text-base bg-teal-600 hover:bg-teal-700 text-white rounded-lg"
+                    >
+                      <Upload className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
+                      대량 추가하기
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs sm:text-sm mb-1 sm:mb-2">영어 단어 *</label>
+                      <input
+                        type="text"
+                        value={newWord.english || ''}
+                        onChange={(e) => setNewWord({ ...newWord, english: e.target.value })}
+                        className="w-full p-2 text-sm sm:text-base border border-gray-300 rounded-lg"
+                        placeholder="e.g., abandon"
+                      />
+                    </div>
 
                 <div>
                   <label className="block text-xs sm:text-sm mb-1 sm:mb-2">한글 뜻 *</label>
@@ -628,7 +746,9 @@ export function SATVocaManagement() {
                   <Plus className="w-3 h-3 sm:w-4 sm:h-4 inline mr-2" />
                   추가하기
                 </Button>
-              </div>
+              </>
+            )}
+          </div>
             </div>
           </div>
 
