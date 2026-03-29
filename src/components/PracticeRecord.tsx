@@ -6,6 +6,7 @@ import historyEmptyImage from "figma:asset/5fda86ab59ab70ac4b90ec46b644ce1cd9e29
 import { AdBannerDisplay, Advertisement } from './AdManagement';
 import { ScoreDetailModal } from './ScoreDetailModal';
 import { ReviewModal } from './ReviewModal';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface Question {
   id: number;
@@ -130,10 +131,10 @@ export function PracticeRecord({
       }
 
       try {
-        const response = await fetch(`https://${(await import('../utils/supabase/info')).projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records/${currentUser.id}`, {
+        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records/${currentUser.id}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${(await import('../utils/supabase/info')).publicAnonKey}`,
+            'Authorization': `Bearer ${publicAnonKey}`,
             'Content-Type': 'application/json',
           },
         });
