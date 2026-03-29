@@ -608,11 +608,11 @@ export function SATVocaManagement() {
       )}
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="flex flex-col gap-6">
           {/* Add New Word Form */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-6">
+          <div className="w-full">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-8">
               <h2 className="text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                 {vocaCategory === 'general' ? '새 단어 추가' : '연도별 단어 추가'}
@@ -654,8 +654,8 @@ export function SATVocaManagement() {
                       <textarea
                         value={bulkText}
                         onChange={(e) => setBulkText(e.target.value)}
-                        className="w-full p-2 text-xs sm:text-sm border border-gray-300 rounded-lg font-mono"
-                        rows={12}
+                        className="w-full p-2 text-xs sm:text-sm border border-gray-300 rounded-lg font-mono min-h-[220px] sm:min-h-[300px] resize-vertical"
+                        rows={14}
                         placeholder="예시)&#10;abandon 포기하다 give_up_something forsake, stop, throw out&#10;apple 사과 a_fruit 빨간_사과, 풋사과"
                       />
                       <p className="text-[10px] text-gray-500 mt-1 leading-tight">
@@ -753,7 +753,7 @@ export function SATVocaManagement() {
           </div>
 
           {/* Word List */}
-          <div className="lg:col-span-2">
+          <div className="w-full">
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg">
