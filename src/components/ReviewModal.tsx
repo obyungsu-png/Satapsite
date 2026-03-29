@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Globe, Search, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
+import { useEffect } from "react";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -96,6 +97,20 @@ export function ReviewModal({
   };
 
   const similarQuestions = getSimilarQuestions();
+
+  // Auto close fullscreen when all 3 similar problems are completed
+  useEffect(() => {
+    if (isFullScreen && activeTab === 'similarProblems') {
+      const completedCount = Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length;
+      if (completedCount === 3) {
+        // Wait a moment before auto-closing (shows completion result)
+        const timer = setTimeout(() => {
+          onClose(); // Close the entire ReviewModal to return to the original question
+        }, 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [showSimilarResults, isFullScreen, activeTab, onClose]);
 
   // Fullscreen Similar Problems View
   if (isFullScreen && activeTab === 'similarProblems') {
@@ -563,7 +578,7 @@ export function ReviewModal({
                   style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
                 >
                   <FileText className="h-4 w-4" />
-                  유형문제
+                  정답
                 </button>
               </div>
 
