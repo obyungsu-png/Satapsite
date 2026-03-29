@@ -62,7 +62,17 @@ export function SATVocaManagement() {
     const savedDays = localStorage.getItem('satVocaDays');
     
     if (savedWords && savedDays) {
-      const parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+      let parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+      // DAY1에 50개만 남기고 나머지 삭제
+      const day1Words = parsedWords.filter(w => w.day === 1);
+      if (day1Words.length > 50) {
+        const keep = day1Words.slice(0, 50);
+        parsedWords = [
+          ...keep,
+          ...parsedWords.filter(w => w.day !== 1)
+        ];
+        localStorage.setItem('satVocaWords', JSON.stringify(parsedWords));
+      }
       const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
       setWords(parsedWords);
       setDays(parsedDays);
@@ -482,6 +492,7 @@ export function SATVocaManagement() {
                 setCategoryTab('yearly');
                 setVocaCategory('yearly');
                 setSelectedDay(null);
+                setNewDayNumber(1);
               }}
               className={`px-4 py-2 font-bold border-b-2 transition-colors ${categoryTab === 'yearly' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
