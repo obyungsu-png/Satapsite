@@ -243,7 +243,7 @@ export function QuestionPanel({
                 { id: 'translation', label: '해석', icon: <Globe className="w-4 h-4" /> },
                 { id: 'explanation', label: '해설', icon: <Search className="w-4 h-4" /> },
                 { id: 'vocabulary', label: '단어', icon: <BookOpen className="w-4 h-4" /> },
-                { id: 'similar', label: '유형문제', icon: <FileText className="w-4 h-4" /> }
+                { id: 'similar', label: '정답', icon: <FileText className="w-4 h-4" /> }
               ].map((tab) => (
                 <Button
                   key={tab.id}

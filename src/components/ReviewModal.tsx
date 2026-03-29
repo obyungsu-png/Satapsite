@@ -6,63 +6,63 @@ import { useEffect } from "react";
 
 interface ReviewModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  question: {
-    id: number;
-    passage: string;
-    question: string;
-    choices: { id: string; text: string }[];
-  };
-  selectedAnswer?: string;
-  correctAnswer: string;
-  onPrevious: () => void;
-  onNext: () => void;
-  canGoPrevious: boolean;
-  canGoNext: boolean;
-  questionType?: string;
-  difficulty?: string;
-}
-
-export function ReviewModal({
-  isOpen,
-  onClose,
-  question,
-  selectedAnswer,
-  correctAnswer,
-  onPrevious,
-  onNext,
-  canGoPrevious,
-  canGoNext,
-  questionType,
-  difficulty,
-}: ReviewModalProps) {
-  const [showExplanation, setShowExplanation] = useState(true);
-  const [activeTab, setActiveTab] = useState<'translation' | 'analysis' | 'vocabulary' | 'similarProblems' | null>(null);
-  const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
-  const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
-  const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [fullscreenTab, setFullscreenTab] = useState<'translation' | 'analysis' | 'vocabulary' | null>(null);
-
-  if (!isOpen) return null;
-
-  const userAnswer = selectedAnswer ? selectedAnswer.toUpperCase() : null;
-  const correctAnswerUpper = (correctAnswer || 'A').toUpperCase();
-  const isCorrect = userAnswer === correctAnswerUpper;
-  const isOmitted = !userAnswer;
-
-  // Mock similar questions based on questionType and difficulty
-  const getSimilarQuestions = () => {
-    const typeLabel = questionType || 'Central Ideas and Details';
-    const diffLabel = difficulty || '보통';
-    
-    return [
-      {
-        id: 1,
-        passage: `"The scientist's findings were so ______ that even her harshest critics had to acknowledge the validity of her research."`,
-        question: 'Which choice completes the text with the most logical and precise word or phrase?',
-        choices: [
-          { id: 'a', text: 'ambiguous' },
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setActiveTab(activeTab === 'translation' ? null : 'translation')}
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
+                    activeTab === 'translation'
+                      ? 'bg-white text-gray-900 border-2 border-gray-300'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={{ fontWeight: activeTab === 'translation' ? '600' : '400' }}
+                >
+                  <Globe className="h-4 w-4" />
+                  해석
+                </button>
+                <button
+                  onClick={() => setActiveTab(activeTab === 'analysis' ? null : 'analysis')}
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
+                    activeTab === 'analysis'
+                      ? 'bg-white text-gray-900 border-2 border-gray-300'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={{ fontWeight: activeTab === 'analysis' ? '600' : '400' }}
+                >
+                  <Search className="h-4 w-4" />
+                  해설
+                </button>
+                <button
+                  onClick={() => setActiveTab(activeTab === 'vocabulary' ? null : 'vocabulary')}
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
+                    activeTab === 'vocabulary'
+                      ? 'bg-white text-gray-900 border-2 border-gray-300'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={{ fontWeight: activeTab === 'vocabulary' ? '600' : '400' }}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  단어
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeTab === 'similarProblems') {
+                      setActiveTab(null);
+                    } else {
+                      setActiveTab('similarProblems');
+                      setIsFullScreen(true);
+                    }
+                  }}
+                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
+                    activeTab === 'similarProblems'
+                      ? 'bg-purple-50 text-purple-900 border-2 border-purple-400'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
+                  }`}
+                  style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
+                >
+                  <FileText className="h-4 w-4" />
+                  정답
+                </button>
+              </div>
           { id: 'b', text: 'compelling' },
           { id: 'c', text: 'trivial' },
           { id: 'd', text: 'controversial' },
@@ -99,18 +99,7 @@ export function ReviewModal({
   const similarQuestions = getSimilarQuestions();
 
   // Auto close fullscreen when all 3 similar problems are completed
-  useEffect(() => {
-    if (isFullScreen && activeTab === 'similarProblems') {
-      const completedCount = Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length;
-      if (completedCount === 3) {
-        // Wait a moment before auto-closing (shows completion result)
-        const timer = setTimeout(() => {
-          onClose(); // Close the entire ReviewModal to return to the original question
-        }, 1500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [showSimilarResults, isFullScreen, activeTab, onClose]);
+  // Next 버튼에서 복귀하도록 변경 (자동 복귀 제거)
 
   // Fullscreen Similar Problems View
   if (isFullScreen && activeTab === 'similarProblems') {
@@ -304,6 +293,20 @@ export function ReviewModal({
               {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length} / 3 완료
             </div>
 
+                    {/* Next button for returning after all 3 problems */}
+                    {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length === 3 && (
+                      <div className="flex justify-center mb-6">
+                        <button
+                          onClick={() => {
+                            setIsFullScreen(false);
+                            setActiveTab(null);
+                          }}
+                          className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
             {/* Tab Navigation */}
             <div className="border-t border-gray-200 pt-6">
               <div className="flex gap-2 mb-4">
