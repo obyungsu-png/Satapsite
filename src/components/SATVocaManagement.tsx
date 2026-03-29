@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Plus, Edit3, Trash2, Save, X, Download, Upload, Search, Settings, FolderPlus } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { generateSATWordsForDay } from './vocaWordSets';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface VocaWord {
   id: string;
@@ -401,6 +402,50 @@ export function SATVocaManagement() {
       w.korean.includes(searchTerm);
     return matchesCategory && matchesDay && matchesSearch;
   });
+
+  // Supabase 저장 함수 (단어 전체 동기화)
+  const saveWordsToSupabase = async (words: VocaWord[]) => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/words`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ words }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('⚠️ Supabase 저장 실패:', errorText);
+      } else {
+        console.log('✅ Supabase에 단어 저장 완료');
+      }
+    } catch (error) {
+      console.log('⚠️ Supabase 저장 실패:', error);
+    }
+  };
+
+  // Supabase 저장 함수 (DAY 전체 동기화)
+  const saveDaysToSupabase = async (days: DayInfo[]) => {
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/days`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ days }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('⚠️ Supabase DAY 저장 실패:', errorText);
+      } else {
+        console.log('✅ Supabase에 DAY 저장 완료');
+      }
+    } catch (error) {
+      console.log('⚠️ Supabase DAY 저장 실패:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -922,3 +967,47 @@ export function SATVocaManagement() {
     </div>
   );
 }
+
+// Supabase 저장 함수 (단어 전체 동기화)
+const saveWordsToSupabase = async (words: VocaWord[]) => {
+  try {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/words`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ words }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('⚠️ Supabase 저장 실패:', errorText);
+    } else {
+      console.log('✅ Supabase에 단어 저장 완료');
+    }
+  } catch (error) {
+    console.log('⚠️ Supabase 저장 실패:', error);
+  }
+};
+
+// Supabase 저장 함수 (DAY 전체 동기화)
+const saveDaysToSupabase = async (days: DayInfo[]) => {
+  try {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/days`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ days }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('⚠️ Supabase DAY 저장 실패:', errorText);
+    } else {
+      console.log('✅ Supabase에 DAY 저장 완료');
+    }
+  } catch (error) {
+    console.log('⚠️ Supabase DAY 저장 실패:', error);
+  }
+};
