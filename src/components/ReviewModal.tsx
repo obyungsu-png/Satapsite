@@ -109,9 +109,9 @@ interface ReviewModalProps {
     const isCorrectAnswer = userSimilarAnswer === simQ.correctAnswer.toUpperCase();
 
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      <div className="fixed inset-0 bg-purple-50 z-50 flex flex-col">
         {/* Fullscreen Header */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
+        <div className="border-b border-purple-300 px-6 py-4 flex items-center justify-between bg-purple-100">
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
@@ -139,7 +139,7 @@ interface ReviewModalProps {
         {/* Fullscreen Content - Split View */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Passage */}
-          <div className="w-1/2 border-r border-gray-200 overflow-y-auto p-8 bg-white">
+          <div className="w-1/2 border-r border-purple-300 overflow-y-auto p-8 bg-purple-50">
             {/* Similar Problem Navigation */}
             <div className="flex items-center justify-center gap-2 mb-6">
               {similarQuestions.map((_, idx) => (
@@ -165,7 +165,7 @@ interface ReviewModalProps {
           </div>
 
           {/* Right Panel - Question and Answer */}
-          <div className="w-1/2 overflow-y-auto p-8 bg-gray-50">
+          <div className="w-1/2 overflow-y-auto p-8 bg-purple-100">
             {/* Header with Type/Difficulty and Status */}
             <div className="mb-6 space-y-3">
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
@@ -298,10 +298,13 @@ interface ReviewModalProps {
                       <div className="flex justify-center mb-6">
                         <button
                           onClick={() => {
+                            setSimilarProblemIndex(0);
+                            setSimilarProblemAnswers({});
+                            setShowSimilarResults({});
                             setIsFullScreen(false);
                             setActiveTab(null);
                           }}
-                          className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
+                          className="px-8 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
                         >
                           Next
                         </button>
