@@ -6,63 +6,8 @@ import { useEffect } from "react";
 
 interface ReviewModalProps {
   isOpen: boolean;
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setActiveTab(activeTab === 'translation' ? null : 'translation')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'translation'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'translation' ? '600' : '400' }}
-                >
-                  <Globe className="h-4 w-4" />
-                  해석
-                </button>
-                <button
-                  onClick={() => setActiveTab(activeTab === 'analysis' ? null : 'analysis')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'analysis'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'analysis' ? '600' : '400' }}
-                >
-                  <Search className="h-4 w-4" />
-                  해설
-                </button>
-                <button
-                  onClick={() => setActiveTab(activeTab === 'vocabulary' ? null : 'vocabulary')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'vocabulary'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'vocabulary' ? '600' : '400' }}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  단어
-                </button>
-                <button
-                  onClick={() => {
-                    if (activeTab === 'similarProblems') {
-                      setActiveTab(null);
-                    } else {
-                      setActiveTab('similarProblems');
-                      setIsFullScreen(true);
-                    }
-                  }}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'similarProblems'
-                      ? 'bg-purple-50 text-purple-900 border-2 border-purple-400'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
-                >
-                  <FileText className="h-4 w-4" />
-                  정답
-                </button>
-              </div>
+  // ...existing code...
+}
           { id: 'b', text: 'compelling' },
           { id: 'c', text: 'trivial' },
           { id: 'd', text: 'controversial' },
