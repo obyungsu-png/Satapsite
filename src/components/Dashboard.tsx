@@ -3260,7 +3260,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-sm sm:text-base font-bold text-gray-800">{word.word}</h3>
+                              <h3 className="text-sm sm:text-base font-bold text-gray-800">{word.word || word.english}</h3>
+                              {(word.korean) && (
+                                <span className="text-xs text-indigo-500 font-medium">{word.korean}</span>
+                              )}
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                                 word.difficulty === '어려움' ? 'bg-red-50 text-red-500' :
                                 word.difficulty === '보통' ? 'bg-amber-50 text-amber-500' :
@@ -3276,7 +3279,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                             onClick={(e) => {
                               e.stopPropagation();
                               if ('speechSynthesis' in window) {
-                                const utterance = new SpeechSynthesisUtterance(word.word);
+                                const utterance = new SpeechSynthesisUtterance(word.word || word.english);
                                 utterance.lang = 'en-US';
                                 window.speechSynthesis.speak(utterance);
                               }
