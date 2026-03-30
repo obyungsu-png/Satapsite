@@ -6,37 +6,110 @@ import { useEffect } from "react";
 
 interface ReviewModalProps {
   isOpen: boolean;
-  // ...existing code...
+  onClose: () => void;
+  question: {
+    id: number;
+    passage: string;
+    question: string;
+    choices: Array<{
+      id: string;
+      text: string;
+    }>;
+  };
+  selectedAnswer?: string | null;
+  correctAnswer: string;
+  onPrevious: () => void;
+  onNext: () => void;
+  canGoPrevious: boolean;
+  canGoNext: boolean;
+  questionType?: string;
+  difficulty?: string;
 }
-          { id: 'b', text: 'compelling' },
-          { id: 'c', text: 'trivial' },
-          { id: 'd', text: 'controversial' },
+
+export function ReviewModal({
+  isOpen,
+  onClose,
+  question,
+  selectedAnswer,
+  correctAnswer,
+  onPrevious,
+  onNext,
+  canGoPrevious,
+  canGoNext,
+  questionType,
+  difficulty,
+}: ReviewModalProps) {
+  const [showExplanation, setShowExplanation] = useState(true);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [fullscreenTab, setFullscreenTab] = useState<string | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
+  const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
+  const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setShowExplanation(true);
+    setActiveTab(null);
+    setFullscreenTab(null);
+    setIsFullScreen(false);
+    setSimilarProblemIndex(0);
+    setSimilarProblemAnswers({});
+    setShowSimilarResults({});
+  }, [isOpen, question.id]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const userAnswer = selectedAnswer ? selectedAnswer.toUpperCase() : null;
+  const correctAnswerUpper = correctAnswer?.toUpperCase() || "A";
+  const isCorrect = userAnswer === correctAnswerUpper;
+  const isOmitted = !userAnswer;
+
+  const getSimilarQuestions = () => {
+    const typeLabel = questionType || "Central Ideas and Details";
+    const diffLabel = difficulty || "중간";
+
+    return [
+      {
+        id: 1,
+        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim, contrasts it with a weaker alternative, and supports the stronger interpretation with evidence.`,
+        question: "Which choice best states the main idea of the passage?",
+        choices: [
+          { id: "a", text: "The author rejects the need for evidence in analysis." },
+          { id: "b", text: "The author supports a stronger interpretation with evidence." },
+          { id: "c", text: "The passage argues that all interpretations are equally valid." },
+          { id: "d", text: "The passage focuses mainly on a historical timeline." },
         ],
-        correctAnswer: 'b',
+        correctAnswer: "b",
       },
       {
         id: 2,
-        passage: `Example passage for ${typeLabel} at ${diffLabel} difficulty level.`,
-        question: 'Based on the passage, which statement is most accurate?',
+        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second explanation better matches the data in the passage.`,
+        question: "Based on the passage, which statement is most accurate?",
         choices: [
-          { id: 'a', text: 'The first interpretation' },
-          { id: 'b', text: 'The second interpretation' },
-          { id: 'c', text: 'The third interpretation' },
-          { id: 'd', text: 'The fourth interpretation' },
+          { id: "a", text: "The first explanation is fully confirmed by the data." },
+          { id: "b", text: "Neither explanation relates to the evidence presented." },
+          { id: "c", text: "The second explanation is better supported by the evidence." },
+          { id: "d", text: "The passage recommends ignoring the available data." },
         ],
-        correctAnswer: 'c',
+        correctAnswer: "c",
       },
       {
         id: 3,
-        passage: `Sample passage for similar question 3. This final example of ${typeLabel} at ${diffLabel} level provides additional practice.`,
-        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
+        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression from an initial concession to a reinforcing point.`,
+        question: "Which of the following best completes the text with the most logical and precise word or phrase?",
         choices: [
-          { id: 'a', text: 'nevertheless' },
-          { id: 'b', text: 'furthermore' },
-          { id: 'c', text: 'however' },
-          { id: 'd', text: 'therefore' },
+          { id: "a", text: "nevertheless" },
+          { id: "b", text: "furthermore" },
+          { id: "c", text: "however" },
+          { id: "d", text: "instead" },
         ],
-        correctAnswer: 'b',
+        correctAnswer: "b",
       },
     ];
   };
@@ -523,7 +596,7 @@ interface ReviewModalProps {
                   }}
                   className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'similarProblems'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
+                      ? 'bg-purple-50 text-purple-900 border-2 border-purple-400'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                   }`}
                   style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
