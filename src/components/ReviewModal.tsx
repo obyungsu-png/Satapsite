@@ -166,8 +166,8 @@ export function ReviewModal({
                   onClick={() => setSimilarProblemIndex(idx)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                     similarProblemIndex === idx
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-200 text-purple-700 hover:bg-purple-300'
                   }`}
                 >
                   {idx + 1}
@@ -213,7 +213,7 @@ export function ReviewModal({
             {/* Question */}
             <div className="mb-6">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                   Q
                 </div>
                 <p className="text-gray-900 text-base leading-relaxed">
@@ -249,8 +249,8 @@ export function ReviewModal({
                           ? 'border-red-500 bg-red-50'
                           : 'border-gray-200 bg-white'
                         : isUserChoice
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50/30'
                     } ${hasAnswered ? 'cursor-default' : 'cursor-pointer'}`}
                   >
                     <div className="flex items-start gap-3">
@@ -299,7 +299,7 @@ export function ReviewModal({
                       [similarProblemIndex]: true
                     }));
                   }}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
+                  className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
                 >
                   다음
                 </button>
@@ -307,7 +307,7 @@ export function ReviewModal({
             )}
 
             {/* Progress Indicator */}
-            <div className="mb-6 text-center text-sm text-gray-500">
+            <div className="mb-6 text-center text-sm text-purple-600">
               {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length} / 3 완료
             </div>
 
@@ -322,7 +322,7 @@ export function ReviewModal({
                             setIsFullScreen(false);
                             setActiveTab(null);
                           }}
-                          className="px-8 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
+                          className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
                         >
                           Next
                         </button>
@@ -602,7 +602,7 @@ export function ReviewModal({
                   style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
                 >
                   <FileText className="h-4 w-4" />
-                  정답
+                  유형문제
                 </button>
               </div>
 
