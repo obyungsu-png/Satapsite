@@ -1,3 +1,18 @@
+// 시드 기반 고정 셔플 (같은 시드 → 항상 같은 순서)
+function seededShuffle<T>(array: T[], seed: number = 42): T[] {
+  const newArray = [...array];
+  let s = seed;
+  const nextRandom = () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRandom() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+}
+
 // Fisher-Yates 셔플 알고리즘 (무작위 배열)
 function shuffleArray<T>(array: T[]): T[] {
   const newArray = [...array];
@@ -8,8 +23,8 @@ function shuffleArray<T>(array: T[]): T[] {
   return newArray;
 }
 
-// SAT 고급 어휘 풀 (1,500개 단어) - 고정 순서
-const SAT_WORDS_POOL = [
+// SAT 고급 어휘 풀 (1,500개 단어) - 고정 섬인 순서 (A~Z 섬어서 배정)
+const SAT_WORDS_POOL = seededShuffle([
   // === A ===
   { 
     english: "abscond", 
@@ -993,7 +1008,7 @@ const SAT_WORDS_POOL = [
   { english: "wizened", korean: "쭈글쭈글한", definition: "shriveled or wrinkled with age", synonyms: "shriveled, wrinkled, withered" },
   { english: "zealot", korean: "광신자", definition: "a person with extreme enthusiasm", synonyms: "fanatic, extremist, enthusiast" },
   { english: "zenith", korean: "정점", definition: "the highest point reached", synonyms: "peak, summit, apex" },
-];
+]);
 
 // DAY별로 50개씩 분할하는 함수
 function createDayData(wordsPool: any[], totalDays: number = 30, wordsPerDay: number = 50) {
@@ -1005,7 +1020,7 @@ function createDayData(wordsPool: any[], totalDays: number = 30, wordsPerDay: nu
   // 단어 풀이 부족하면 반복해서 채움
   let extendedPool = [...wordsPool];
   while (extendedPool.length < totalNeeded) {
-    extendedPool = [...extendedPool, ...wordsPool];
+    extendedPool = [...extendedPool, ...seededShuffle(wordsPool, 7 * extendedPool.length)];
   }
   
   // DAY별로 분할
