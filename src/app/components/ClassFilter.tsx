@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Filter } from 'lucide-react';
 import { getClasses } from '../utils/classes';
+import { getStudents } from '../utils/storage';
+import { Class } from '../types';
 
 interface ClassFilterProps {
   selectedClass: string;
@@ -7,9 +10,40 @@ interface ClassFilterProps {
 }
 
 export function ClassFilter({ selectedClass, onClassChange }: ClassFilterProps) {
-  const classes = getClasses();
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [hasNoClassStudents, setHasNoClassStudents] = useState(false);
 
-  if (classes.length === 0) {
+  useEffect(() => {
+    const loadClassOptions = async () => {
+      const [allClasses, students] = await Promise.all([Promise.resolve(getClasses()), getStudents()]);
+      const studentClassNames = Array.from(
+        new Set(
+          students
+            .map((student) => student.className)
+            .filter((className): className is string => Boolean(className && className.trim())),
+        ),
+      );
+
+      const classByName = new Map(allClasses.map((cls) => [cls.name, cls]));
+      const activeClasses = studentClassNames.map((name) => {
+        const existing = classByName.get(name);
+        return (
+          existing || {
+            id: `derived-${name}`,
+            name,
+            color: '#6B7280',
+          }
+        );
+      });
+
+      setClasses(activeClasses);
+      setHasNoClassStudents(students.some((student) => !student.className));
+    };
+
+    loadClassOptions();
+  }, []);
+
+  if (classes.length === 0 && !hasNoClassStudents) {
     return null;
   }
 
@@ -27,7 +61,7 @@ export function ClassFilter({ selectedClass, onClassChange }: ClassFilterProps) 
             {cls.name}
           </option>
         ))}
-        <option value="no-class">반 미지정</option>
+        {hasNoClassStudents && <option value="no-class">반 미지정</option>}
       </select>
     </div>
   );

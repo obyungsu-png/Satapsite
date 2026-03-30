@@ -60,3 +60,13 @@ export interface Class {
   name: string;
   color: string;
 }
+
+export interface PerformanceItem {
+  id: string;
+  date: string; // yyyy-MM-dd
+  type: 'assessment' | 'school-event';
+  title: string;
+  note?: string;
+  className?: string;
+  createdAt: string;
+}

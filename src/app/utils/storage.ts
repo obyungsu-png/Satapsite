@@ -1,4 +1,4 @@
-import { Student, WeeklySchedule, AttendanceRecord } from '../types';
+import { Student, WeeklySchedule, AttendanceRecord, PerformanceItem } from '../types';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-a8a911aa`;
@@ -261,4 +261,40 @@ export const removeBillingAdjustment = async (studentId: string, year: number, m
     console.error('Error removing billing adjustment:', error);
     throw error;
   }
+};
+
+// ============ Performance / School Events ============
+const PERFORMANCE_EVENTS_KEY = 'academy_performance_events';
+
+export const getPerformanceEvents = async (): Promise<PerformanceItem[]> => {
+  try {
+    const raw = localStorage.getItem(PERFORMANCE_EVENTS_KEY);
+    const parsed: PerformanceItem[] = raw ? JSON.parse(raw) : [];
+    return parsed.sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error('Error fetching performance events:', error);
+    return [];
+  }
+};
+
+export const savePerformanceEvents = async (events: PerformanceItem[]): Promise<void> => {
+  localStorage.setItem(PERFORMANCE_EVENTS_KEY, JSON.stringify(events));
+};
+
+export const addPerformanceEvent = async (
+  data: Omit<PerformanceItem, 'id' | 'createdAt'>,
+): Promise<PerformanceItem> => {
+  const current = await getPerformanceEvents();
+  const newEvent: PerformanceItem = {
+    ...data,
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: new Date().toISOString(),
+  };
+  await savePerformanceEvents([...current, newEvent]);
+  return newEvent;
+};
+
+export const deletePerformanceEvent = async (id: string): Promise<void> => {
+  const current = await getPerformanceEvents();
+  await savePerformanceEvents(current.filter((event) => event.id !== id));
 };

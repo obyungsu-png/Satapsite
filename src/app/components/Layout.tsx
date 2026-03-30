@@ -5,12 +5,14 @@ import {
   Calendar, 
   CheckSquare, 
   DollarSign,
+  ClipboardCheck,
   GraduationCap,
 } from 'lucide-react';
 
 export function Layout() {
   const navItems = [
     { path: '/', label: '대시보드', icon: LayoutDashboard },
+    { path: '/performance', label: '수행평가', icon: ClipboardCheck },
     { path: '/students', label: '학생 관리', icon: Users },
     { path: '/schedule', label: '수업 스케줄', icon: Calendar },
     { path: '/attendance', label: '출결 관리', icon: CheckSquare },
