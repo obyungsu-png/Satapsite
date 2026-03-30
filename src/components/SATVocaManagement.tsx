@@ -104,75 +104,72 @@ export function SATVocaManagement() {
   // Load words from Supabase first, then localStorage fallback, then initialize
   useEffect(() => {
     const loadData = async () => {
+      // Build canonical 'general' seed data
+      const seedWords: VocaWord[] = [];
+      const seedDays: DayInfo[] = [];
+      for (let day = 1; day <= 30; day++) {
+        const dayWords = generateSATWordsForDay(day);
+        dayWords.forEach((word, index) => {
+          seedWords.push({
+            id: `${day}-${index + 1}`,
+            day,
+            english: word.english,
+            korean: word.korean,
+            definition: word.definition,
+            synonym: word.synonyms,
+            antonym: '',
+            example: '',
+            category: 'general'
+          });
+        });
+        seedDays.push({ day, name: `DAY ${day}`, wordCount: dayWords.length, category: 'general' });
+      }
+
       // Try Supabase first
       const supaWords = await fetchWordsFromSupabase();
       const supaDays = await fetchDaysFromSupabase();
 
+      let allWords: VocaWord[] = [];
+      let allDays: DayInfo[] = [];
+
       if (supaWords && supaDays) {
-        setWords(supaWords);
-        setDays(supaDays);
-        localStorage.setItem('satVocaWords', JSON.stringify(supaWords));
-        localStorage.setItem('satVocaDays', JSON.stringify(supaDays));
-        return;
-      }
-
-      // Fallback to localStorage
-      const savedWords = localStorage.getItem('satVocaWords');
-      const savedDays = localStorage.getItem('satVocaDays');
-
-      if (savedWords && savedDays) {
-        let parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
-        const day1Words = parsedWords.filter((w: VocaWord) => w.day === 1);
-        if (day1Words.length > 50) {
-          const keep = day1Words.slice(0, 50);
-          parsedWords = [...keep, ...parsedWords.filter((w: VocaWord) => w.day !== 1)];
-          localStorage.setItem('satVocaWords', JSON.stringify(parsedWords));
-        }
-        const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
-        setWords(parsedWords);
-        setDays(parsedDays);
-        // Sync existing localStorage data to Supabase
-        syncWordsToSupabase(parsedWords);
-        syncDaysToSupabase(parsedDays);
+        allWords = supaWords.map((w: any) => ({ ...w, category: w.category || 'general' }));
+        allDays = supaDays.map((d: any) => ({ ...d, category: d.category || 'general' }));
       } else {
-        // Initialize with seed data
-        const initialWords: VocaWord[] = [];
-        const initialDays: DayInfo[] = [];
-
-        for (let day = 1; day <= 30; day++) {
-          const dayWords = generateSATWordsForDay(day);
-          dayWords.forEach((word, index) => {
-            initialWords.push({
-              id: `${day}-${index + 1}`,
-              day,
-              english: word.english,
-              korean: word.korean,
-              definition: word.definition,
-              synonym: word.synonyms,
-              antonym: '',
-              example: '',
-              category: 'general'
-            });
-          });
-          initialDays.push({ day, name: `DAY ${day}`, wordCount: dayWords.length, category: 'general' });
+        // Fallback to localStorage
+        const savedWords = localStorage.getItem('satVocaWords');
+        const savedDays = localStorage.getItem('satVocaDays');
+        if (savedWords && savedDays) {
+          allWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+          allDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
         }
-
-        setWords(initialWords);
-        setDays(initialDays);
-        localStorage.setItem('satVocaWords', JSON.stringify(initialWords));
-        localStorage.setItem('satVocaDays', JSON.stringify(initialDays));
-        syncWordsToSupabase(initialWords);
-        syncDaysToSupabase(initialDays);
       }
+
+      // Always enforce: 'general' words for DAY 1-30 = seed data (50 each)
+      const yearlyWords = allWords.filter(w => w.category === 'yearly');
+      const yearlyDays = allDays.filter(d => d.category === 'yearly');
+      // Keep any user-added general days beyond DAY 30
+      const extraGeneralDays = allDays.filter(d => d.category === 'general' && d.day > 30);
+      const extraGeneralWords = allWords.filter(w => w.category === 'general' && w.day > 30);
+
+      const finalWords = [...seedWords, ...extraGeneralWords, ...yearlyWords];
+      const finalDays = [...seedDays, ...extraGeneralDays, ...yearlyDays];
+
+      setWords(finalWords);
+      setDays(finalDays);
+      localStorage.setItem('satVocaWords', JSON.stringify(finalWords));
+      localStorage.setItem('satVocaDays', JSON.stringify(finalDays));
+      syncWordsToSupabase(finalWords);
+      syncDaysToSupabase(finalDays);
     };
     loadData();
   }, []);
 
-  // Update day word counts
+  // Update day word counts (category-aware)
   useEffect(() => {
     const updatedDays = days.map(day => ({
       ...day,
-      wordCount: words.filter(w => w.day === day.day).length
+      wordCount: words.filter(w => w.day === day.day && (w.category || 'general') === (day.category || 'general')).length
     }));
     
     if (JSON.stringify(updatedDays) !== JSON.stringify(days)) {
@@ -359,17 +356,17 @@ export function SATVocaManagement() {
 
   // Delete DAY
   const handleDeleteDay = (dayNumber: number) => {
-    const dayInfo = days.find(d => d.day === dayNumber);
+    const dayInfo = days.find(d => d.day === dayNumber && (d.category || 'general') === vocaCategory);
     if (dayInfo && dayInfo.wordCount > 0) {
       if (!confirm(`${dayInfo.name}에 ${dayInfo.wordCount}개의 단어가 있습니다. 정말 삭제하시겠습니까?`)) {
         return;
       }
-      // Delete all words in this day
-      const updatedWords = words.filter(w => w.day !== dayNumber);
+      // Delete only words in this day AND current category
+      const updatedWords = words.filter(w => !(w.day === dayNumber && (w.category || 'general') === vocaCategory));
       saveWords(updatedWords);
     }
 
-    const updatedDays = days.filter(d => d.day !== dayNumber);
+    const updatedDays = days.filter(d => !(d.day === dayNumber && (d.category || 'general') === vocaCategory));
     saveDays(updatedDays);
     
     if (selectedDay === dayNumber) {
