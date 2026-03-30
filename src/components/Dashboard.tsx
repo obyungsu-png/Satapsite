@@ -979,213 +979,291 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     };
 
     return (
-      <div className="bg-gray-50 pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-          {/* Header */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#3D5AA1' }}>
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
+      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 50%, #faf5ff 100%)' }}>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+          
+          {/* Hero Header Card */}
+          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 mb-6 shadow-xl" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A855F7 100%)' }}>
+            <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/4" />
+            <div className="absolute top-1/2 right-1/4 w-32 h-32 bg-white/5 rounded-full" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">학습 리포트</h1>
-                  <p className="text-sm text-gray-600">Monthly Progress Report</p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full mb-3">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                    <span className="text-[11px] text-white/80 font-medium">Monthly Report</span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">SAT 학습 리포트</h1>
+                  <p className="text-sm text-white/60">{new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                <div className="text-right">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-3xl sm:text-4xl">📊</span>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600">생성일</p>
-                <p className="text-base font-semibold text-gray-900">{new Date().toLocaleDateString('ko-KR')}</p>
+              
+              {/* Quick Stats Row */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-white">{performanceData.totalTests}</div>
+                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">총 테스트</div>
+                </div>
+                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-emerald-300">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</div>
+                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">정답률</div>
+                </div>
+                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
+                  <div className="text-2xl sm:text-3xl font-bold text-amber-300">{performanceData.highestScore}</div>
+                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">최고점</div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 📈 학습 횟수 요약 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              📈 학습 횟수 요약
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">모의고사</p>
-                <p className="text-2xl font-bold text-gray-900">{studyStats.mockTests.count}회</p>
-                <p className="text-xs text-gray-600 mt-1">평균 {studyStats.mockTests.avgScore}점</p>
+          {/* 학습 활동 요약 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
+                <span className="text-base">📈</span>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">실전 테스트</p>
-                <p className="text-2xl font-bold text-gray-900">{studyStats.realTests.count}회</p>
-                <p className="text-xs text-gray-600 mt-1">평균 {studyStats.realTests.avgScore}점</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">학습 활동 요약</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📝</span>
+                  <span className="text-xs font-semibold text-gray-500">모의고사</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{studyStats.mockTests.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
+                <div className="text-[11px] text-blue-500 font-medium mt-1">평균 {studyStats.mockTests.avgScore}점</div>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">어휘 학습</p>
-                <p className="text-2xl font-bold text-gray-900">{studyStats.vocabulary.count}회</p>
+              <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-4 border border-violet-100/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🎯</span>
+                  <span className="text-xs font-semibold text-gray-500">실전 테스트</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{studyStats.realTests.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
+                <div className="text-[11px] text-violet-500 font-medium mt-1">평균 {studyStats.realTests.avgScore}점</div>
               </div>
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
-                <p className="text-sm text-gray-600 mb-1">전문 훈련</p>
-                <p className="text-2xl font-bold text-gray-900">{studyStats.training.count}회</p>
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📚</span>
+                  <span className="text-xs font-semibold text-gray-500">어휘 학습</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{studyStats.vocabulary.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⚡</span>
+                  <span className="text-xs font-semibold text-gray-500">전문 훈련</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{studyStats.training.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
               </div>
             </div>
           </div>
 
-          {/* 🎯 성적 분석 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              🎯 성적 분석
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">평균 점수</p>
-                <p className="text-2xl font-bold" style={{ color: '#3D5AA1' }}>{performanceData.averageScore}</p>
+          {/* 성적 분석 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <span className="text-base">🎯</span>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">최고 점수</p>
-                <p className="text-2xl font-bold text-green-600">{performanceData.highestScore}</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">성적 분석</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="text-center p-4 bg-gradient-to-b from-indigo-50 to-white rounded-2xl border border-indigo-100/50">
+                <div className="text-xs text-gray-500 mb-1.5 font-medium">평균 점수</div>
+                <div className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">{performanceData.averageScore}</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">최저 점수</p>
-                <p className="text-2xl font-bold text-orange-600">{performanceData.lowestScore}</p>
+              <div className="text-center p-4 bg-gradient-to-b from-emerald-50 to-white rounded-2xl border border-emerald-100/50">
+                <div className="text-xs text-gray-500 mb-1.5 font-medium">최고 점수</div>
+                <div className="text-3xl font-bold text-emerald-600">{performanceData.highestScore}</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">전체 정답률</p>
-                <p className="text-2xl font-bold" style={{ color: '#10B981' }}>
-                  {Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%
-                </p>
+              <div className="text-center p-4 bg-gradient-to-b from-amber-50 to-white rounded-2xl border border-amber-100/50">
+                <div className="text-xs text-gray-500 mb-1.5 font-medium">최저 점수</div>
+                <div className="text-3xl font-bold text-amber-600">{performanceData.lowestScore}</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">푼 문제 수</p>
-                <p className="text-2xl font-bold text-gray-900">{performanceData.totalQuestions}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <div className="text-[11px] text-gray-500 mb-1">정답률</div>
+                <div className="text-lg font-bold text-emerald-600">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-600 mb-1">맞춘 문제</p>
-                <p className="text-2xl font-bold text-gray-900">{performanceData.correctAnswers}</p>
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <div className="text-[11px] text-gray-500 mb-1">푼 문제</div>
+                <div className="text-lg font-bold text-gray-800">{performanceData.totalQuestions}</div>
+              </div>
+              <div className="text-center p-3 bg-gray-50 rounded-xl">
+                <div className="text-[11px] text-gray-500 mb-1">맞춘 문제</div>
+                <div className="text-lg font-bold text-gray-800">{performanceData.correctAnswers}</div>
               </div>
             </div>
           </div>
 
-          {/* 📚 영역별 성적 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              📚 영역별 성적
-            </h2>
+          {/* 영역별 성적 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
+                <span className="text-base">📚</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">영역별 성적</h2>
+            </div>
             <div className="space-y-4">
               {subjectPerformance.map((subject, index) => (
-                <div key={index}>
+                <div key={index} className="group">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900">{subject.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ 
-                        backgroundColor: subject.color + '20', 
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs" 
+                        style={{ backgroundColor: subject.color + '15', color: subject.color }}>
+                        {subject.status === '우수' ? '🟢' : subject.status === '보통' ? '🟡' : '🔴'}
+                      </div>
+                      <span className="text-sm font-bold text-gray-800">{subject.name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ 
+                        backgroundColor: subject.color + '15', 
                         color: subject.color 
                       }}>
                         {subject.status}
                       </span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.score}%</span>
-                      <span className="text-xs text-gray-500 ml-2">({subject.count}회)</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base font-bold" style={{ color: subject.color }}>{subject.score}%</span>
+                      <span className="text-[11px] text-gray-400">({subject.count}회)</span>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
                     <div 
-                      className="h-2.5 rounded-full transition-all duration-500"
+                      className="h-full rounded-full transition-all duration-700 ease-out"
                       style={{ 
                         width: `${subject.score}%`, 
-                        backgroundColor: subject.color 
+                        background: `linear-gradient(90deg, ${subject.color}, ${subject.color}dd)`
                       }}
-                    ></div>
+                    />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ⚠️ 자동 분석 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              ⚠️ 자동 분석
-            </h2>
-            <div className="space-y-4">
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                <p className="text-sm font-semibold text-green-900 mb-1">
-                  우수 영역: {bestSubject.name} ({bestSubject.score}%)
-                </p>
-                <p className="text-xs text-green-700">
-                  {bestSubject.name} 영역에서 뛰어난 실력을 보이고 있습니다!
-                </p>
+          {/* AI 분석 인사이트 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                <span className="text-base">🤖</span>
               </div>
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <p className="text-sm font-semibold text-red-900 mb-1">
-                  취약 영역: {weakestSubject.name} ({weakestSubject.score}%)
-                </p>
-                <p className="text-xs text-red-700">
-                  {weakestSubject.name} 영역의 집중 학습이 필요합니다.
-                </p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">AI 분석 인사이트</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100/60">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">💪</span>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-emerald-800 mb-0.5">강점 영역: {bestSubject.name}</div>
+                  <div className="text-xs text-emerald-600 leading-relaxed">
+                    {bestSubject.score}% 달성! {bestSubject.name} 영역에서 뛰어난 실력을 보이고 있습니다!
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100/60">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg">📌</span>
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-rose-800 mb-0.5">집중 필요: {weakestSubject.name}</div>
+                  <div className="text-xs text-rose-600 leading-relaxed">
+                    {weakestSubject.score}% — {weakestSubject.name} 영역의 집중 학습이 필요합니다.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 💡 종합 평가 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              💡 종합 평가
-            </h2>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-sm text-gray-700 leading-relaxed">
-                총 <span className="font-bold">{performanceData.totalTests}회</span>의 테스트를 통해 꾸준한 학습 습관을 보여주고 있습니다. 
-                평균 정답률 <span className="font-bold">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</span>로 
-                전반적으로 양호한 수준이며, 특히 <span className="font-bold" style={{ color: bestSubject.color }}>{bestSubject.name}</span> 영역에서 
-                강점을 보입니다. <span className="font-bold" style={{ color: weakestSubject.color }}>{weakestSubject.name}</span> 영역에 
-                더 집중하면 더욱 균형잡힌 실력 향상이 가능할 것입니다.
+          {/* 종합 평가 */}
+          <div className="relative overflow-hidden rounded-3xl p-5 sm:p-7 mb-5 shadow-sm" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' }}>
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center">
+                  <span className="text-base">💡</span>
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-white">종합 평가</h2>
+              </div>
+              <p className="text-sm text-indigo-200 leading-relaxed">
+                총 <span className="font-bold text-white">{performanceData.totalTests}회</span>의 테스트를 통해 꾸준한 학습 습관을 보여주고 있습니다. 
+                평균 정답률 <span className="font-bold text-emerald-300">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</span>로 
+                전반적으로 양호한 수준이며, 특히 <span className="font-bold text-emerald-300">{bestSubject.name}</span> 영역에서 
+                강점을 보입니다. <span className="font-bold text-amber-300">{weakestSubject.name}</span> 영역에 
+                더 집중하면 더욱 균형잡힌 실력 향상이 가능합니다.
               </p>
             </div>
           </div>
 
-          {/* 💌 학생 메시지 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              💌 학생 메시지
-            </h2>
+          {/* 학생 메시지 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-pink-100 flex items-center justify-center">
+                <span className="text-base">💌</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">학생 메시지</h2>
+            </div>
             <textarea
               value={studentMessage}
               onChange={(e) => setStudentMessage(e.target.value)}
               placeholder="부모님께 전하고 싶은 메시지를 작성하세요..."
-              className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              rows={4}
+              className="w-full p-4 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50 resize-none text-sm text-gray-700 placeholder-gray-300 transition-all"
+              rows={3}
             />
           </div>
 
           {/* 공유 버튼 */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">리포트 공유하기</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Button
-                onClick={handleCopyReport}
-                className="flex items-center justify-center gap-2 py-3"
-                style={{ backgroundColor: '#6B7280', color: 'white' }}
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? '복사됨!' : '텍스트 복사'}
-              </Button>
-              <Button
-                onClick={handleShareEmail}
-                className="flex items-center justify-center gap-2 py-3"
-                style={{ backgroundColor: '#3D5AA1', color: 'white' }}
-              >
-                <Mail className="w-4 h-4" />
-                이메일
-              </Button>
-              <Button
-                onClick={handleShareSMS}
-                className="flex items-center justify-center gap-2 py-3"
-                style={{ backgroundColor: '#10B981', color: 'white' }}
-              >
-                <MessageCircle className="w-4 h-4" />
-                문자/WeChat
-              </Button>
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <Share2 className="w-4 h-4 text-indigo-600" />
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">리포트 공유하기</h2>
             </div>
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                onClick={handleCopyReport}
+                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
+                  {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5 text-gray-500" />}
+                </div>
+                <span className="text-xs font-semibold text-gray-600">{copied ? '복사됨!' : '복사'}</span>
+              </button>
+              <button
+                onClick={handleShareEmail}
+                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+                  <Mail className="w-5 h-5 text-indigo-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">이메일</span>
+              </button>
+              <button
+                onClick={handleShareSMS}
+                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
+                  <MessageCircle className="w-5 h-5 text-emerald-500" />
+                </div>
+                <span className="text-xs font-semibold text-gray-600">문자</span>
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-4 text-center font-medium">
               💡 한 달에 한 번씩 부모님께 학습 상황을 공유해보세요!
             </p>
+          </div>
+          
+          {/* Bottom Branding */}
+          <div className="text-center mt-8 mb-4">
+            <p className="text-[10px] text-gray-300 font-medium tracking-wider uppercase">Powered by SAT Allmyexam</p>
           </div>
         </div>
       </div>

@@ -818,16 +818,6 @@ export function PracticeRecord({
                   </p>
                 </div>
               )}
-
-              {/* Footer note */}
-              {Object.keys(groupedRecords).length > 0 && (
-                <div className="flex justify-center mt-6 md:mt-8 mb-4">
-                  <div className="inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 bg-gray-800 text-gray-300 text-[10px] md:text-xs rounded-full text-center">
-                    <span className="w-3.5 h-3.5 border border-gray-500 rounded-full flex items-center justify-center text-[8px] flex-shrink-0">!</span>
-                    근태비 데이터가 모든 끝났에, 관련해의 지원센터에 질문 또는 문의하세요
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
