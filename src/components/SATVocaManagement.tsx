@@ -254,7 +254,7 @@ export function SATVocaManagement() {
       return;
     }
 
-    if (days.some(d => d.day === newDayNumber)) {
+    if (days.some(d => d.day === newDayNumber && d.category === vocaCategory)) {
       toast.error(`DAY ${newDayNumber}은(는) 이미 존재합니다.`);
       return;
     }
