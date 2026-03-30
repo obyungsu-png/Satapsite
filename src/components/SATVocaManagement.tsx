@@ -56,61 +56,116 @@ export function SATVocaManagement() {
   // Editing word form
   const [editingWord, setEditingWord] = useState<Partial<VocaWord>>({});
 
-  // Load words from localStorage or initialize from vocaWordSets
+  // Supabase sync helpers
+  const apiBase = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1`;
+  
+  const fetchWordsFromSupabase = async (): Promise<VocaWord[] | null> => {
+    try {
+      const res = await fetch(`${apiBase}/words`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.words) && data.words.length > 0) return data.words;
+      return null;
+    } catch { return null; }
+  };
+
+  const fetchDaysFromSupabase = async (): Promise<DayInfo[] | null> => {
+    try {
+      const res = await fetch(`${apiBase}/days`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.days) && data.days.length > 0) return data.days;
+      return null;
+    } catch { return null; }
+  };
+
+  const syncWordsToSupabase = async (w: VocaWord[]) => {
+    try {
+      await fetch(`${apiBase}/words`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ words: w })
+      });
+    } catch (e) { console.log('Supabase word sync failed:', e); }
+  };
+
+  const syncDaysToSupabase = async (d: DayInfo[]) => {
+    try {
+      await fetch(`${apiBase}/days`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ days: d })
+      });
+    } catch (e) { console.log('Supabase day sync failed:', e); }
+  };
+
+  // Load words from Supabase first, then localStorage fallback, then initialize
   useEffect(() => {
-    const savedWords = localStorage.getItem('satVocaWords');
-    const savedDays = localStorage.getItem('satVocaDays');
-    
-    if (savedWords && savedDays) {
-      let parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
-      // DAY1에 50개만 남기고 나머지 삭제
-      const day1Words = parsedWords.filter(w => w.day === 1);
-      if (day1Words.length > 50) {
-        const keep = day1Words.slice(0, 50);
-        parsedWords = [
-          ...keep,
-          ...parsedWords.filter(w => w.day !== 1)
-        ];
-        localStorage.setItem('satVocaWords', JSON.stringify(parsedWords));
+    const loadData = async () => {
+      // Try Supabase first
+      const supaWords = await fetchWordsFromSupabase();
+      const supaDays = await fetchDaysFromSupabase();
+
+      if (supaWords && supaDays) {
+        setWords(supaWords);
+        setDays(supaDays);
+        localStorage.setItem('satVocaWords', JSON.stringify(supaWords));
+        localStorage.setItem('satVocaDays', JSON.stringify(supaDays));
+        return;
       }
-      const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
-      setWords(parsedWords);
-      setDays(parsedDays);
-    } else {
-      // Initialize with existing SAT VOCA data (1,500 words)
-      const initialWords: VocaWord[] = [];
-      const initialDays: DayInfo[] = [];
-      
-      for (let day = 1; day <= 30; day++) {
-        const dayWords = generateSATWordsForDay(day);
-        
-        dayWords.forEach((word, index) => {
-          initialWords.push({
-            id: `${day}-${index + 1}`,
-            day,
-            english: word.english,
-            korean: word.korean,
-            definition: word.definition,
-            synonym: word.synonyms,
-            antonym: '',
-            example: '',
-            category: 'general'
+
+      // Fallback to localStorage
+      const savedWords = localStorage.getItem('satVocaWords');
+      const savedDays = localStorage.getItem('satVocaDays');
+
+      if (savedWords && savedDays) {
+        let parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+        const day1Words = parsedWords.filter((w: VocaWord) => w.day === 1);
+        if (day1Words.length > 50) {
+          const keep = day1Words.slice(0, 50);
+          parsedWords = [...keep, ...parsedWords.filter((w: VocaWord) => w.day !== 1)];
+          localStorage.setItem('satVocaWords', JSON.stringify(parsedWords));
+        }
+        const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
+        setWords(parsedWords);
+        setDays(parsedDays);
+        // Sync existing localStorage data to Supabase
+        syncWordsToSupabase(parsedWords);
+        syncDaysToSupabase(parsedDays);
+      } else {
+        // Initialize with seed data
+        const initialWords: VocaWord[] = [];
+        const initialDays: DayInfo[] = [];
+
+        for (let day = 1; day <= 30; day++) {
+          const dayWords = generateSATWordsForDay(day);
+          dayWords.forEach((word, index) => {
+            initialWords.push({
+              id: `${day}-${index + 1}`,
+              day,
+              english: word.english,
+              korean: word.korean,
+              definition: word.definition,
+              synonym: word.synonyms,
+              antonym: '',
+              example: '',
+              category: 'general'
+            });
           });
-        });
-        
-        initialDays.push({
-          day,
-          name: `DAY ${day}`,
-          wordCount: dayWords.length,
-          category: 'general'
-        });
+          initialDays.push({ day, name: `DAY ${day}`, wordCount: dayWords.length, category: 'general' });
+        }
+
+        setWords(initialWords);
+        setDays(initialDays);
+        localStorage.setItem('satVocaWords', JSON.stringify(initialWords));
+        localStorage.setItem('satVocaDays', JSON.stringify(initialDays));
+        syncWordsToSupabase(initialWords);
+        syncDaysToSupabase(initialDays);
       }
-      
-      setWords(initialWords);
-      setDays(initialDays);
-      localStorage.setItem('satVocaWords', JSON.stringify(initialWords));
-      localStorage.setItem('satVocaDays', JSON.stringify(initialDays));
-    }
+    };
+    loadData();
   }, []);
 
   // Update day word counts
@@ -123,19 +178,22 @@ export function SATVocaManagement() {
     if (JSON.stringify(updatedDays) !== JSON.stringify(days)) {
       setDays(updatedDays);
       localStorage.setItem('satVocaDays', JSON.stringify(updatedDays));
+      syncDaysToSupabase(updatedDays);
     }
   }, [words]);
 
-  // Save words to localStorage
+  // Save words to localStorage + Supabase
   const saveWords = (updatedWords: VocaWord[]) => {
     setWords(updatedWords);
     localStorage.setItem('satVocaWords', JSON.stringify(updatedWords));
+    syncWordsToSupabase(updatedWords);
   };
 
-  // Save days to localStorage
+  // Save days to localStorage + Supabase
   const saveDays = (updatedDays: DayInfo[]) => {
     setDays(updatedDays);
     localStorage.setItem('satVocaDays', JSON.stringify(updatedDays));
+    syncDaysToSupabase(updatedDays);
   };
 
   // Bulk upload words

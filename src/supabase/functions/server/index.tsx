@@ -630,4 +630,64 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   }
 });
 
+// ==============================================
+// SAT Vocabulary Routes
+// ==============================================
+
+// Get all vocabulary words
+app.get('/make-server-46fa08c1/words', async (c) => {
+  try {
+    const words = await kv.get('sat_voca_words');
+    return c.json({ success: true, words: words || [] });
+  } catch (error) {
+    console.error('Error loading words:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// Save all vocabulary words (replaces all)
+app.post('/make-server-46fa08c1/words', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { words } = body;
+    if (!Array.isArray(words)) {
+      return c.json({ success: false, error: 'Words must be an array' }, 400);
+    }
+    await kv.set('sat_voca_words', words);
+    console.log(`✅ ${words.length}개의 단어가 Supabase에 저장되었습니다.`);
+    return c.json({ success: true, message: `${words.length} words saved` });
+  } catch (error) {
+    console.error('Error saving words:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// Get all vocabulary days
+app.get('/make-server-46fa08c1/days', async (c) => {
+  try {
+    const days = await kv.get('sat_voca_days');
+    return c.json({ success: true, days: days || [] });
+  } catch (error) {
+    console.error('Error loading days:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
+// Save all vocabulary days (replaces all)
+app.post('/make-server-46fa08c1/days', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { days } = body;
+    if (!Array.isArray(days)) {
+      return c.json({ success: false, error: 'Days must be an array' }, 400);
+    }
+    await kv.set('sat_voca_days', days);
+    console.log(`✅ ${days.length}개의 DAY가 Supabase에 저장되었습니다.`);
+    return c.json({ success: true, message: `${days.length} days saved` });
+  } catch (error) {
+    console.error('Error saving days:', error);
+    return c.json({ success: false, error: String(error) }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

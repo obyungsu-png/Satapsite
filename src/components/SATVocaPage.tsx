@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Check, Minus, Plus, RefreshCw, Trash2, FileText, Calendar, X } from "lucide-react";
 import { generateSATWordsForDay } from "./vocaWordSets";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { TestTypeSelectionModal } from "./TestTypeSelectionModal";
 import { SATVocaTest } from "./SATVocaTest";
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface SATWord {
   id: number;
@@ -58,27 +59,47 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   const [isTestActive, setIsTestActive] = useState(false);
   const [activeTestInfo, setActiveTestInfo] = useState<any>(null);
 
+  // Raw word/day data from Supabase (or localStorage fallback)
+  const [allSavedWords, setAllSavedWords] = useState<any[]>([]);
+  const [allSavedDays, setAllSavedDays] = useState<any[]>([]);
+
+  useEffect(() => {
+    const apiBase = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1`;
+    const load = async () => {
+      try {
+        const [wRes, dRes] = await Promise.all([
+          fetch(`${apiBase}/words`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` } }),
+          fetch(`${apiBase}/days`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` } })
+        ]);
+        const wData = await wRes.json();
+        const dData = await dRes.json();
+        if (wData.success && Array.isArray(wData.words) && wData.words.length > 0) {
+          setAllSavedWords(wData.words);
+          setAllSavedDays(dData.days || []);
+          return;
+        }
+      } catch {}
+      // Fallback to localStorage
+      const sw = localStorage.getItem('satVocaWords');
+      const sd = localStorage.getItem('satVocaDays');
+      if (sw) setAllSavedWords(JSON.parse(sw));
+      if (sd) setAllSavedDays(JSON.parse(sd));
+    };
+    load();
+  }, []);
+
   const availableDays = useMemo(() => {
-    const savedDays = localStorage.getItem('satVocaDays');
-    if (!savedDays) return Array.from({ length: 30 }, (_, i) => ({ day: i + 1, name: `DAY ${i + 1}`, wordCount: 0 }));
-    const allDays = JSON.parse(savedDays);
-    return allDays.filter((d: any) => (d.category || 'general') === vocaCategory);
-  }, [vocaCategory]);
+    if (allSavedDays.length === 0) return [];
+    return allSavedDays.filter((d: any) => (d.category || 'general') === vocaCategory);
+  }, [vocaCategory, allSavedDays]);
 
   const totalAvailableWordsCount = useMemo(() => {
-    const savedWords = localStorage.getItem('satVocaWords');
-    if (!savedWords) return 0;
-    const allWords = JSON.parse(savedWords);
-    return allWords.filter((w: any) => (w.category || 'general') === vocaCategory).length;
-  }, [vocaCategory]);
+    return allSavedWords.filter((w: any) => (w.category || 'general') === vocaCategory).length;
+  }, [vocaCategory, allSavedWords]);
 
   // Get available words based on selected days and category
   const availableWords = useMemo(() => {
-    const savedWords = localStorage.getItem('satVocaWords');
-    if (!savedWords) return [];
-    
-    const allWords = JSON.parse(savedWords);
-    const categoryWords = allWords.filter((w: any) => (w.category || 'general') === vocaCategory);
+    const categoryWords = allSavedWords.filter((w: any) => (w.category || 'general') === vocaCategory);
     
     if (selectedDays.length === 0) return [];
     
