@@ -3005,42 +3005,42 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </div>
             ) : selectedWordList ? (
               // Word Study Mode (List, Flashcard, or Test)
-              <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
                 {/* Header with back button */}
-                <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-6">
-                  <div className="flex items-center gap-2">
-                    <Button
+                <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <div className="flex items-center gap-3">
+                    <button
                       onClick={handleBackToWordLists}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs px-2 py-1 h-7 flex-shrink-0"
+                      className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
                     >
-                      ←
-                    </Button>
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate">{selectedWordList.title}</h2>
-                      <p className="text-xs text-gray-500 truncate hidden sm:block">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
+                      <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate">{selectedWordList.title}</h2>
+                      <p className="text-[11px] text-gray-400 truncate hidden sm:block">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
                     </div>
                     {/* Mobile download button */}
                     <button
                       onClick={() => handleDownloadQuestions('both')}
-                      className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md transition-all text-[11px] bg-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
+                      className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-medium bg-gray-100 text-gray-500 hover:text-red-500 hover:bg-red-50 whitespace-nowrap flex-shrink-0"
                       title="PDF 다운로드"
                     >
-                      <Download className="w-3 h-3" />
-                      <span>다운</span>
+                      <Download className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 sm:flex sm:gap-1.5 sm:overflow-x-auto pb-1">
+                  {/* Modern Tabs */}
+                  <div className="flex items-center gap-1 p-1 bg-gray-100/80 rounded-2xl sm:self-start">
                     <button
                       onClick={() => setWordStudyMode('list')}
-                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
+                      className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
                         wordStudyMode === 'list'
-                          ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
-                          : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
                       <span>단어 목록</span>
                     </button>
                     <button
@@ -3049,39 +3049,43 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                         setCurrentWordIndex(0);
                         setIsFlashcardFlipped(false);
                       }}
-                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
+                      className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
                         wordStudyMode === 'flashcard'
-                          ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
-                          : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-white text-gray-900 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
                       }`}
                     >
-                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
                       <span>플래시카드</span>
                     </button>
                     <div className="relative">
                       <button
                         onClick={() => setShowTestDialog(!showTestDialog)}
-                        className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap w-full ${
+                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
                           wordStudyMode === 'test'
-                            ? 'bg-blue-600 text-white border-2 border-blue-600 font-medium'
-                            : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-200'
+                            : 'text-gray-500 hover:text-gray-700'
                         }`}
                         title="테스트 옵션"
                       >
-                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         <span>Test</span>
                       </button>
                       
-                      {/* Test Options Popover */}
+                      {/* Test Options Popover - Modern */}
                       {showTestDialog && (
                         <>
-                          {/* Backdrop to close popover when clicking outside */}
                           <div 
                             className="fixed inset-0 z-40" 
                             onClick={() => setShowTestDialog(false)}
                           />
-                          <div className="absolute top-full mt-2 left-0 sm:-left-12 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50 min-w-max">
-                            <div className="flex flex-col sm:flex-row gap-1.5">
+                          <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50 min-w-max">
+                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">테스트 유형 선택</p>
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <button
                                 onClick={() => {
                                   setTestType('multiple');
@@ -3092,12 +3096,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
+                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-indigo-50 transition-all min-w-[110px] group"
                               >
-                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
+                                <div className="w-9 h-9 rounded-xl bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
+                                  <span className="text-base">📝</span>
+                                </div>
                                 <div className="text-center">
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">객관식</div>
-                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">4지선다형</div>
+                                  <div className="text-[11px] font-semibold text-gray-800">객관식</div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">4지선다형</div>
                                 </div>
                               </button>
                               
@@ -3111,12 +3117,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
+                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-purple-50 transition-all min-w-[110px] group"
                               >
-                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
+                                <div className="w-9 h-9 rounded-xl bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                                  <span className="text-base">✏️</span>
+                                </div>
                                 <div className="text-center">
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">주관식</div>
-                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">직접 입력형</div>
+                                  <div className="text-[11px] font-semibold text-gray-800">주관식</div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">직접 입력형</div>
                                 </div>
                               </button>
                               
@@ -3130,12 +3138,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
+                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-emerald-50 transition-all min-w-[110px] group"
                               >
-                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
+                                <div className="w-9 h-9 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center transition-colors">
+                                  <span className="text-base">🔄</span>
+                                </div>
                                 <div className="text-center">
-                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">객관식+주관식</div>
-                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">혼합형</div>
+                                  <div className="text-[11px] font-semibold text-gray-800">혼합형</div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5">객관식+주관식</div>
                                 </div>
                               </button>
                             </div>
@@ -3143,10 +3153,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                         </>
                       )}
                     </div>
-                    <div className="w-px h-8 bg-gray-300 mx-1 hidden sm:block"></div>
+                    <div className="hidden sm:block w-px h-6 bg-gray-300/60 mx-1"></div>
                     <button
                       onClick={() => handleDownloadQuestions('both')}
-                      className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-full transition-all text-sm bg-gray-100 border-2 border-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
+                      className="hidden sm:flex items-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 whitespace-nowrap font-medium"
                       title="시험지+답안지 다운로드"
                     >
                       <Download className="w-4 h-4" />
@@ -3157,23 +3167,49 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
                 {/* Word Study Content */}
                 {wordStudyMode === 'list' && (
-                  <div className="space-y-3 sm:space-y-4">
+                  <div className="space-y-2 sm:space-y-3">
+                    {/* Word count badge */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">총 {selectedWordList.words.length}개 단어</span>
+                    </div>
                     {selectedWordList.words.map((word: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 flex gap-2.5 sm:gap-3 items-start">
-                        <span className="text-xs sm:text-sm text-gray-400 font-medium mt-0.5 sm:mt-1 flex-shrink-0 w-5 sm:w-7 text-right">{index + 1}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                            <h3 className="text-base sm:text-lg font-medium text-gray-800">{word.word}</h3>
-                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0 ${
-                              word.difficulty === '어려움' ? 'bg-red-100 text-red-600' :
-                              word.difficulty === '보통' ? 'bg-yellow-100 text-yellow-600' :
-                              'bg-green-100 text-green-600'
-                            }`}>
-                              {word.difficulty}
-                            </span>
+                      <div key={index} className="group relative bg-white rounded-2xl border border-gray-100 hover:border-indigo-100 hover:shadow-md transition-all duration-200 overflow-hidden">
+                        <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
+                          {/* Number badge */}
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-50 group-hover:bg-indigo-50 flex items-center justify-center flex-shrink-0 transition-colors">
+                            <span className="text-xs sm:text-sm font-bold text-gray-400 group-hover:text-indigo-500 transition-colors">{index + 1}</span>
                           </div>
-                          <p className="text-sm sm:text-base text-gray-600">{word.definition}</p>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-sm sm:text-base font-bold text-gray-800">{word.word}</h3>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                word.difficulty === '어려움' ? 'bg-red-50 text-red-500' :
+                                word.difficulty === '보통' ? 'bg-amber-50 text-amber-500' :
+                                'bg-emerald-50 text-emerald-500'
+                              }`}>
+                                {word.difficulty}
+                              </span>
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{word.definition}</p>
+                          </div>
+                          {/* Hover action - speak */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if ('speechSynthesis' in window) {
+                                const utterance = new SpeechSynthesisUtterance(word.word);
+                                utterance.lang = 'en-US';
+                                window.speechSynthesis.speak(utterance);
+                              }
+                            }}
+                            className="p-2 rounded-xl text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                          >
+                            <Volume2 className="w-4 h-4" />
+                          </button>
                         </div>
+                        {/* Bottom accent line on hover */}
+                        <div className="h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
                       </div>
                     ))}
                   </div>
