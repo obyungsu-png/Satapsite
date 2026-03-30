@@ -42,10 +42,62 @@ export function WordTest({
 }: WordTestProps) {
   
   const [showHint, setShowHint] = React.useState(false);
+  const [answerFeedback, setAnswerFeedback] = React.useState<'correct' | 'wrong' | null>(null);
   
   React.useEffect(() => {
     setShowHint(false);
   }, [currentWordIndex]);
+
+  // Sound effects using Web Audio API
+  const playCorrectSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Ding
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(830, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc1.connect(gain1).connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.3);
+      // Dong
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1100, ctx.currentTime + 0.15);
+      gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc2.connect(gain2).connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.15);
+      osc2.stop(ctx.currentTime + 0.5);
+      setTimeout(() => ctx.close(), 600);
+    } catch (_) {}
+  };
+
+  const playWrongSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+      setTimeout(() => ctx.close(), 500);
+    } catch (_) {}
+  };
+
+  const showFeedbackOverlay = (isCorrect: boolean) => {
+    setAnswerFeedback(isCorrect ? 'correct' : 'wrong');
+    if (isCorrect) playCorrectSound(); else playWrongSound();
+    setTimeout(() => setAnswerFeedback(null), 900);
+  };
   
   const totalQuestions = testType === 'mixed' 
     ? selectedWordList.words.length * 2
@@ -446,15 +498,18 @@ export function WordTest({
                 return (
                   <button
                     key={idx}
-                    onClick={() => handleTestAnswer(currentWordIndex, option, currentWord?.word)}
+                    onClick={() => {
+                      handleTestAnswer(currentWordIndex, option, currentWord?.word);
+                      showFeedbackOverlay(option === currentWord?.word);
+                    }}
                     disabled={showResult}
                     className={`w-full p-4 sm:p-5 text-left rounded-2xl transition-all duration-200 flex items-center gap-4 group ${
                       showResult && isCorrect
-                        ? 'bg-emerald-50 border-2 border-emerald-400 shadow-sm shadow-emerald-100'
+                        ? 'border-2 border-emerald-400'
                         : showResult && isSelected && !isCorrect
-                        ? 'bg-orange-50 border-2 border-orange-400 shadow-sm shadow-orange-100'
+                        ? 'border-2 border-orange-400'
                         : showResult
-                        ? 'border-2 border-gray-100 opacity-50'
+                        ? 'border-2 border-gray-100 opacity-40'
                         : 'border-2 border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm active:scale-[0.99]'
                     }`}
                   >
@@ -566,6 +621,7 @@ export function WordTest({
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && subjectiveAnswer.trim()) {
                         handleTestAnswer(currentWordIndex, subjectiveAnswer.trim(), currentWord?.word);
+                        showFeedbackOverlay(subjectiveAnswer.trim().toLowerCase() === currentWord?.word?.toLowerCase());
                         setShowHint(false);
                       }
                     }}
@@ -600,6 +656,7 @@ export function WordTest({
                     <button
                       onClick={() => {
                         handleTestAnswer(currentWordIndex, subjectiveAnswer.trim(), currentWord?.word);
+                        showFeedbackOverlay(subjectiveAnswer.trim().toLowerCase() === currentWord?.word?.toLowerCase());
                         setShowHint(false);
                       }}
                       className="px-6 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:shadow-lg hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all"
@@ -613,6 +670,41 @@ export function WordTest({
           </div>
         </div>
       )}
+
+      {/* O/X Feedback Overlay */}
+      {answerFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none" style={{ animation: 'fadeInOut 0.9s ease-in-out forwards' }}>
+          {answerFeedback === 'correct' ? (
+            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl" style={{ animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
+              <svg viewBox="0 0 24 24" className="w-20 h-20 sm:w-24 sm:h-24 text-white" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          ) : (
+            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-red-500 flex items-center justify-center shadow-2xl" style={{ animation: 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards' }}>
+              <svg viewBox="0 0 24 24" className="w-20 h-20 sm:w-24 sm:h-24 text-white" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inline CSS for overlay animations */}
+      <style>{`
+        @keyframes popIn {
+          0% { transform: scale(0); opacity: 0; }
+          50% { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeInOut {
+          0% { opacity: 0; }
+          15% { opacity: 1; }
+          70% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
 
       {/* Continue Button */}
       {showTestResult[currentWordIndex] && (
