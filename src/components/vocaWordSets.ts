@@ -8,8 +8,8 @@ function shuffleArray<T>(array: T[]): T[] {
   return newArray;
 }
 
-// SAT 고급 어휘 풀 (1,500개 단어) - 무작위로 섞임
-const SAT_WORDS_POOL = shuffleArray([
+// SAT 고급 어휘 풀 (1,500개 단어) - 고정 순서
+const SAT_WORDS_POOL = [
   // === A ===
   { 
     english: "abscond", 
@@ -993,7 +993,7 @@ const SAT_WORDS_POOL = shuffleArray([
   { english: "wizened", korean: "쭈글쭈글한", definition: "shriveled or wrinkled with age", synonyms: "shriveled, wrinkled, withered" },
   { english: "zealot", korean: "광신자", definition: "a person with extreme enthusiasm", synonyms: "fanatic, extremist, enthusiast" },
   { english: "zenith", korean: "정점", definition: "the highest point reached", synonyms: "peak, summit, apex" },
-]);
+];
 
 // DAY별로 50개씩 분할하는 함수
 function createDayData(wordsPool: any[], totalDays: number = 30, wordsPerDay: number = 50) {
@@ -1005,7 +1005,7 @@ function createDayData(wordsPool: any[], totalDays: number = 30, wordsPerDay: nu
   // 단어 풀이 부족하면 반복해서 채움
   let extendedPool = [...wordsPool];
   while (extendedPool.length < totalNeeded) {
-    extendedPool = [...extendedPool, ...shuffleArray(wordsPool)];
+    extendedPool = [...extendedPool, ...wordsPool];
   }
   
   // DAY별로 분할
