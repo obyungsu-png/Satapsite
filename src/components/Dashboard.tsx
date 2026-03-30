@@ -3451,7 +3451,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           )}
 
           {/* Pagination */}
-          {(smartPracticeTab === '단어관리' ? totalWordPages > 1 : totalPages > 1) && (
+          {smartPracticeTab !== 'SAT VOCA' && (smartPracticeTab === '단어관리' ? totalWordPages > 1 : totalPages > 1) && (
             <div className="flex justify-center items-center gap-2">
               <Button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
