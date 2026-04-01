@@ -252,4 +252,56 @@ app.delete("/make-server-a8a911aa/billing-adjustments/:studentId/:year/:month", 
   }
 });
 
+// ============ Payment Status API ============
+// Get all payment statuses
+app.get("/make-server-a8a911aa/payment-statuses", async (c) => {
+  try {
+    const statuses = await kv.getByPrefix("payment:");
+    return c.json({ statuses: statuses || [] });
+  } catch (error) {
+    console.error("Error fetching payment statuses:", error);
+    return c.json({ error: "Failed to fetch payment statuses", details: String(error) }, 500);
+  }
+});
+
+// Set payment status
+app.post("/make-server-a8a911aa/payment-statuses", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { studentId, year, month, isPaid } = body;
+    
+    const statusId = `payment:${studentId}:${year}:${month}`;
+    const status = {
+      id: statusId,
+      studentId,
+      year,
+      month,
+      isPaid,
+    };
+    
+    await kv.set(statusId, status);
+    return c.json({ status });
+  } catch (error) {
+    console.error("Error setting payment status:", error);
+    return c.json({ error: "Failed to set payment status", details: String(error) }, 500);
+  }
+});
+
+// Remove payment status
+app.delete("/make-server-a8a911aa/payment-statuses/:studentId/:year/:month", async (c) => {
+  try {
+    const studentId = c.req.param("studentId");
+    const year = c.req.param("year");
+    const month = c.req.param("month");
+    
+    const statusId = `payment:${studentId}:${year}:${month}`;
+    await kv.del(statusId);
+    
+    return c.json({ success: true });
+  } catch (error) {
+    console.error("Error removing payment status:", error);
+    return c.json({ error: "Failed to remove payment status", details: String(error) }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
