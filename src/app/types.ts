@@ -70,3 +70,10 @@ export interface PerformanceItem {
   className?: string;
   createdAt: string;
 }
+
+export interface PaymentStatus {
+  studentId: string;
+  year: number;
+  month: number;
+  isPaid: boolean;
+}

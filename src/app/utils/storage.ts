@@ -1,4 +1,4 @@
-import { Student, WeeklySchedule, AttendanceRecord, PerformanceItem } from '../types';
+import { Student, WeeklySchedule, AttendanceRecord, PerformanceItem, PaymentStatus } from '../types';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-a8a911aa`;
@@ -297,4 +297,46 @@ export const addPerformanceEvent = async (
 export const deletePerformanceEvent = async (id: string): Promise<void> => {
   const current = await getPerformanceEvents();
   await savePerformanceEvents(current.filter((event) => event.id !== id));
+};
+
+// ============ Payment Status ============
+export const getPaymentStatuses = async (): Promise<PaymentStatus[]> => {
+  try {
+    const data = await apiCall('/payment-statuses');
+    return data.statuses || [];
+  } catch (error) {
+    console.error('Error fetching payment statuses:', error);
+    return [];
+  }
+};
+
+export const getPaymentStatus = async (studentId: string, year: number, month: number): Promise<boolean> => {
+  const statuses = await getPaymentStatuses();
+  const status = statuses.find(
+    s => s.studentId === studentId && s.year === year && s.month === month
+  );
+  return status ? status.isPaid : false;
+};
+
+export const setPaymentStatus = async (studentId: string, year: number, month: number, isPaid: boolean): Promise<void> => {
+  try {
+    await apiCall('/payment-statuses', {
+      method: 'POST',
+      body: JSON.stringify({ studentId, year, month, isPaid }),
+    });
+  } catch (error) {
+    console.error('Error setting payment status:', error);
+    throw error;
+  }
+};
+
+export const removePaymentStatus = async (studentId: string, year: number, month: number): Promise<void> => {
+  try {
+    await apiCall(`/payment-statuses/${studentId}/${year}/${month}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Error removing payment status:', error);
+    throw error;
+  }
 };

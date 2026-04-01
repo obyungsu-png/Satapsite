@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, FileText, Edit2, Check, X } from 'lucide-react';
 import { MonthlyBilling } from '../types';
 import { calculateMonthlyBilling } from '../utils/billing';
-import { getStudents, getBillingAdjustment, setBillingAdjustment, removeBillingAdjustment } from '../utils/storage';
+import { getStudents, getBillingAdjustment, setBillingAdjustment, removeBillingAdjustment, getPaymentStatus, setPaymentStatus } from '../utils/storage';
 import { getClassColor } from '../utils/classes';
 import { ClassFilter } from '../components/ClassFilter';
 import { Invoice } from '../components/Invoice';
+import { Checkbox } from '../components/ui/checkbox';
 import { format, addMonths, subMonths } from 'date-fns';
 
 export function Billing() {
@@ -17,6 +18,7 @@ export function Billing() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [students, setStudents] = useState<any[]>([]);
+  const [paymentStatuses, setPaymentStatuses] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     loadBillingData();
@@ -47,6 +49,18 @@ export function Billing() {
     }));
     
     setBillingData(adjustedData as MonthlyBilling[]);
+    
+    // Load payment statuses for the new billing data
+    const statuses: {[key: string]: boolean} = {};
+    for (const billing of adjustedData) {
+      const isPaid = await getPaymentStatus(
+        billing.studentId,
+        currentDate.getFullYear(),
+        currentDate.getMonth()
+      );
+      statuses[billing.studentId] = isPaid;
+    }
+    setPaymentStatuses(statuses);
   };
 
   const loadStudents = async () => {
@@ -65,6 +79,28 @@ export function Billing() {
         const classStudentIds = students.filter(s => s.className === selectedClass).map(s => s.id);
         setFilteredBilling(billingData.filter(b => classStudentIds.includes(b.studentId)));
       }
+    }
+  };
+
+  const togglePayment = async (studentId: string) => {
+    const currentStatus = paymentStatuses[studentId] || false;
+    const newStatus = !currentStatus;
+    
+    try {
+      await setPaymentStatus(
+        studentId,
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        newStatus
+      );
+      
+      setPaymentStatuses(prev => ({
+        ...prev,
+        [studentId]: newStatus
+      }));
+    } catch (error) {
+      console.error('Failed to update payment status:', error);
+      alert('수업료 수령 상태를 업데이트하는데 실패했습니다');
     }
   };
 
@@ -190,6 +226,9 @@ export function Billing() {
                 <th className="text-right py-2.5 px-3 text-xs text-[#8A8478]" style={{ fontWeight: 500 }}>
                   단가
                 </th>
+                <th className="text-center py-2.5 px-3 text-xs text-[#8A8478]" style={{ fontWeight: 500 }}>
+                  수령
+                </th>
                 <th className="text-right py-2.5 px-5 text-xs text-[#8A8478]" style={{ fontWeight: 500 }}>
                   청구 금액
                 </th>
@@ -250,6 +289,12 @@ export function Billing() {
                     </td>
                     <td className="py-3 px-3 text-right text-sm text-[#8A8478]">
                       {billing.pricePerClass.toLocaleString()}원
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <Checkbox
+                        checked={paymentStatuses[billing.studentId] || false}
+                        onCheckedChange={() => togglePayment(billing.studentId)}
+                      />
                     </td>
                     <td className="py-3 px-5 text-right">
                       {isEditing ? (
@@ -376,6 +421,7 @@ export function Billing() {
           <li>• <strong>정기 학생</strong>: 예정 수업 - 결석 = 출석 수업</li>
           <li>• <strong>자유수업 학생</strong>: 출석 체크한 날만 계산 (예정 수업 "-" 표시)</li>
           <li>• 청구 금액 = 출석 수업 × 수업료/회</li>
+          <li>• <strong>수령 체크박스</strong>: 단가 옆의 체크박스를 클릭하여 수업료를 받은 여부를 기록할 수 있습니다</li>
           <li>• <strong>금액 수정</strong>: 각 행에 마우스를 올리면 수정 버튼이 나타나며, 클릭하여 금액을 직접 수정할 수 있습니다</li>
           <li>• <strong>청구서</strong> 버튼을 눌러 학부모에게 보낼 청구서를 인쇄하거나 텍스트로 복사할 수 있습니다</li>
         </ul>
