@@ -11,7 +11,7 @@ function App() {
     const checkServer = async () => {
       try {
         const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-a8a911aa/health`,
+          `https://${projectId}.supabase.co/functions/v1/server/health`,
           {
             headers: {
               'Authorization': `Bearer ${publicAnonKey}`,
@@ -91,7 +91,7 @@ function App() {
           <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
             <p className="font-medium mb-2">기술 정보:</p>
             <p className="font-mono text-xs break-all">
-              Server URL: https://{projectId}.supabase.co/functions/v1/make-server-a8a911aa/health
+              Server URL: https://{projectId}.supabase.co/functions/v1/server/health
             </p>
           </div>
 

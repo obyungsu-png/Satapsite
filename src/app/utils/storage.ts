@@ -1,7 +1,7 @@
 import { Student, WeeklySchedule, AttendanceRecord, PerformanceItem, PaymentStatus } from '../types';
 import { projectId, publicAnonKey } from '/utils/supabase/info';
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-a8a911aa`;
+const API_BASE = `https://${projectId}.supabase.co/functions/v1/server`;
 
 // Helper function to make API calls
 async function apiCall(endpoint: string, options: RequestInit = {}) {
