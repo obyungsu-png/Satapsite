@@ -987,9 +987,14 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     );
   }
 
+  const step3DialogClassName = [
+    "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
+    showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
+  ].join(" ");
+
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
-    <Dialog open={step === STEP.WORD_SELECTION} onOpenChange={(open) => !open && step === STEP.WORD_SELECTION && setStep(STEP.DAY_SELECTION)}>
+    <Dialog open={step === STEP.WORD_SELECTION} onOpenChange={(open) => !open && setStep(STEP.DAY_SELECTION)}>
       <DialogContent className="!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</DialogTitle>
         <DialogDescription className="sr-only">
@@ -1226,11 +1231,8 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
-    <Dialog open={step === STEP.SAVE_AND_DOWNLOAD} onOpenChange={(open) => !open && step === STEP.SAVE_AND_DOWNLOAD && setStep(STEP.WORD_SELECTION)}>
-      <DialogContent className={[
-        "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
-        showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
-      ].join(" ")}>
+    <Dialog open={step === STEP.SAVE_AND_DOWNLOAD} onOpenChange={(open) => !open && setStep(isMobile ? STEP.DAY_SELECTION : STEP.WORD_SELECTION)}>
+      <DialogContent className={step3DialogClassName}>
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
           출��� 결과를 확인하고 테스트 정보를 설정한 후 다운로드하거나 테스트를 시작할 수 있습니다.
@@ -1242,7 +1244,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setStep(STEP.WORD_SELECTION)}
+              onClick={() => setStep(isMobile ? STEP.DAY_SELECTION : STEP.WORD_SELECTION)}
               className="absolute left-3 md:left-4 top-3 md:top-3 text-white hover:bg-white/20 text-sm md:text-sm px-3 py-2 md:p-2 rounded-full"
             >
               &lt; 이전
