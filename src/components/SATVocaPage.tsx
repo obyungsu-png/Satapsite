@@ -960,12 +960,12 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
     <Dialog open={step === 2} onOpenChange={(open) => !open && setStep(1)}>
-      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !max-h-[85vh] md:!h-[85vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[88vh] md:!h-[85vh] !bottom-auto !top-[6vh] !translate-y-0 md:!top-auto md:!translate-y-[-50%] p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</DialogTitle>
         <DialogDescription className="sr-only">
           전체 단어 리스트에서 출제할 단어를 선택하고 출제 리스트를 관리할 수 있습니다.
         </DialogDescription>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
           {/* Header */}
           <div className="text-white text-center py-2.5 md:py-4 px-3 md:px-6 relative" style={{ backgroundColor: '#3DB89E' }}>
             <h1 className="text-sm md:text-xl font-semibold px-8 md:px-0">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</h1>
@@ -1197,12 +1197,12 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
     <Dialog open={step === 3} onOpenChange={(open) => !open && setStep(2)}>
-      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !max-h-[85vh] md:!h-[85vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[88vh] md:!h-[85vh] !bottom-auto !top-[6vh] !translate-y-0 md:!top-auto md:!translate-y-[-50%] p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
           출��� 결과를 확인하고 테스트 정보를 설정한 후 다운로드하거나 테스트를 시작할 수 있습니다.
         </DialogDescription>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
           {/* Header */}
           <div className="text-white text-center py-2.5 md:py-4 px-3 md:px-6 relative flex-shrink-0" style={{ backgroundColor: '#3DB89E' }}>
             <h1 className="text-sm md:text-xl font-semibold leading-tight px-12 md:px-0">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</h1>
@@ -1225,7 +1225,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
           </div>
 
           {/* Content */}
-          <div className="flex-1 px-3 md:px-6 py-2 md:py-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-3 md:px-6 py-2 md:py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-10">
               {/* Left: Test Summary */}
               <div>
@@ -1368,45 +1368,46 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
               </div>
             </div>
 
-            {/* Download Section */}
-            <div className="mt-4 md:mt-8 pt-3 md:pt-6 border-t border-gray-200 pb-4">
-              <h2 className="text-base md:text-xl text-center mb-3 md:mb-6 font-semibold" style={{ color: '#3DB89E' }}>
-                SAT 어휘 시험지 다운로드
-              </h2>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-2.5 md:gap-4">
-                <Button
-                  onClick={handleDownloadPDF}
-                  variant="outline"
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-red-500 text-sm md:text-base"
-                  style={{ borderColor: '#E0E0E0' }}
-                >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-red-500 flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
-                  </div>
-                  <span className="text-sm md:text-base">PDF 다운로드</span>
-                </Button>
-                <Button
-                  onClick={handleDownloadWord}
-                  variant="outline"
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-blue-500 text-sm md:text-base"
-                  style={{ borderColor: '#E0E0E0' }}
-                >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-blue-500 flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
-                  </div>
-                  <span className="text-sm md:text-base">워드 다운로드</span>
-                </Button>
-                <Button
-                  onClick={handleStartTest}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg text-white hover:opacity-90 transition-opacity text-sm md:text-base"
-                  style={{ backgroundColor: '#3DB89E' }}
-                >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-white flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#3DB89E' }} />
-                  </div>
-                  <span className="text-sm md:text-base">테스트 시작</span>
-                </Button>
-              </div>
+          </div>
+
+          {/* Download Section */}
+          <div className="border-t border-gray-200 px-3 md:px-6 py-3 md:py-6 bg-white flex-shrink-0">
+            <h2 className="text-base md:text-xl text-center mb-3 md:mb-6 font-semibold" style={{ color: '#3DB89E' }}>
+              SAT 어휘 시험지 다운로드
+            </h2>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-2.5 md:gap-4">
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-red-500 text-sm md:text-base"
+                style={{ borderColor: '#E0E0E0' }}
+              >
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-red-500 flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-sm md:text-base">PDF 다운로드</span>
+              </Button>
+              <Button
+                onClick={handleDownloadWord}
+                variant="outline"
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-blue-500 text-sm md:text-base"
+                style={{ borderColor: '#E0E0E0' }}
+              >
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-blue-500 flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-sm md:text-base">워드 다운로드</span>
+              </Button>
+              <Button
+                onClick={handleStartTest}
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg text-white hover:opacity-90 transition-opacity text-sm md:text-base"
+                style={{ backgroundColor: '#3DB89E' }}
+              >
+                <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-white flex-shrink-0">
+                  <FileText className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#3DB89E' }} />
+                </div>
+                <span className="text-sm md:text-base">테스트 시작</span>
+              </Button>
             </div>
           </div>
         </div>
