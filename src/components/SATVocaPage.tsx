@@ -251,7 +251,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     }
 
     setSelectedWords(selected);
-    setStep(isMobile ? STEP.SAVE_AND_DOWNLOAD : STEP.WORD_SELECTION);
+    setStep(STEP.WORD_SELECTION);
   };
 
   const proceedToStep3 = () => {
