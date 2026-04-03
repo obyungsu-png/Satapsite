@@ -1197,7 +1197,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
     <Dialog open={step === 3} onOpenChange={(open) => !open && setStep(2)}>
-      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !max-h-[85vh] md:!max-h-[90vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !max-h-[85vh] md:!h-[85vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
           출��� 결과를 확인하고 테스트 정보를 설정한 후 다운로드하거나 테스트를 시작할 수 있습니다.
