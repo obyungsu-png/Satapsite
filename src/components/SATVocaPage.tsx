@@ -21,10 +21,18 @@ interface SATVocaPageProps {
   onStartTest?: (testInfo: any) => void;
 }
 
+const MOBILE_BREAKPOINT_MAX = 767;
+const MOBILE_LIST_MAX_HEIGHT_OFFSET = 300;
+const STEP = {
+  DAY_SELECTION: 1,
+  WORD_SELECTION: 2,
+  SAVE_AND_DOWNLOAD: 3,
+} as const;
+
 export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   const [vocaCategory, setVocaCategory] = useState<'general' | 'yearly'>('general');
-  const [step, setStep] = useState(1); // 1: DAY 선택, 2: 단어 확인, 3: 저장 및 다운로드
-  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [step, setStep] = useState(STEP.DAY_SELECTION);
+  const [isMobile, setIsMobile] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [inputValue, setInputValue] = useState("");
   
@@ -89,20 +97,14 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_MAX}px)`);
     const syncViewport = (event?: MediaQueryListEvent) => {
-      setIsMobileViewport(event ? event.matches : mediaQuery.matches);
+      setIsMobile(event ? event.matches : mediaQuery.matches);
     };
 
     syncViewport();
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", syncViewport);
-      return () => mediaQuery.removeEventListener("change", syncViewport);
-    }
-
-    mediaQuery.addListener(syncViewport);
-    return () => mediaQuery.removeListener(syncViewport);
+    mediaQuery.addEventListener("change", syncViewport);
+    return () => mediaQuery.removeEventListener("change", syncViewport);
   }, []);
 
   const availableDays = useMemo(() => {
@@ -239,7 +241,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
     setSelectedWords(selected);
     setMobileListView('selected');
-    setStep(isMobileViewport ? 3 : 2);
+    setStep(isMobile ? STEP.SAVE_AND_DOWNLOAD : STEP.WORD_SELECTION);
   };
 
   const proceedToStep3 = () => {
@@ -247,7 +249,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
       alert("출제할 단어를 선택해주세요.");
       return;
     }
-    setStep(3);
+    setStep(STEP.SAVE_AND_DOWNLOAD);
   };
 
   const handleStartTest = () => {
@@ -629,7 +631,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   }
 
   // Step 1: DAY Selection Screen
-  if (step === 1) {
+  if (step === STEP.DAY_SELECTION) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 pb-24 md:pb-8">
         <div className="bg-white rounded-lg md:border md:border-gray-300 md:p-10 p-4">
@@ -987,7 +989,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
-    <Dialog open={step === 2} onOpenChange={(open) => !open && step === 2 && setStep(1)}>
+    <Dialog open={step === STEP.WORD_SELECTION} onOpenChange={(open) => !open && step === STEP.WORD_SELECTION && setStep(STEP.DAY_SELECTION)}>
       <DialogContent className="!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</DialogTitle>
         <DialogDescription className="sr-only">
@@ -1000,7 +1002,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setStep(1)}
+              onClick={() => setStep(STEP.DAY_SELECTION)}
               className="absolute right-3 md:right-4 top-3 md:top-3 text-white hover:bg-white/20 p-2 rounded-full"
             >
               <X className="w-4 h-4 md:w-5 md:h-5" />
@@ -1149,7 +1151,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                     <h3 className="text-sm font-semibold">전체 리스트 ({availableWords.length}개)</h3>
                     <p className="text-xs text-gray-500 mt-0.5">단어를 터치하여 출제 리스트에 추가하세요</p>
                   </div>
-                  <div className="divide-y divide-gray-100 overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 300px)' }}>
+                  <div className="divide-y divide-gray-100 overflow-y-auto" style={{ maxHeight: `calc(100dvh - ${MOBILE_LIST_MAX_HEIGHT_OFFSET}px)` }}>
                     {availableWords.slice(0, 100).map((word) => (
                       <div
                         key={word.id}
@@ -1174,7 +1176,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                     <h3 className="text-sm font-semibold">출제 리스트 ({selectedWords.length}개)</h3>
                     <p className="text-xs text-gray-500 mt-0.5">삭제 버튼을 눌러 단어를 제거하세요</p>
                   </div>
-                  <div className="divide-y divide-gray-100 overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 300px)' }}>
+                  <div className="divide-y divide-gray-100 overflow-y-auto" style={{ maxHeight: `calc(100dvh - ${MOBILE_LIST_MAX_HEIGHT_OFFSET}px)` }}>
                     {selectedWords.map((word) => (
                       <div key={word.id} className="mx-1 my-1 flex items-center justify-between rounded-2xl p-4 hover:bg-gray-50">
                         <div className="flex-1">
@@ -1224,8 +1226,11 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
-    <Dialog open={step === 3} onOpenChange={(open) => !open && step === 3 && setStep(2)}>
-      <DialogContent className={`!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity ${(showDownloadModal || showTestTypeModal) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+    <Dialog open={step === STEP.SAVE_AND_DOWNLOAD} onOpenChange={(open) => !open && step === STEP.SAVE_AND_DOWNLOAD && setStep(STEP.WORD_SELECTION)}>
+      <DialogContent className={[
+        "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
+        showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
+      ].join(" ")}>
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
           출��� 결과를 확인하고 테스트 정보를 설정한 후 다운로드하거나 테스트를 시작할 수 있습니다.
@@ -1237,7 +1242,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setStep(2)}
+              onClick={() => setStep(STEP.WORD_SELECTION)}
               className="absolute left-3 md:left-4 top-3 md:top-3 text-white hover:bg-white/20 text-sm md:text-sm px-3 py-2 md:p-2 rounded-full"
             >
               &lt; 이전
@@ -1245,7 +1250,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setStep(1)}
+              onClick={() => setStep(STEP.DAY_SELECTION)}
               className="absolute right-3 md:right-4 top-3 md:top-3 text-white hover:bg-white/20 p-2 md:p-2 rounded-full"
             >
               <X className="w-4 h-4 md:w-5 md:h-5" />
@@ -1445,7 +1450,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   return (
     <>
-      {step === 1 && (
+      {step === STEP.DAY_SELECTION && (
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="bg-white rounded-lg border border-gray-300 p-10">
             {/* Title */}
