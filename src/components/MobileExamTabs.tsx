@@ -140,11 +140,11 @@ export function MobileExamTabs({
                   )}
                   <button
                     onClick={() => setPassageExpanded(!passageExpanded)}
-                    className="w-full flex items-center justify-end gap-1.5 px-3 py-1.5 text-[#0d6e6e] font-semibold hover:bg-gray-100 transition-colors"
-                    style={{ fontSize: '13px' }}
+                    className="w-full flex items-center justify-end gap-1 px-2 py-1 text-[#0d6e6e] font-semibold hover:bg-gray-100 transition-colors"
+                    style={{ fontSize: '11px' }}
                   >
                     {passageExpanded ? "Collapse" : "Expand"}
-                    {passageExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {passageExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                   </button>
                 </div>
               </div>
