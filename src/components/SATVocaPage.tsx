@@ -219,6 +219,17 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     setSelectedWords(prev => prev.filter(w => w.id !== wordId));
   };
 
+  const getRandomizedWords = (words: SATWord[]) => {
+    const shuffled = [...words];
+
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const randomIndex = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+    }
+
+    return shuffled;
+  };
+
   const prepareSelectedWords = () => {
     if (selectedDays.length === 0) {
       alert("출제범위를 선택해주세요.");
@@ -229,7 +240,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
       return null;
     }
     
-    const shuffled = [...availableWords].sort(() => Math.random() - 0.5);
+    const shuffled = getRandomizedWords(availableWords);
     return shuffled.slice(0, Math.min(totalQuestions, shuffled.length));
   };
 
@@ -240,7 +251,6 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     }
 
     setSelectedWords(selected);
-    setMobileListView('selected');
     setStep(isMobile ? STEP.SAVE_AND_DOWNLOAD : STEP.WORD_SELECTION);
   };
 
@@ -987,10 +997,12 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
     );
   }
 
-  const step3DialogClassName = [
-    "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
-    showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
-  ].join(" ");
+  const step3DialogClassName = useMemo(() => {
+    return [
+      "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
+      showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
+    ].join(" ");
+  }, [showDownloadModal, showTestTypeModal]);
 
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
