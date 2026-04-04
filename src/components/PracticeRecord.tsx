@@ -291,7 +291,16 @@ export function PracticeRecord({
     return filtered;
   };
 
-  const filteredRecords = getFilteredRecords();
+  const filteredRecords = useMemo(() => getFilteredRecords(), [
+    practiceRecordCategory,
+    practiceRecordSubject,
+    practiceRecordDifficulty,
+    timePeriod,
+    statusFilter,
+    selectedStudentFilter,
+    practiceRecords,
+    supabaseRecords,
+  ]);
 
   // Group records by date
   const groupedRecords = useMemo(() => {
