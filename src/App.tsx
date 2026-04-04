@@ -220,6 +220,53 @@ const generateQuestions = () => {
 const defaultQuestions = generateQuestions();
 
 export default function App() {
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({}); // No answers selected initially
+  const [isHidden, setIsHidden] = useState(false);
+  const [markedForReview, setMarkedForReview] = useState<Record<number, boolean>>({}); // No questions marked by default
+  const [highlightsMode, setHighlightsMode] = useState(true);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Start at question 1 (index 0)
+  const [isExpanded, setIsExpanded] = useState(false); // Panel expansion state
+  const [showOverview, setShowOverview] = useState(false); // Question overview panel state
+  const [timeRemaining, setTimeRemaining] = useState(32 * 60); // 32 minutes in seconds (1920 seconds)
+  const [currentSection, setCurrentSection] = useState(1); // Current section (1 or 2)
+  const [currentModule, setCurrentModule] = useState(1); // Current module (1 or 2)
+  const [gameState, setGameState] = useState<'dashboard' | 'preparing' | 'practice-info' | 'time-mode' | 'intro' | 'exam' | 'check-work' | 'module-over' | 'finished' | 'score-report' | 'review'>('dashboard'); // Game state
+  const [reviewMode, setReviewMode] = useState(false); // Review mode state
+  const [isPracticeReview, setIsPracticeReview] = useState(false); // New state for "시작하기(복습용)"
+  const [showSimilarOverlay, setShowSimilarOverlay] = useState(false);
+  const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
+  const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
+  const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
+  const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
+  const [similarFullscreenTab, setSimilarFullscreenTab] = useState<string | null>(null);
+  const [showDirections, setShowDirections] = useState(false); // Directions modal state
+  const [panelWidth, setPanelWidth] = useState(50); // Panel width percentage
+  const [expandDirection, setExpandDirection] = useState<'left' | 'right' | null>(null); // Expansion direction
+  const [historyRecordToReview, setHistoryRecordToReview] = useState<any | null>(null);
+  const [learnedWords, setLearnedWords] = useState<any[]>(loadLearnedWords()); // User's learned vocabulary
+  const [processedQuestions, setProcessedQuestions] = useState<Set<number>>(new Set()); // Track which questions had words extracted
+  const [practiceRecords, setPracticeRecords] = useState<any[]>(loadPracticeRecords()); // User's practice records
+  const [currentTestInfo, setCurrentTestInfo] = useState<any>(null); // Current test metadata
+  const [showVideoModal, setShowVideoModal] = useState(false); // Video modal state
+  const [selectedVideoQuestion, setSelectedVideoQuestion] = useState<number | null>(null); // Current video question
+  const [showReviewModal, setShowReviewModal] = useState(false); // Review modal state
+  const [showScoreDetail, setShowScoreDetail] = useState(false); // Score detail modal state
+  const [showAnalysis, setShowAnalysis] = useState(false); // Analysis view state
+  const [isTimed, setIsTimed] = useState(true); // Time mode state (Timed or Untimed)
+  const [questions, setQuestions] = useState<any[]>(defaultQuestions); // Questions data - can be default or uploaded
+  const [showCalculator, setShowCalculator] = useState(false); // Calculator state
+  const [showReference, setShowReference] = useState(false); // Reference modal state
+  const [calculatorExpanded, setCalculatorExpanded] = useState(false); // Calculator expanded state
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    // Load current user from localStorage
+    try {
+      const saved = localStorage.getItem('currentUser');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }); // Current logged in user
+
   // Set document title and favicon
   useEffect(() => {
     document.title = "AllMyExam - SAT";
@@ -271,52 +318,6 @@ export default function App() {
     }
   }, []);
 
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({}); // No answers selected initially
-  const [isHidden, setIsHidden] = useState(false);
-  const [markedForReview, setMarkedForReview] = useState<Record<number, boolean>>({}); // No questions marked by default
-  const [highlightsMode, setHighlightsMode] = useState(true);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // Start at question 1 (index 0)
-  const [isExpanded, setIsExpanded] = useState(false); // Panel expansion state
-  const [showOverview, setShowOverview] = useState(false); // Question overview panel state
-  const [timeRemaining, setTimeRemaining] = useState(32 * 60); // 32 minutes in seconds (1920 seconds)
-  const [currentSection, setCurrentSection] = useState(1); // Current section (1 or 2)
-  const [currentModule, setCurrentModule] = useState(1); // Current module (1 or 2)
-  const [gameState, setGameState] = useState<'dashboard' | 'preparing' | 'practice-info' | 'time-mode' | 'intro' | 'exam' | 'check-work' | 'module-over' | 'finished' | 'score-report' | 'review'>('dashboard'); // Game state
-  const [reviewMode, setReviewMode] = useState(false); // Review mode state
-  const [isPracticeReview, setIsPracticeReview] = useState(false); // New state for "시작하기(복습용)"
-  const [showSimilarOverlay, setShowSimilarOverlay] = useState(false);
-  const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
-  const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
-  const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
-  const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
-  const [similarFullscreenTab, setSimilarFullscreenTab] = useState<string | null>(null);
-  const [showDirections, setShowDirections] = useState(false); // Directions modal state
-  const [panelWidth, setPanelWidth] = useState(50); // Panel width percentage
-  const [expandDirection, setExpandDirection] = useState<'left' | 'right' | null>(null); // Expansion direction
-  const [historyRecordToReview, setHistoryRecordToReview] = useState<any | null>(null);
-  const [learnedWords, setLearnedWords] = useState<any[]>(loadLearnedWords()); // User's learned vocabulary
-  const [processedQuestions, setProcessedQuestions] = useState<Set<number>>(new Set()); // Track which questions had words extracted
-  const [practiceRecords, setPracticeRecords] = useState<any[]>(loadPracticeRecords()); // User's practice records
-  const [currentTestInfo, setCurrentTestInfo] = useState<any>(null); // Current test metadata
-  const [showVideoModal, setShowVideoModal] = useState(false); // Video modal state
-  const [selectedVideoQuestion, setSelectedVideoQuestion] = useState<number | null>(null); // Current video question
-  const [showReviewModal, setShowReviewModal] = useState(false); // Review modal state
-  const [showScoreDetail, setShowScoreDetail] = useState(false); // Score detail modal state
-  const [showAnalysis, setShowAnalysis] = useState(false); // Analysis view state
-  const [isTimed, setIsTimed] = useState(true); // Time mode state (Timed or Untimed)
-  const [questions, setQuestions] = useState<any[]>(defaultQuestions); // Questions data - can be default or uploaded
-  const [showCalculator, setShowCalculator] = useState(false); // Calculator state
-  const [showReference, setShowReference] = useState(false); // Reference modal state
-  const [calculatorExpanded, setCalculatorExpanded] = useState(false); // Calculator expanded state
-  const [currentUser, setCurrentUser] = useState<any>(() => {
-    // Load current user from localStorage
-    try {
-      const saved = localStorage.getItem('currentUser');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  }); // Current logged in user
   const totalQuestions = questions.length;
 
   // Split questions into modules based on test type

@@ -858,7 +858,119 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   // Report content state
   const [reportCopied, setReportCopied] = useState(false);
   const [reportStudentMessage, setReportStudentMessage] = useState('');
+
+  // Get default practice tests (with fallback to hardcoded values)
+  const getDefaultPracticeTests = () => {
+    const defaultTests = [
+      { id: 1, title: "2025년 6월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 2, title: "2025년 6월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 3, title: "2025년 6월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 4, title: "2025년 6월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 5, title: "2025년 6월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 6, title: "2025년 6월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 7, title: "2025년 8월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 8, title: "2025년 8월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 9, title: "2025년 8월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 10, title: "2025년 8월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 11, title: "2025년 8월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 12, title: "2025년 8월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 13, title: "2025년 8월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 14, title: "2025년 8월 제4회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 15, title: "2025년 8월 제5회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 16, title: "2025년 8월 제5회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 17, title: "2025년 10월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 18, title: "2025년 10월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 19, title: "2025년 10월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 20, title: "2025년 10월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 21, title: "2025년 12월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
+      { id: 22, title: "2025년 12월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
+      { id: 101, title: "SAT Official Sample 1 - Reading", type: "Reading", status: "available", category: "official-samples" },
+      { id: 102, title: "SAT Official Sample 2 - Reading", type: "Reading", status: "available", category: "official-samples" },
+      { id: 103, title: "SAT Official Sample 1 - Math", type: "Math", status: "available", category: "official-samples" },
+      { id: 104, title: "SAT Official Sample 2 - Math", type: "Math", status: "available", category: "official-samples" },
+      { id: 105, title: "SAT Official Sample 3 - Reading", type: "Reading", status: "available", category: "official-samples" },
+      { id: 106, title: "SAT Official Sample 3 - Math", type: "Math", status: "available", category: "official-samples" }
+    ];
+    
+    // If no uploaded files with practice data, return defaults
+    if (uploadedFiles.length === 0) {
+      return defaultTests;
+    }
+    
+    // Filter uploadedFiles that are past-exams or official-samples and merge with defaults
+    const practiceFiles = uploadedFiles.filter(
+      file => file && file.subcategory && file.location &&
+              (file.subcategory === 'past-exams' || file.subcategory === 'official-samples') && 
+              (file.location === '스마트 연습')
+    );
+    
+    // Create a map of existing default test IDs to avoid duplicates
+    const defaultIds = new Set(defaultTests.map(t => t.id));
+    
+    // Convert uploaded files to test format
+    const uploadedTests = practiceFiles.map(file => ({
+      id: file.id,
+      title: file.name,
+      type: file.type,
+      status: file.status === 'completed' ? 'available' : 'processing',
+      category: file.subcategory,
+      data: file.data // Include the actual question data
+    }));
+    
+    // Merge: keep defaults and add uploaded tests that don't conflict
+    const mergedTests = [
+      ...defaultTests,
+      ...uploadedTests.filter(ut => !defaultIds.has(ut.id))
+    ];
+    
+    return mergedTests;
+  };
+
+  // Practice tests state - loaded from localStorage
+  const [practiceTests, setPracticeTests] = useState<any[]>(() => {
+    const stored = loadTestsFromStorage();
+    return stored || getDefaultPracticeTests();
+  });
+  const [practiceTestsLoading, setPracticeTestsLoading] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // 초기 로드: Supabase에서 데이터 가져오기
+  useEffect(() => {
+    const loadInitialData = async () => {
+      console.log('🔍 Supabase에서 데이터 로드 시도...');
+      const supabaseData = await loadTestsFromSupabase();
+      
+      if (supabaseData && supabaseData.length > 0) {
+        console.log('✅ Supabase에서 데이터 로드 성공:', supabaseData.length, '개');
+        setPracticeTests(supabaseData);
+        saveTestsToStorage(supabaseData); // localStorage에도 동기화
+      } else {
+        console.log('📂 localStorage 데이터 사용');
+        const localData = loadTestsFromStorage();
+        if (localData && localData.length > 0) {
+          // localStorage 데이터를 Supabase에 백업
+          await saveTestsToSupabase(localData);
+        }
+      }
+      setIsDataLoaded(true);
+    };
+    
+    loadInitialData();
+  }, []);
+
+  // Save to localStorage AND Supabase whenever practiceTests changes
+  useEffect(() => {
+    if (!isDataLoaded) return; // 초기 로드 중에는 저장하지 않음
+    
+    saveTestsBoth(practiceTests);
+  }, [practiceTests, isDataLoaded]);
   
+  // Update practiceTests when uploadedFiles changes
+  useEffect(() => {
+    const updated = getDefaultPracticeTests();
+    setPracticeTests(updated);
+  }, [uploadedFiles]);
+
   const testsPerPage = 6;
   
   // Render practice records using the separate component
@@ -1448,152 +1560,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       sourceTests: learnedWords.length > 0 ? ["학습한 문제"] : ["최근 연습"]
     }
   ];
-
-  // Get default practice tests (with fallback to hardcoded values)
-  const getDefaultPracticeTests = () => {
-    const defaultTests = [
-      { id: 1, title: "2025년 6월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 2, title: "2025년 6월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 3, title: "2025년 6월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 4, title: "2025년 6월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 5, title: "2025년 6월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 6, title: "2025년 6월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 7, title: "2025년 8월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 8, title: "2025년 8월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 9, title: "2025년 8월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 10, title: "2025년 8월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 11, title: "2025년 8월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 12, title: "2025년 8월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 13, title: "2025년 8월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 14, title: "2025년 8월 제4회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 15, title: "2025년 8월 제5회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 16, title: "2025년 8월 제5회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 17, title: "2025년 10월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 18, title: "2025년 10월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 19, title: "2025년 10월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 20, title: "2025년 10월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 21, title: "2025년 12월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 22, title: "2025년 12월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 101, title: "SAT Official Sample 1 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 102, title: "SAT Official Sample 2 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 103, title: "SAT Official Sample 1 - Math", type: "Math", status: "available", category: "official-samples" },
-      { id: 104, title: "SAT Official Sample 2 - Math", type: "Math", status: "available", category: "official-samples" },
-      { id: 105, title: "SAT Official Sample 3 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 106, title: "SAT Official Sample 3 - Math", type: "Math", status: "available", category: "official-samples" }
-    ];
-    
-    // If no uploaded files with practice data, return defaults
-    if (uploadedFiles.length === 0) {
-      return defaultTests;
-    }
-    
-    // Filter uploadedFiles that are past-exams or official-samples and merge with defaults
-    const practiceFiles = uploadedFiles.filter(
-      file => file && file.subcategory && file.location &&
-              (file.subcategory === 'past-exams' || file.subcategory === 'official-samples') && 
-              (file.location === '스마트 연습')
-    );
-    
-    // Create a map of existing default test IDs to avoid duplicates
-    const defaultIds = new Set(defaultTests.map(t => t.id));
-    
-    // Convert uploaded files to test format
-    const uploadedTests = practiceFiles.map(file => ({
-      id: file.id,
-      title: file.name,
-      type: file.type,
-      status: file.status === 'completed' ? 'available' : 'processing',
-      category: file.subcategory,
-      data: file.data // Include the actual question data
-    }));
-    
-    // Merge: keep defaults and add uploaded tests that don't conflict
-    const mergedTests = [
-      ...defaultTests,
-      ...uploadedTests.filter(ut => !defaultIds.has(ut.id))
-    ];
-    
-    return mergedTests;
-  };
-
-  // Practice tests state - loaded from localStorage
-  const [practiceTests, setPracticeTests] = useState<any[]>(() => {
-    const stored = loadTestsFromStorage();
-    return stored || getDefaultPracticeTests();
-  });
-  const [practiceTestsLoading, setPracticeTestsLoading] = useState(false);
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-
-  // 초기 로드: Supabase에서 데이터 가져오기
-  useEffect(() => {
-    const loadInitialData = async () => {
-      console.log('🔍 Supabase에서 데이터 로드 시도...');
-      const supabaseData = await loadTestsFromSupabase();
-      
-      if (supabaseData && supabaseData.length > 0) {
-        console.log('✅ Supabase에서 데이터 로드 성공:', supabaseData.length, '개');
-        setPracticeTests(supabaseData);
-        saveTestsToStorage(supabaseData); // localStorage에도 동기화
-      } else {
-        console.log('📂 localStorage 데이터 사용');
-        const localData = loadTestsFromStorage();
-        if (localData && localData.length > 0) {
-          // localStorage 데이터를 Supabase에 백업
-          await saveTestsToSupabase(localData);
-        }
-      }
-      setIsDataLoaded(true);
-    };
-    
-    loadInitialData();
-  }, []);
-
-  // Save to localStorage AND Supabase whenever practiceTests changes
-  useEffect(() => {
-    if (!isDataLoaded) return; // 초기 로드 중에는 저장하지 않음
-    
-    saveTestsBoth(practiceTests);
-  }, [practiceTests, isDataLoaded]);
-  
-  // Update practiceTests when uploadedFiles changes
-  useEffect(() => {
-    const updated = getDefaultPracticeTests();
-    setPracticeTests(updated);
-  }, [uploadedFiles]);
-
-  // Load advertisements from Supabase
-  useEffect(() => {
-    const loadAdvertisements = async () => {
-      try {
-        console.log('📡 광고 데이터 로드 시도...');
-        const response = await fetchWithTimeout(
-          `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ 광고 데이터 로드 완료:', data.length, '개');
-          if (Array.isArray(data)) {
-            setAdvertisements(data);
-          }
-        } else {
-          const errorText = await response.text();
-          console.log('⚠️ 광고 로드 실패 (빈 배열 사용):', response.status);
-          setAdvertisements([]);
-        }
-      } catch (error) {
-        console.log('⚠️ 광고 로드 에러 (빈 배열 사용):', error instanceof Error ? error.message : String(error));
-        setAdvertisements([]);
-      }
-    };
-    
-    loadAdvertisements();
-  }, []);
 
   // Sample practice record data with question history
   const practiceRecordData = [

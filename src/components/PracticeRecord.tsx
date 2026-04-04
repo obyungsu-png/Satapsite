@@ -111,6 +111,11 @@ export function PracticeRecord({
   const [showScoreDetailModal, setShowScoreDetailModal] = useState(false);
   const [scoreDetailRecord, setScoreDetailRecord] = useState<PracticeRecordItem | null>(null);
 
+  // Accordion states for review sections
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ answer: true });
+  const [similarAnswers, setSimilarAnswers] = useState<Record<number, string>>({});
+  const [similarResults, setSimilarResults] = useState<Record<number, 'correct' | 'incorrect' | null>>({});
+
   useEffect(() => {
     const stored = localStorage.getItem('studentQuestions');
     if (stored) {
@@ -315,11 +320,6 @@ export function PracticeRecord({
 
   // Detail view for selected question
   const selectedRecord = allAvailableRecords.find(record => record.id === selectedQuestion?.recordId);
-
-  // Accordion states for review sections
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ answer: true });
-  const [similarAnswers, setSimilarAnswers] = useState<Record<number, string>>({});
-  const [similarResults, setSimilarResults] = useState<Record<number, 'correct' | 'incorrect' | null>>({});
 
   const toggleSection = (key: string) => {
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
