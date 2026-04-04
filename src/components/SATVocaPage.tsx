@@ -1095,9 +1095,9 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                   <table className="w-full">
                     <thead className="bg-gray-50 sticky top-0 border-b border-gray-200">
                       <tr>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">영단어</th>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">한글 뜻</th>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">영영풀이</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">영단어</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">한글 뜻</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">영영풀이</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1113,9 +1113,9 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                             }
                           }}
                         >
-                          <td className="px-3 py-2 text-sm">{word.english}</td>
-                          <td className="px-3 py-2 text-sm text-gray-600">{word.korean}</td>
-                          <td className="px-3 py-2 text-xs text-gray-500">{word.definition.slice(0, 25)}...</td>
+                          <td className="px-3 py-2 text-sm text-center align-middle">{word.english}</td>
+                          <td className="px-3 py-2 text-sm text-gray-600 text-center align-middle">{word.korean}</td>
+                          <td className="px-3 py-2 text-xs text-gray-500 text-center align-middle">{word.definition.slice(0, 25)}...</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1132,17 +1132,17 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                   <table className="w-full">
                     <thead className="bg-gray-50 sticky top-0 border-b border-gray-200">
                       <tr>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">영단어</th>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">한글 뜻</th>
-                        <th className="px-3 py-2 text-left text-sm text-gray-600">삭제</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">영단어</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">한글 뜻</th>
+                        <th className="px-3 py-2 text-center text-sm text-gray-600">삭제</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedWords.map((word) => (
                         <tr key={word.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-3 py-2 text-sm">{word.english}</td>
-                          <td className="px-3 py-2 text-sm text-gray-600">{word.korean}</td>
-                          <td className="px-3 py-2 text-sm">
+                          <td className="px-3 py-2 text-sm text-center align-middle">{word.english}</td>
+                          <td className="px-3 py-2 text-sm text-gray-600 text-center align-middle">{word.korean}</td>
+                          <td className="px-3 py-2 text-sm text-center align-middle">
                             <Button
                               size="sm"
                               variant="ghost"
