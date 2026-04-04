@@ -999,12 +999,10 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   const step2DialogClassName = "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]";
 
-  const step3DialogClassName = useMemo(() => {
-    return [
-      "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
-      showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
-    ].join(" ");
-  }, [showDownloadModal, showTestTypeModal]);
+  const step3DialogClassName = [
+    "!max-w-[100vw] md:!max-w-[1400px] !w-[100vw] md:!w-[90vw] !h-[100dvh] md:!h-[85vh] !max-h-[100dvh] md:!max-h-[85vh] !bottom-auto !top-0 md:!top-auto !translate-y-0 md:!translate-y-[-50%] !rounded-none md:!rounded-2xl p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[70] transition-opacity",
+    showDownloadModal || showTestTypeModal ? "opacity-0 pointer-events-none" : "opacity-100"
+  ].join(" ");
 
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
