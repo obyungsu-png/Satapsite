@@ -6,7 +6,6 @@ import historyEmptyImage from "figma:asset/5fda86ab59ab70ac4b90ec46b644ce1cd9e29
 import { AdBannerDisplay, Advertisement } from './AdManagement';
 import { ScoreDetailModal } from './ScoreDetailModal';
 import { ReviewModal } from './ReviewModal';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface Question {
   id: number;
@@ -131,10 +130,10 @@ export function PracticeRecord({
       }
 
       try {
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records/${currentUser.id}`, {
+        const response = await fetch(`https://${(await import('../utils/supabase/info')).projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records/${currentUser.id}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
+            'Authorization': `Bearer ${(await import('../utils/supabase/info')).publicAnonKey}`,
             'Content-Type': 'application/json',
           },
         });
@@ -816,6 +815,16 @@ export function PracticeRecord({
                       : '테스트를 완료하면 여기에서 결과를 확인할 수 있습니다.'
                     }
                   </p>
+                </div>
+              )}
+
+              {/* Footer note */}
+              {Object.keys(groupedRecords).length > 0 && (
+                <div className="flex justify-center mt-6 md:mt-8 mb-4">
+                  <div className="inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 bg-gray-800 text-gray-300 text-[10px] md:text-xs rounded-full text-center">
+                    <span className="w-3.5 h-3.5 border border-gray-500 rounded-full flex items-center justify-center text-[8px] flex-shrink-0">!</span>
+                    근태비 데이터가 모든 끝났에, 관련해의 지원센터에 질문 또는 문의하세요
+                  </div>
                 </div>
               )}
             </div>

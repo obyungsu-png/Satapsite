@@ -22,13 +22,12 @@ import { Button } from "./components/ui/button";
 import { AdBanner } from "./components/AdBanner";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
-import { X, Bookmark, ArrowLeft, Globe, Search as SearchIcon, BookOpen, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Bookmark } from "lucide-react";
 import { Download } from "lucide-react";
 import { BluebookExpandButton } from "./components/BluebookExpandButton";
 import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
 import { MobileExamTabs } from "./components/MobileExamTabs";
 import { mathQuestions } from "./mathQuestions";
-import { projectId, publicAnonKey } from "./utils/supabase/info";
 import expandIconsSprite from "figma:asset/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
 import dragHandleImg from "figma:asset/af403f2609b757e96b427cbfdd300891837f3bc7.png";
 import expandRightIcon from "figma:asset/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
@@ -129,10 +128,10 @@ const savePracticeRecords = async (records: any[], currentUser?: any) => {
       const latestRecord = records[0];
       if (latestRecord) {
         try {
-          const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records`, {
+          const response = await fetch(`https://${(await import('./utils/supabase/info')).projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records`, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
+              'Authorization': `Bearer ${(await import('./utils/supabase/info')).publicAnonKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -284,12 +283,6 @@ export default function App() {
   const [gameState, setGameState] = useState<'dashboard' | 'preparing' | 'practice-info' | 'time-mode' | 'intro' | 'exam' | 'check-work' | 'module-over' | 'finished' | 'score-report' | 'review'>('dashboard'); // Game state
   const [reviewMode, setReviewMode] = useState(false); // Review mode state
   const [isPracticeReview, setIsPracticeReview] = useState(false); // New state for "시작하기(복습용)"
-  const [showSimilarOverlay, setShowSimilarOverlay] = useState(false);
-  const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
-  const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
-  const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
-  const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
-  const [similarFullscreenTab, setSimilarFullscreenTab] = useState<string | null>(null);
   const [showDirections, setShowDirections] = useState(false); // Directions modal state
   const [panelWidth, setPanelWidth] = useState(50); // Panel width percentage
   const [expandDirection, setExpandDirection] = useState<'left' | 'right' | null>(null); // Expansion direction
@@ -1391,52 +1384,24 @@ export default function App() {
                   explanation={currentQuestion.explanation}
                   passage={currentQuestion.passage}
                   onShowSimilarProblems={() => {
-                    const typeLabel = currentQuestion.category || currentQuestion.trainingType || 'Central Ideas and Details';
-                    const diffLabel = currentQuestion.difficulty || '중간';
-                    const generated = [
-                      {
-                        id: 1,
-                        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim, contrasts it with a weaker alternative, and supports the stronger interpretation with evidence.`,
-                        question: 'Which choice best states the main idea of the passage?',
-                        choices: [
-                          { id: 'a', text: 'The author rejects the need for evidence in analysis.' },
-                          { id: 'b', text: 'The author supports a stronger interpretation with evidence.' },
-                          { id: 'c', text: 'The passage argues that all interpretations are equally valid.' },
-                          { id: 'd', text: 'The passage focuses mainly on a historical timeline.' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                      {
-                        id: 2,
-                        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second explanation better matches the data.`,
-                        question: 'Based on the passage, which statement is most accurate?',
-                        choices: [
-                          { id: 'a', text: 'The first explanation is fully confirmed by the data.' },
-                          { id: 'b', text: 'Neither explanation relates to the evidence presented.' },
-                          { id: 'c', text: 'The second explanation is better supported by the evidence.' },
-                          { id: 'd', text: 'The passage recommends ignoring the available data.' },
-                        ],
-                        correctAnswer: 'c',
-                      },
-                      {
-                        id: 3,
-                        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression.`,
-                        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
-                        choices: [
-                          { id: 'a', text: 'nevertheless' },
-                          { id: 'b', text: 'furthermore' },
-                          { id: 'c', text: 'however' },
-                          { id: 'd', text: 'instead' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                    ];
-                    setSimilarQuestions(generated);
-                    setSimilarProblemIndex(0);
-                    setSimilarProblemAnswers({});
-                    setShowSimilarResults({});
-                    setSimilarFullscreenTab(null);
-                    setShowSimilarOverlay(true);
+                    toast.info('동일 유형 유사 문항 3개를 불러옵니다...');
+                    const pool = [...defaultQuestions, ...mathQuestions];
+                    const similar = pool
+                      .filter(q => q.id !== currentQuestion.id && (q.category === currentQuestion.category || q.trainingType === currentQuestion.trainingType))
+                      .slice(0, 3);
+                    
+                    if (similar.length > 0) {
+                      const similarTest = {
+                        title: `${currentQuestionIndex + 1}번 유사 문항 연습`,
+                        type: currentTestInfo?.type || 'Review',
+                        source: '유사문제',
+                        questions: similar,
+                        isReview: true
+                      };
+                      handleStartReview(similarTest);
+                    } else {
+                      toast.error('유사한 유형의 문제를 더 찾을 수 없습니다.');
+                    }
                   }}
                 />
               </div>
@@ -1463,52 +1428,24 @@ export default function App() {
                 correctAnswer={currentQuestion.correctAnswer}
                 explanation={currentQuestion.explanation}
                 onShowSimilarProblems={() => {
-                    const typeLabel = currentQuestion.category || currentQuestion.trainingType || 'Central Ideas and Details';
-                    const diffLabel = currentQuestion.difficulty || '중간';
-                    const generated = [
-                      {
-                        id: 1,
-                        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim and supports the stronger interpretation with evidence.`,
-                        question: 'Which choice best states the main idea of the passage?',
-                        choices: [
-                          { id: 'a', text: 'The author rejects the need for evidence in analysis.' },
-                          { id: 'b', text: 'The author supports a stronger interpretation with evidence.' },
-                          { id: 'c', text: 'The passage argues that all interpretations are equally valid.' },
-                          { id: 'd', text: 'The passage focuses mainly on a historical timeline.' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                      {
-                        id: 2,
-                        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second better matches the data.`,
-                        question: 'Based on the passage, which statement is most accurate?',
-                        choices: [
-                          { id: 'a', text: 'The first explanation is fully confirmed by the data.' },
-                          { id: 'b', text: 'Neither explanation relates to the evidence presented.' },
-                          { id: 'c', text: 'The second explanation is better supported by the evidence.' },
-                          { id: 'd', text: 'The passage recommends ignoring the available data.' },
-                        ],
-                        correctAnswer: 'c',
-                      },
-                      {
-                        id: 3,
-                        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression.`,
-                        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
-                        choices: [
-                          { id: 'a', text: 'nevertheless' },
-                          { id: 'b', text: 'furthermore' },
-                          { id: 'c', text: 'however' },
-                          { id: 'd', text: 'instead' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                    ];
-                    setSimilarQuestions(generated);
-                    setSimilarProblemIndex(0);
-                    setSimilarProblemAnswers({});
-                    setShowSimilarResults({});
-                    setSimilarFullscreenTab(null);
-                    setShowSimilarOverlay(true);
+                  toast.info('동일 유형 유사 문항 3개를 불러옵니다...');
+                  const pool = [...defaultQuestions, ...mathQuestions];
+                  const similar = pool
+                    .filter(q => q.id !== currentQuestion.id && (q.category === currentQuestion.category || q.trainingType === currentQuestion.trainingType))
+                    .slice(0, 3);
+                  
+                  if (similar.length > 0) {
+                    const similarTest = {
+                      title: `${currentQuestionIndex + 1}번 유사 문항 연습`,
+                      type: currentTestInfo?.type || 'Review',
+                      source: '유사문제',
+                      questions: similar,
+                      isReview: true
+                    };
+                    handleStartReview(similarTest);
+                  } else {
+                    toast.error('유사한 유형의 문제를 더 찾을 수 없습니다.');
+                  }
                 }}
               />
             </div>
@@ -1553,287 +1490,6 @@ export default function App() {
             currentQuestion={currentQuestion}
           />
         )}
-
-        {/* Similar Problems Overlay - Exam-style layout */}
-        {showSimilarOverlay && similarQuestions.length > 0 && (() => {
-          const simQ = similarQuestions[similarProblemIndex];
-          const hasAnswered = showSimilarResults[similarProblemIndex];
-          const userSimilarAnswer = similarProblemAnswers[similarProblemIndex]?.toUpperCase();
-          const isCorrectAnswer = userSimilarAnswer === simQ.correctAnswer.toUpperCase();
-          const completedCount = Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length;
-          const allDone = completedCount === 3;
-
-          return (
-            <div className="fixed inset-0 bg-white z-[60] flex flex-col">
-              {/* ── Header (mirrors ExamHeader) ── */}
-              <div className="border-b-2 border-dashed border-black relative" style={{ backgroundColor: '#E8EEF7' }}>
-                <div className="flex items-center p-2 md:p-4 relative">
-                  {/* Left - Title */}
-                  <div className="flex flex-col gap-0.5 md:gap-1 flex-1 min-w-0">
-                    <span className="text-black truncate" style={{ fontSize: '22px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', fontWeight: '700', letterSpacing: '-0.5px' }}>
-                      유형문제 연습
-                    </span>
-                    <span className="text-gray-500" style={{ fontSize: '13px' }}>
-                      문제 {currentQuestionIndex + 1}번 기준 · {currentQuestion?.category || 'Reading'} · {currentQuestion?.difficulty || '중간'}
-                    </span>
-                  </div>
-                  {/* Center - Progress indicator */}
-                  <div className="absolute left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-1">
-                    <div className="flex items-center gap-1.5">
-                      {similarQuestions.map((_: any, idx: number) => {
-                        const answered = showSimilarResults[idx];
-                        const isCurrent = similarProblemIndex === idx;
-                        return (
-                          <button
-                            key={idx}
-                            onClick={() => setSimilarProblemIndex(idx)}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all ${
-                              isCurrent
-                                ? 'bg-[#0F766E] text-white shadow-sm'
-                                : answered
-                                  ? 'bg-[#0F766E]/20 text-[#0F766E] border border-[#0F766E]/40'
-                                  : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
-                            }`}
-                          >
-                            {idx + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <span className="text-[11px] text-gray-500 font-medium">{completedCount} / 3 완료</span>
-                  </div>
-                  {/* Right - Close */}
-                  <div className="flex items-center">
-                    <button
-                      onClick={() => setShowSimilarOverlay(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm text-gray-600 hover:bg-white/60 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="hidden md:inline">닫기</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Content Area (split view like exam) ── */}
-              <div className="flex-1 flex overflow-hidden">
-                {/* Left Panel - Passage */}
-                <div className="w-1/2 border-r border-gray-200 overflow-y-auto bg-white">
-                  <div className="p-6 md:p-8">
-                    <p className="text-gray-800 leading-[1.8] text-[15px]" style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif' }}>
-                      {simQ.passage}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right Panel - Question */}
-                <div className="w-1/2 overflow-y-auto bg-white">
-                  <div className="p-6 md:p-8">
-                    {/* Question number + Mark for Review style header */}
-                    <div className="flex items-center gap-3 mb-1">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-sm text-white text-sm font-bold" style={{ backgroundColor: '#0F766E' }}>
-                        {similarProblemIndex + 1}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium" style={{ backgroundColor: '#F0FDFA', color: '#0F766E', border: '1px solid #CCFBF1' }}>
-                          유형문제
-                        </span>
-                        {hasAnswered && (
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${isCorrectAnswer ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
-                            {isCorrectAnswer ? '✓ 정답' : '✗ 오답'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="border-b-2 border-dashed border-gray-300 mb-5" />
-
-                    {/* Question text */}
-                    <p className="text-gray-900 text-[15px] leading-relaxed mb-6">{simQ.question}</p>
-
-                    {/* Choices - SAT Bluebook style */}
-                    <div className="space-y-3 mb-6">
-                      {simQ.choices.map((choice: any) => {
-                        const choiceUpper = choice.id.toUpperCase();
-                        const isCorrectChoice = simQ.correctAnswer.toUpperCase() === choiceUpper;
-                        const isUserChoice = userSimilarAnswer === choiceUpper;
-                        return (
-                          <button
-                            key={choice.id}
-                            onClick={() => {
-                              if (!hasAnswered) {
-                                setSimilarProblemAnswers(prev => ({ ...prev, [similarProblemIndex]: choice.id }));
-                              }
-                            }}
-                            disabled={hasAnswered}
-                            className={`w-full flex items-center gap-3 p-3.5 rounded-lg border transition-all text-left ${
-                              hasAnswered
-                                ? isCorrectChoice
-                                  ? 'border-emerald-400 bg-emerald-50'
-                                  : isUserChoice
-                                    ? 'border-red-400 bg-red-50'
-                                    : 'border-gray-200 bg-white'
-                                : isUserChoice
-                                  ? 'border-[#0F766E] bg-[#F0FDFA]'
-                                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                            } ${hasAnswered ? 'cursor-default' : 'cursor-pointer'}`}
-                          >
-                            <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border ${
-                              hasAnswered
-                                ? isCorrectChoice
-                                  ? 'bg-emerald-500 text-white border-emerald-500'
-                                  : isUserChoice
-                                    ? 'bg-red-500 text-white border-red-500'
-                                    : 'bg-white text-gray-500 border-gray-300'
-                                : isUserChoice
-                                  ? 'bg-[#0F766E] text-white border-[#0F766E]'
-                                  : 'bg-white text-gray-600 border-gray-400'
-                            }`}>
-                              {choiceUpper}
-                            </span>
-                            <span className="text-[14px] text-gray-800 flex-1">{choice.text}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* 정답 확인 버튼 */}
-                    {!hasAnswered && userSimilarAnswer && (
-                      <div className="flex justify-center mb-6">
-                        <button
-                          onClick={() => setShowSimilarResults(prev => ({ ...prev, [similarProblemIndex]: true }))}
-                          className="px-6 py-2.5 rounded-full text-white text-sm font-semibold transition-all hover:opacity-90"
-                          style={{ backgroundColor: '#0F766E' }}
-                        >
-                          정답 확인
-                        </button>
-                      </div>
-                    )}
-
-                    {/* 정답/오답 피드백 */}
-                    {hasAnswered && (
-                      <div className={`p-4 rounded-lg text-sm mb-6 ${isCorrectAnswer ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
-                        {isCorrectAnswer ? '정답입니다!' : `오답입니다. 정답은 ${simQ.correctAnswer.toUpperCase()}입니다.`}
-                      </div>
-                    )}
-
-                    {/* 하단 탭 (해석/해설/단어) */}
-                    <div className="border-t border-gray-200 pt-5">
-                      <div className="flex gap-2 mb-4">
-                        {[
-                          { key: 'translation', icon: Globe, label: '해석' },
-                          { key: 'analysis', icon: SearchIcon, label: '해설' },
-                          { key: 'vocabulary', icon: BookOpen, label: '단어' },
-                        ].map(tab => (
-                          <button
-                            key={tab.key}
-                            onClick={() => setSimilarFullscreenTab(similarFullscreenTab === tab.key ? null : tab.key)}
-                            className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5 ${
-                              similarFullscreenTab === tab.key
-                                ? 'bg-gray-100 text-gray-900 border border-gray-300 font-semibold'
-                                : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                            }`}
-                          >
-                            <tab.icon className="h-3.5 w-3.5" />
-                            {tab.label}
-                          </button>
-                        ))}
-                      </div>
-                      {similarFullscreenTab && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 min-h-[120px] max-h-[260px] overflow-y-auto">
-                          {similarFullscreenTab === 'translation' ? (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3">이 문제는 문맥에 맞는 적절한 단어를 선택하는 문제입니다.</p>
-                              <p>정답은 <strong>{simQ.correctAnswer.toUpperCase()}</strong>입니다.</p>
-                            </div>
-                          ) : similarFullscreenTab === 'analysis' ? (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3"><strong>문제 해설:</strong></p>
-                              <p>정답은 <strong>{simQ.correctAnswer.toUpperCase()}</strong>입니다. 전체 문맥을 파악하고 분석해야 합니다.</p>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3 font-semibold">핵심 어휘:</p>
-                              <ul className="space-y-2 list-disc list-inside">
-                                <li><strong>compelling</strong> - 설득력 있는</li>
-                                <li><strong>acknowledge</strong> - 인정하다</li>
-                                <li><strong>validity</strong> - 타당성</li>
-                                <li><strong>ambiguous</strong> - 모호한</li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Bottom Navigation (mirrors ExamNavigation) ── */}
-              <div className="flex items-center justify-between px-4 py-3 border-t-2 border-dashed border-black" style={{ backgroundColor: '#E8EEF7' }}>
-                {/* Left - Question indicator */}
-                <div
-                  className="text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium"
-                  style={{ backgroundColor: '#0F766E' }}
-                >
-                  Question {similarProblemIndex + 1} of 3
-                </div>
-
-                {/* Right - Navigation buttons */}
-                <div className="flex items-center gap-3">
-                  {/* Back */}
-                  <button
-                    onClick={() => { if (similarProblemIndex > 0) setSimilarProblemIndex(prev => prev - 1); }}
-                    disabled={similarProblemIndex === 0}
-                    className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all ${
-                      similarProblemIndex === 0
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'hover:opacity-90'
-                    }`}
-                    style={similarProblemIndex === 0 ? {} : { backgroundColor: '#0F766E' }}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back
-                  </button>
-
-                  {/* Next / 실전문제로 돌아가기 */}
-                  {allDone && similarProblemIndex === 2 ? (
-                    <button
-                      onClick={() => {
-                        setSimilarProblemIndex(0);
-                        setSimilarProblemAnswers({});
-                        setShowSimilarResults({});
-                        setShowSimilarOverlay(false);
-                      }}
-                      className="flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90"
-                      style={{ backgroundColor: '#0F766E' }}
-                    >
-                      실전문제로 돌아가기
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (hasAnswered && similarProblemIndex < 2) {
-                          setSimilarProblemIndex(prev => prev + 1);
-                        }
-                      }}
-                      disabled={!hasAnswered || similarProblemIndex >= 2}
-                      className={`flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all ${
-                        !hasAnswered || similarProblemIndex >= 2
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'hover:opacity-90'
-                      }`}
-                      style={!hasAnswered || similarProblemIndex >= 2 ? {} : { backgroundColor: '#0F766E' }}
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Directions Modal */}
         <DirectionsModal

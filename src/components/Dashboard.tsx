@@ -135,52 +135,136 @@ const saveTestsBoth = async (tests: any[]) => {
 };
 
 // TestCard Component with hover effect for Practice
-function TestCard({ test, index, onStartTest, onStartReview }: { 
+function TestCard({ test, index, onStartTest, onStartReview, isUnlocked, onNavigateToPricing }: { 
   test: any; 
   index: number; 
   onStartTest: () => void;
   onStartReview: () => void;
+  isUnlocked?: boolean;
+  onNavigateToPricing?: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const isLocked = false; // 모든 잠금 해제
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-white rounded-[20px] p-5 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 flex flex-col h-full relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="rounded-lg transition-all duration-300 relative"
+      style={{
+        backgroundColor: isLocked ? '#f5f5f5' : (isHovered ? '#E8EAF6' : '#F5F5F5'),
+        boxShadow: isHovered ? '0 3px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.06)',
+        opacity: isLocked ? 0.6 : 1
+      }}
+      whileHover={{ scale: isLocked ? 1 : 1.015, y: isLocked ? 0 : -2 }}
     >
-      <div className="mb-4 flex-grow">
-        <div className="flex justify-between items-start mb-3">
-          <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] rounded-full font-bold tracking-wide uppercase">
-            {test.type || 'Practice'}
-          </span>
-          {test.isUploaded && (
-            <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
-              <Upload size={10} /> 업로드됨
-            </span>
-          )}
+      <div className="p-3.5">
+        {/* Icon and Title */}
+        <div className="flex items-start gap-2.5 mb-3">
+          <motion.div 
+            className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: isLocked ? '#d1d5db' : '#E8EAF6' }}
+          >
+            {isLocked ? (
+              <Lock className="w-4.5 h-4.5 text-gray-500" />
+            ) : (
+              <BookOpen className="w-4.5 h-4.5" style={{ color: '#3D5AA1' }} />
+            )}
+          </motion.div>
+          <div className="flex-1 min-w-0">
+            <h3 
+              className="text-sm line-clamp-2 mb-1"
+              style={{ color: isLocked ? '#6b7280' : '#000', fontWeight: 700 }}
+            >
+              {test.title}
+            </h3>
+            <p 
+              className="text-xs transition-colors duration-300"
+              style={{ 
+                color: isLocked ? '#9ca3af' : (isHovered ? '#3D5AA1' : '#666'),
+                fontWeight: 700
+              }}
+            >
+              {test.type}
+            </p>
+          </div>
         </div>
-        <h3 className="text-sm font-bold text-gray-800 line-clamp-2 leading-snug mb-2">
-          {test.title}
-        </h3>
-        <p className="text-[11px] text-gray-500 line-clamp-2 font-medium">
-          {test.description || '실전 감각을 익히기 위한 연습 세이션입니다.'}
-        </p>
-      </div>
 
-      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
-        <button
-          onClick={onStartTest}
-          className="flex-1 bg-[#3D5AA1] hover:bg-[#2F4A85] text-white text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
-        >
-          시작하기
-        </button>
-        <button
-          onClick={onStartReview}
-          className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-[#3D5AA1] text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
-        >
-          복습용
-        </button>
+        {/* Badges */}
+        {test.isUploaded && !isLocked && (
+          <div className="mb-3">
+            <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#EBE9F5', color: '#2B478B' }}>
+              <Upload className="w-3 h-3 inline-block mr-1" />
+              업로드됨
+            </span>
+          </div>
+        )}
+        
+        {/* Buttons */}
+        {!isLocked && (
+          <div className="space-y-2">
+            <Button
+              onClick={onStartTest}
+              className="w-full py-2 rounded transition-colors text-xs"
+              style={{ 
+                backgroundColor: '#3D5AA1',
+                color: '#FFFFFF',
+                fontWeight: 700
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F4A85';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#3D5AA1';
+              }}
+              size="sm"
+            >
+              시작하기
+            </Button>
+            <Button
+              onClick={onStartReview}
+              className="w-full py-2 rounded transition-colors text-xs"
+              style={{ 
+                backgroundColor: '#3D5AA1',
+                color: '#FFFFFF',
+                fontWeight: 700
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2F4A85';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#3D5AA1';
+              }}
+              size="sm"
+            >
+              시작하기(복습용)
+            </Button>
+          </div>
+        )}
       </div>
+      
+      {/* Unlock Button Overlay */}
+      {isLocked && (
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onNavigateToPricing) {
+              onNavigateToPricing();
+            }
+          }}
+          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
+            <Lock size={14} className="md:w-4 md:h-4" />
+            <span className="whitespace-nowrap">Unlock Now</span>
+          </div>
+        </motion.button>
+      )}
     </motion.div>
   );
 }
@@ -979,291 +1063,213 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     };
 
     return (
-      <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #f8faff 0%, #f0f4ff 50%, #faf5ff 100%)' }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-          
-          {/* Hero Header Card */}
-          <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 mb-6 shadow-xl" style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #A855F7 100%)' }}>
-            <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full translate-y-1/3 -translate-x-1/4" />
-            <div className="absolute top-1/2 right-1/4 w-32 h-32 bg-white/5 rounded-full" />
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
+      <div className="bg-gray-50 pb-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#3D5AA1' }}>
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
                 <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full mb-3">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                    <span className="text-[11px] text-white/80 font-medium">Monthly Report</span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">SAT 학습 리포트</h1>
-                  <p className="text-sm text-white/60">{new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-                <div className="text-right">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-3xl sm:text-4xl">📊</span>
-                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900">학습 리포트</h1>
+                  <p className="text-sm text-gray-600">Monthly Progress Report</p>
                 </div>
               </div>
-              
-              {/* Quick Stats Row */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-white">{performanceData.totalTests}</div>
-                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">총 테스트</div>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-emerald-300">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</div>
-                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">정답률</div>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 sm:p-4 text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-amber-300">{performanceData.highestScore}</div>
-                  <div className="text-[10px] sm:text-xs text-white/60 mt-0.5">최고점</div>
-                </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">생성일</p>
+                <p className="text-base font-semibold text-gray-900">{new Date().toLocaleDateString('ko-KR')}</p>
               </div>
             </div>
           </div>
 
-          {/* 학습 활동 요약 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center">
-                <span className="text-base">📈</span>
+          {/* 📈 학습 횟수 요약 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              📈 학습 횟수 요약
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-1">모의고사</p>
+                <p className="text-2xl font-bold text-gray-900">{studyStats.mockTests.count}회</p>
+                <p className="text-xs text-gray-600 mt-1">평균 {studyStats.mockTests.avgScore}점</p>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">학습 활동 요약</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📝</span>
-                  <span className="text-xs font-semibold text-gray-500">모의고사</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{studyStats.mockTests.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
-                <div className="text-[11px] text-blue-500 font-medium mt-1">평균 {studyStats.mockTests.avgScore}점</div>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-1">실전 테스트</p>
+                <p className="text-2xl font-bold text-gray-900">{studyStats.realTests.count}회</p>
+                <p className="text-xs text-gray-600 mt-1">평균 {studyStats.realTests.avgScore}점</p>
               </div>
-              <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-4 border border-violet-100/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">🎯</span>
-                  <span className="text-xs font-semibold text-gray-500">실전 테스트</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{studyStats.realTests.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
-                <div className="text-[11px] text-violet-500 font-medium mt-1">평균 {studyStats.realTests.avgScore}점</div>
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-1">어휘 학습</p>
+                <p className="text-2xl font-bold text-gray-900">{studyStats.vocabulary.count}회</p>
               </div>
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-100/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">📚</span>
-                  <span className="text-xs font-semibold text-gray-500">어휘 학습</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{studyStats.vocabulary.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
-              </div>
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">⚡</span>
-                  <span className="text-xs font-semibold text-gray-500">전문 훈련</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-900">{studyStats.training.count}<span className="text-sm font-medium text-gray-400 ml-0.5">회</span></div>
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                <p className="text-sm text-gray-600 mb-1">전문 훈련</p>
+                <p className="text-2xl font-bold text-gray-900">{studyStats.training.count}회</p>
               </div>
             </div>
           </div>
 
-          {/* 성적 분석 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <span className="text-base">🎯</span>
+          {/* 🎯 성적 분석 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              🎯 성적 분석
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">평균 점수</p>
+                <p className="text-2xl font-bold" style={{ color: '#3D5AA1' }}>{performanceData.averageScore}</p>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">성적 분석</h2>
-            </div>
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="text-center p-4 bg-gradient-to-b from-indigo-50 to-white rounded-2xl border border-indigo-100/50">
-                <div className="text-xs text-gray-500 mb-1.5 font-medium">평균 점수</div>
-                <div className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">{performanceData.averageScore}</div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">최고 점수</p>
+                <p className="text-2xl font-bold text-green-600">{performanceData.highestScore}</p>
               </div>
-              <div className="text-center p-4 bg-gradient-to-b from-emerald-50 to-white rounded-2xl border border-emerald-100/50">
-                <div className="text-xs text-gray-500 mb-1.5 font-medium">최고 점수</div>
-                <div className="text-3xl font-bold text-emerald-600">{performanceData.highestScore}</div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">최저 점수</p>
+                <p className="text-2xl font-bold text-orange-600">{performanceData.lowestScore}</p>
               </div>
-              <div className="text-center p-4 bg-gradient-to-b from-amber-50 to-white rounded-2xl border border-amber-100/50">
-                <div className="text-xs text-gray-500 mb-1.5 font-medium">최저 점수</div>
-                <div className="text-3xl font-bold text-amber-600">{performanceData.lowestScore}</div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">전체 정답률</p>
+                <p className="text-2xl font-bold" style={{ color: '#10B981' }}>
+                  {Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%
+                </p>
               </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <div className="text-[11px] text-gray-500 mb-1">정답률</div>
-                <div className="text-lg font-bold text-emerald-600">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">푼 문제 수</p>
+                <p className="text-2xl font-bold text-gray-900">{performanceData.totalQuestions}</p>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <div className="text-[11px] text-gray-500 mb-1">푼 문제</div>
-                <div className="text-lg font-bold text-gray-800">{performanceData.totalQuestions}</div>
-              </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <div className="text-[11px] text-gray-500 mb-1">맞춘 문제</div>
-                <div className="text-lg font-bold text-gray-800">{performanceData.correctAnswers}</div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-600 mb-1">맞춘 문제</p>
+                <p className="text-2xl font-bold text-gray-900">{performanceData.correctAnswers}</p>
               </div>
             </div>
           </div>
 
-          {/* 영역별 성적 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center">
-                <span className="text-base">📚</span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">영역별 성적</h2>
-            </div>
+          {/* 📚 영역별 성적 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              📚 영역별 성적
+            </h2>
             <div className="space-y-4">
               {subjectPerformance.map((subject, index) => (
-                <div key={index} className="group">
+                <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs" 
-                        style={{ backgroundColor: subject.color + '15', color: subject.color }}>
-                        {subject.status === '우수' ? '🟢' : subject.status === '보통' ? '🟡' : '🔴'}
-                      </div>
-                      <span className="text-sm font-bold text-gray-800">{subject.name}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{ 
-                        backgroundColor: subject.color + '15', 
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900">{subject.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ 
+                        backgroundColor: subject.color + '20', 
                         color: subject.color 
                       }}>
                         {subject.status}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base font-bold" style={{ color: subject.color }}>{subject.score}%</span>
-                      <span className="text-[11px] text-gray-400">({subject.count}회)</span>
+                    <div className="text-right">
+                      <span className="text-sm font-bold" style={{ color: subject.color }}>{subject.score}%</span>
+                      <span className="text-xs text-gray-500 ml-2">({subject.count}회)</span>
                     </div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
                     <div 
-                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      className="h-2.5 rounded-full transition-all duration-500"
                       style={{ 
                         width: `${subject.score}%`, 
-                        background: `linear-gradient(90deg, ${subject.color}, ${subject.color}dd)`
+                        backgroundColor: subject.color 
                       }}
-                    />
+                    ></div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* AI 분석 인사이트 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
-                <span className="text-base">🤖</span>
+          {/* ⚠️ 자동 분석 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              ⚠️ 자동 분석
+            </h2>
+            <div className="space-y-4">
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                <p className="text-sm font-semibold text-green-900 mb-1">
+                  우수 영역: {bestSubject.name} ({bestSubject.score}%)
+                </p>
+                <p className="text-xs text-green-700">
+                  {bestSubject.name} 영역에서 뛰어난 실력을 보이고 있습니다!
+                </p>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">AI 분석 인사이트</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="flex gap-3 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100/60">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg">💪</span>
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-emerald-800 mb-0.5">강점 영역: {bestSubject.name}</div>
-                  <div className="text-xs text-emerald-600 leading-relaxed">
-                    {bestSubject.score}% 달성! {bestSubject.name} 영역에서 뛰어난 실력을 보이고 있습니다!
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-100/60">
-                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg">📌</span>
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-rose-800 mb-0.5">집중 필요: {weakestSubject.name}</div>
-                  <div className="text-xs text-rose-600 leading-relaxed">
-                    {weakestSubject.score}% — {weakestSubject.name} 영역의 집중 학습이 필요합니다.
-                  </div>
-                </div>
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                <p className="text-sm font-semibold text-red-900 mb-1">
+                  취약 영역: {weakestSubject.name} ({weakestSubject.score}%)
+                </p>
+                <p className="text-xs text-red-700">
+                  {weakestSubject.name} 영역의 집중 학습이 필요합니다.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* 종합 평가 */}
-          <div className="relative overflow-hidden rounded-3xl p-5 sm:p-7 mb-5 shadow-sm" style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' }}>
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center">
-                  <span className="text-base">💡</span>
-                </div>
-                <h2 className="text-base sm:text-lg font-bold text-white">종합 평가</h2>
-              </div>
-              <p className="text-sm text-indigo-200 leading-relaxed">
-                총 <span className="font-bold text-white">{performanceData.totalTests}회</span>의 테스트를 통해 꾸준한 학습 습관을 보여주고 있습니다. 
-                평균 정답률 <span className="font-bold text-emerald-300">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</span>로 
-                전반적으로 양호한 수준이며, 특히 <span className="font-bold text-emerald-300">{bestSubject.name}</span> 영역에서 
-                강점을 보입니다. <span className="font-bold text-amber-300">{weakestSubject.name}</span> 영역에 
-                더 집중하면 더욱 균형잡힌 실력 향상이 가능합니다.
+          {/* 💡 종합 평가 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              💡 종합 평가
+            </h2>
+            <div className="bg-blue-50 rounded-lg p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                총 <span className="font-bold">{performanceData.totalTests}회</span>의 테스트를 통해 꾸준한 학습 습관을 보여주고 있습니다. 
+                평균 정답률 <span className="font-bold">{Math.round((performanceData.correctAnswers / performanceData.totalQuestions) * 100)}%</span>로 
+                전반적으로 양호한 수준이며, 특히 <span className="font-bold" style={{ color: bestSubject.color }}>{bestSubject.name}</span> 영역에서 
+                강점을 보입니다. <span className="font-bold" style={{ color: weakestSubject.color }}>{weakestSubject.name}</span> 영역에 
+                더 집중하면 더욱 균형잡힌 실력 향상이 가능할 것입니다.
               </p>
             </div>
           </div>
 
-          {/* 학생 메시지 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7 mb-5">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-pink-100 flex items-center justify-center">
-                <span className="text-base">💌</span>
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">학생 메시지</h2>
-            </div>
+          {/* 💌 학생 메시지 */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              💌 학생 메시지
+            </h2>
             <textarea
               value={studentMessage}
               onChange={(e) => setStudentMessage(e.target.value)}
               placeholder="부모님께 전하고 싶은 메시지를 작성하세요..."
-              className="w-full p-4 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50 resize-none text-sm text-gray-700 placeholder-gray-300 transition-all"
-              rows={3}
+              className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={4}
             />
           </div>
 
           {/* 공유 버튼 */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-sm border border-gray-100/80 p-5 sm:p-7">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
-                <Share2 className="w-4 h-4 text-indigo-600" />
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900">리포트 공유하기</h2>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <button
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">리포트 공유하기</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Button
                 onClick={handleCopyReport}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group"
+                className="flex items-center justify-center gap-2 py-3"
+                style={{ backgroundColor: '#6B7280', color: 'white' }}
               >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
-                  {copied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5 text-gray-500" />}
-                </div>
-                <span className="text-xs font-semibold text-gray-600">{copied ? '복사됨!' : '복사'}</span>
-              </button>
-              <button
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? '복사됨!' : '텍스트 복사'}
+              </Button>
+              <Button
                 onClick={handleShareEmail}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all group"
+                className="flex items-center justify-center gap-2 py-3"
+                style={{ backgroundColor: '#3D5AA1', color: 'white' }}
               >
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
-                  <Mail className="w-5 h-5 text-indigo-500" />
-                </div>
-                <span className="text-xs font-semibold text-gray-600">이메일</span>
-              </button>
-              <button
+                <Mail className="w-4 h-4" />
+                이메일
+              </Button>
+              <Button
                 onClick={handleShareSMS}
-                className="flex flex-col items-center gap-2 py-4 rounded-2xl border-2 border-gray-100 hover:border-emerald-200 hover:bg-emerald-50 transition-all group"
+                className="flex items-center justify-center gap-2 py-3"
+                style={{ backgroundColor: '#10B981', color: 'white' }}
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors">
-                  <MessageCircle className="w-5 h-5 text-emerald-500" />
-                </div>
-                <span className="text-xs font-semibold text-gray-600">문자</span>
-              </button>
+                <MessageCircle className="w-4 h-4" />
+                문자/WeChat
+              </Button>
             </div>
-            <p className="text-[11px] text-gray-400 mt-4 text-center font-medium">
+            <p className="text-xs text-gray-500 mt-3 text-center">
               💡 한 달에 한 번씩 부모님께 학습 상황을 공유해보세요!
             </p>
-          </div>
-          
-          {/* Bottom Branding */}
-          <div className="text-center mt-8 mb-4">
-            <p className="text-[10px] text-gray-300 font-medium tracking-wider uppercase">Powered by SAT Allmyexam</p>
           </div>
         </div>
       </div>
@@ -2562,22 +2568,53 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
           {/* Tab Selection */}
           <div className="mb-6">
-           {/* Desktop Tabs - 둥근 캡슐 탭 디자인 적용 */}
-          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit">
-            {['기출문제', '공식문제', '단어관리', 'SAT VOCA'].map((tab) => (
+            {/* Desktop Tabs */}
+            <div className="hidden md:flex gap-2 border-b border-gray-200">
               <button
-                key={tab}
-                onClick={() => setSmartPracticeTab(tab as any)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  smartPracticeTab === tab
-                    ? 'bg-[#3D5AA1] text-white shadow-md'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                onClick={() => setSmartPracticeTab('기출문제')} 
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '기출문제'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
                 }`}
+                style={smartPracticeTab === '기출문제' ? { backgroundColor: '#3D5AA1' } : {}}
               >
-                {tab}
+                기출문제
               </button>
-            ))}
-          </div>
+              <button
+                onClick={() => setSmartPracticeTab('��식문제')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '공식문제'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === '공식문제' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                공식문제
+              </button>
+              <button
+                onClick={() => setSmartPracticeTab('단어관리')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === '단어관리'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === '단어관리' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                단어관리
+              </button>
+              <button
+                onClick={() => setSmartPracticeTab('SAT VOCA')}
+                className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                  smartPracticeTab === 'SAT VOCA'
+                    ? 'text-white font-medium'
+                    : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                }`}
+                style={smartPracticeTab === 'SAT VOCA' ? { backgroundColor: '#3D5AA1' } : {}}
+              >
+                SAT VOCA
+              </button>
+            </div>
 
             {/* Mobile Tabs - Two Rows Grid */}
             <div className="md:hidden -mx-4 px-4 pb-1">
@@ -2634,27 +2671,45 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Filters for Tests */}
           {smartPracticeTab !== 'SAT VOCA' && smartPracticeTab !== '단어관리' && (
             <>
-            {/* 필터 그룹 컨테이너 - 화이트 박스 스타일 적용 */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Subject</span>
-                <div className="flex flex-nowrap gap-2 overflow-x-auto">
-                  {['전체', 'Reading', 'Math'].map((sub) => (
-                    <button
-                      key={sub}
-                      onClick={() => setSmartPracticeSubject(sub)}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
-                        smartPracticeSubject === sub
-                          ? 'bg-[#3D5AA1] text-white'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      {sub === 'Reading' ? '독해문법' : sub === 'Math' ? '수학' : sub}
-                    </button>
-                  ))}
+              {/* Subject Filter */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">과목:</h3>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSmartPracticeSubject('전체')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === '전체'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === '전체' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    전체
+                  </button>
+                  <button
+                    onClick={() => setSmartPracticeSubject('Reading')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === 'Reading'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === 'Reading' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    독해문법
+                  </button>
+                  <button
+                    onClick={() => setSmartPracticeSubject('Math')}
+                    className={`px-6 py-2 text-sm transition-colors rounded-lg ${
+                      smartPracticeSubject === 'Math'
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={smartPracticeSubject === 'Math' ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    수학
+                  </button>
                 </div>
               </div>
-            </div>
 
 
             </>
@@ -2663,136 +2718,116 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Word Management Filters */}
           {smartPracticeTab === '단어관리' && !selectedWordList && !showWordBrowseView && (
             <>
-              {/* 단어 관리 필터 그룹 - 화이트 박스 틀 적용 */}
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
-                {/* 단어 유형 */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <BookOpen size={16} className="text-[#3D5AA1]" />
-                    단어 유형
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['전체', '기출문제', '공식문제'].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => setWordListType(type)}
-                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                          wordListType === type
-                            ? 'bg-[#3D5AA1] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-100"></div>
-
-                {/* 카테고리 */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Target size={16} className="text-[#3D5AA1]" />
-                    카테고리
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['전체', 'Reading', 'Math'].map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => setWordCategory(category)}
-                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                          wordCategory === category
-                            ? 'bg-[#3D5AA1] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {category}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-100"></div>
-
-                {/* 난이도 */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <Zap size={16} className="text-[#3D5AA1]" />
-                    난이도
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['전체', '쉬움', '보통', '어려움'].map((difficulty) => (
-                      <button
-                        key={difficulty}
-                        onClick={() => setWordDifficulty(difficulty)}
-                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                          wordDifficulty === difficulty
-                            ? 'bg-[#3D5AA1] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {difficulty}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-100"></div>
-
-                {/* 문항수 */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <FileText size={16} className="text-[#3D5AA1]" />
-                    문항수
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['10', '30', '50', '100'].map((count) => (
-                      <button
-                        key={count}
-                        onClick={() => setWordQuestionCount(count)}
-                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                          wordQuestionCount === count
-                            ? 'bg-[#3D5AA1] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {count}개
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-100"></div>
-
-                {/* 연습 유형 */}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <TrendingUp size={16} className="text-[#3D5AA1]" />
-                    연습 유형
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {['전체', '미연습', '한 번 틀린 문제', '두 번 이상 틀린 문제'].map((attempt) => (
-                      <button
-                        key={attempt}
-                        onClick={() => setWordAttemptFilter(attempt)}
-                        className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
-                          wordAttemptFilter === attempt
-                            ? 'bg-[#3D5AA1] text-white shadow-sm'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                        }`}
-                      >
-                        {attempt}
-                      </button>
-                    ))}
-                  </div>
+              {/* 단어 유형 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">단어 유형:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['���체', '기출문제', '공식문제'].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setWordListType(type)}
+                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
+                      style={{
+                        backgroundColor: wordListType === type ? '#3D5AA1' : 'white',
+                        color: wordListType === type ? 'white' : '#374151',
+                        border: `1px solid ${wordListType === type ? '#3D5AA1' : '#D1D5DB'}`
+                      }}
+                    >
+                      {type}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-            {/* Start Button */}
-              <div className="flex justify-center pt-8 pb-4">
+              {/* 카테고리 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">카테고리:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['전체', 'Reading', 'Math'].map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setWordCategory(category)}
+                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
+                      style={{
+                        backgroundColor: wordCategory === category ? '#3D5AA1' : 'white',
+                        color: wordCategory === category ? 'white' : '#374151',
+                        border: `1px solid ${wordCategory === category ? '#3D5AA1' : '#D1D5DB'}`
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 난이도 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">난이도:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['전체', '쉬움', '보통', '어려움'].map((difficulty) => (
+                    <button
+                      key={difficulty}
+                      onClick={() => setWordDifficulty(difficulty)}
+                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
+                      style={{
+                        backgroundColor: wordDifficulty === difficulty ? '#3D5AA1' : 'white',
+                        color: wordDifficulty === difficulty ? 'white' : '#374151',
+                        border: `1px solid ${wordDifficulty === difficulty ? '#3D5AA1' : '#D1D5DB'}`
+                      }}
+                    >
+                      {difficulty}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 문항수 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">문항수:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['10', '30', '50', '100'].map((count) => (
+                    <button
+                      key={count}
+                      onClick={() => setWordQuestionCount(count)}
+                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
+                      style={{
+                        backgroundColor: wordQuestionCount === count ? '#3D5AA1' : 'white',
+                        color: wordQuestionCount === count ? 'white' : '#374151',
+                        border: `1px solid ${wordQuestionCount === count ? '#3D5AA1' : '#D1D5DB'}`
+                      }}
+                    >
+                      {count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 연습 유형 */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-800 mb-3">연습 유형:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {['전체', '미연습', '한 번 틀린 문제', '두 번 이상 틀린 문제'].map((attempt) => (
+                    <button
+                      key={attempt}
+                      onClick={() => setWordAttemptFilter(attempt)}
+                      className="px-6 py-2.5 rounded-lg text-sm transition-all"
+                      style={{
+                        backgroundColor: wordAttemptFilter === attempt ? '#3D5AA1' : 'white',
+                        color: wordAttemptFilter === attempt ? 'white' : '#374151',
+                        border: `1px solid ${wordAttemptFilter === attempt ? '#3D5AA1' : '#D1D5DB'}`
+                      }}
+                    >
+                      {attempt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Start Button */}
+              <div className="flex justify-end pt-4">
                 <button
                   onClick={() => {
+                    // Create a new word study session with timestamp
                     const now = new Date();
                     const year = now.getFullYear();
                     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -2822,12 +2857,17 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       }
                     };
                     
+                    // Add to viewed word lists
                     setViewedWordLists(prev => [newSession, ...prev]);
+                    
+                    // Show browse view with session list
                     setShowWordBrowseView(true);
                     setWordStudyMode('browse');
                   }}
-                  className="px-16 sm:px-24 py-3.5 text-base font-bold text-white rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1"
-                  style={{ backgroundColor: '#425486' }}
+                  className="px-8 sm:px-16 py-3 text-sm text-white rounded-lg transition-colors"
+                  style={{ backgroundColor: '#3D5AA1' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3D5AA1'}
                 >
                   시작
                 </button>
@@ -2842,188 +2882,187 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             // Word Management Content
             showWordBrowseView ? (
               // Browse Mode - Show word study session list
-            <div className="space-y-4 mb-8">
-              {/* Back to normal view button & Header */}
-              <div className="flex items-start gap-4 mb-6">
-                <button
-                  onClick={() => {
-                    setShowWordBrowseView(false);
-                    setWordStudyMode('list');
-                  }}
-                  className="mt-1 text-gray-400 hover:text-gray-800 transition-colors p-1"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-                <div>
-                  <h2 className="text-xl font-bold text-[#2C3E50] mb-1">
-                    단어 학습 목록
-                  </h2>
-                  <p className="text-sm text-gray-500 font-medium">
-                    {wordListType} · {wordCategory} · {wordDifficulty}
-                  </p>
+              <div className="space-y-6">
+                {/* Back to normal view button */}
+                <div className="flex items-start sm:items-center justify-between mb-4 gap-2">
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <Button
+                      onClick={() => {
+                        setShowWordBrowseView(false);
+                        setWordStudyMode('list');
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0 text-xs sm:text-sm"
+                    >
+                      ←
+                    </Button>
+                    <h2 className="text-sm sm:text-xl font-medium text-gray-800 leading-tight">
+                      단어 목록 <span className="text-gray-500 text-xs sm:text-base">({wordListType} · {wordCategory} · {wordDifficulty})</span>
+                    </h2>
+                  </div>
                 </div>
-              </div>
 
-              {/* Word Study Sessions List */}
-              <div>
-                {viewedWordLists.length > 0 ? (
-                  <>
-                    {(() => {
-                      const itemsPerPage = 5;
-                      const totalPages = Math.ceil(viewedWordLists.length / itemsPerPage);
-                      const startIndex = (wordListPage - 1) * itemsPerPage;
-                      const endIndex = startIndex + itemsPerPage;
-                      const currentItems = viewedWordLists.slice(startIndex, endIndex);
-                      
-                      return (
-                        <div className="space-y-3">
-                          {currentItems.map((session: any) => (
-                            <div key={session.id} className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                              
-                              {/* Left Icon */}
-                              <div className="hidden sm:flex w-12 h-12 rounded-2xl bg-[#EEF2F6] items-center justify-center text-[#425486] shrink-0">
-                                <BookOpen className="w-6 h-6" />
-                              </div>
-
-                              {/* Middle Content */}
-                              <div className="flex-1 cursor-pointer w-full"
-                                onClick={() => {
-                                  const filteredWords = getAllWords();
-                                  const selectedCount = parseInt(session.filters?.questionCount || '10');
-                                  const wordsToShow = filteredWords.slice(0, selectedCount);
-                                  
-                                  setSelectedWordList({
-                                    ...session,
-                                    words: wordsToShow
-                                  });
-                                  setShowWordBrowseView(false);
-                                  setWordStudyMode('list');
-                                }}
-                              >
-                                <div className="flex items-center flex-wrap gap-2 mb-2">
-                                  <div className="sm:hidden w-8 h-8 rounded-xl bg-[#EEF2F6] flex items-center justify-center text-[#425486] shrink-0">
-                                    <BookOpen className="w-4 h-4" />
-                                  </div>
-                                  <h4 className="text-base font-bold text-[#2C3E50]">
-                                    {session.title}
-                                  </h4>
-                                  <span className="text-xs text-gray-400 font-medium">
-                                    {session.desktopTimestamp || new Date(session.createdAt).toLocaleDateString('ko-KR')}
-                                  </span>
-                                  {!session.attemptCount || session.attemptCount === 0 ? (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 font-bold tracking-wide">
-                                      NEW
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-bold tracking-wide">
-                                      {session.attemptCount}회
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                                  <span className="px-2.5 py-1 bg-gray-50 rounded-md border border-gray-100">
-                                    {session.type}
-                                  </span>
-                                  <span>
-                                    {session.filters?.questionCount || session.words?.length}개 단어
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Right Action Buttons */}
-                              <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const filteredWords = getAllWords();
-                                    const selectedCount = parseInt(session.filters?.questionCount || '10');
-                                    const wordsToShow = filteredWords.slice(0, selectedCount);
-                                    
-                                    setSelectedWordList({
-                                      ...session,
-                                      words: wordsToShow
-                                    });
-                                    setShowWordBrowseView(false);
-                                    setWordStudyMode('test');
-                                    setCurrentWordIndex(0);
-                                    setTestAnswers({});
-                                    setShowTestResult({});
-                                  }}
-                                  className="flex-1 sm:flex-none px-6 py-2 text-sm font-bold text-white rounded-xl transition-colors shadow-sm"
-                                  style={{ backgroundColor: '#425486' }}
-                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2C3E50'}
-                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#425486'}
-                                >
-                                  테스트
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (confirm(`"${session.title}" 목록을 삭제하시겠습니까?`)) {
-                                      setViewedWordLists(prev => prev.filter(s => s.id !== session.id));
-                                      toast.success('단어 목록이 삭제되었습니다.');
-                                    }
-                                  }}
-                                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                {/* Word Study Sessions List */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">목록보기</h3>
+                  <div className="space-y-3">
+                    {viewedWordLists.length > 0 ? (
+                      <>
+                        {(() => {
+                          const itemsPerPage = 5;
+                          const totalPages = Math.ceil(viewedWordLists.length / itemsPerPage);
+                          const startIndex = (wordListPage - 1) * itemsPerPage;
+                          const endIndex = startIndex + itemsPerPage;
+                          const currentItems = viewedWordLists.slice(startIndex, endIndex);
                           
-                          {/* Pagination */}
-                          {totalPages > 1 && (
-                            <div className="flex items-center justify-center gap-2 mt-8 pt-4">
-                              <Button
-                                onClick={() => setWordListPage(prev => Math.max(1, prev - 1))}
-                                disabled={wordListPage === 1}
-                                className="w-10 h-10 p-0 rounded-xl bg-[#8E9BBA] hover:bg-[#7A88A8] text-white disabled:opacity-50 border-none transition-colors"
-                              >
-                                <ChevronLeft className="w-5 h-5" />
-                              </Button>
-                              
-                              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <Button
-                                  key={page}
-                                  onClick={() => setWordListPage(page)}
-                                  className={`w-10 h-10 p-0 rounded-xl font-bold border-none transition-colors ${
-                                    wordListPage === page 
-                                      ? "bg-[#425486] text-white shadow-md" 
-                                      : "bg-[#8E9BBA] hover:bg-[#7A88A8] text-white"
-                                  }`}
-                                >
-                                  {page}
-                                </Button>
+                          return (
+                            <>
+                              {currentItems.map((session: any) => (
+                                <div key={session.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-3 sm:gap-4">
+                                    <div className="flex-1 cursor-pointer"
+                                      onClick={() => {
+                                        // Select this session to view its words
+                                        const filteredWords = getAllWords();
+                                        const selectedCount = parseInt(session.filters?.questionCount || '10');
+                                        const wordsToShow = filteredWords.slice(0, selectedCount);
+                                        
+                                        setSelectedWordList({
+                                          ...session,
+                                          words: wordsToShow
+                                        });
+                                        setShowWordBrowseView(false);
+                                        setWordStudyMode('list');
+                                      }}
+                                    >
+                                      <div className="flex items-start sm:items-center justify-between gap-2 mb-1.5">
+                                        <h4 className="text-sm sm:text-base font-medium text-gray-800 flex-1 min-w-0" style={{ wordBreak: 'keep-all' }}>
+                                          {session.title}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                                          <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-blue-100 text-blue-600 whitespace-nowrap">
+                                            {session.type}
+                                          </span>
+                                          {!session.attemptCount || session.attemptCount === 0 ? (
+                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-green-100 text-green-600 font-medium whitespace-nowrap">
+                                              new
+                                            </span>
+                                          ) : (
+                                            <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-gray-100 text-gray-600 font-medium whitespace-nowrap">
+                                              {session.attemptCount}회
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <p className="text-xs text-gray-500 mb-1 line-clamp-1">{session.description}</p>
+                                      <div className="flex items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-gray-600 flex-wrap">
+                                        <span className="hidden sm:inline">생성일: {new Date(session.createdAt).toLocaleDateString('ko-KR')}</span>
+                                        {session.filters && (
+                                          <span>문항수: {session.filters.questionCount}개</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Action Buttons */}
+                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                      <Button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const filteredWords = getAllWords();
+                                          const selectedCount = parseInt(session.filters?.questionCount || '10');
+                                          const wordsToShow = filteredWords.slice(0, selectedCount);
+                                          
+                                          setSelectedWordList({
+                                            ...session,
+                                            words: wordsToShow
+                                          });
+                                          setShowWordBrowseView(false);
+                                          setWordStudyMode('test');
+                                          setCurrentWordIndex(0);
+                                          setTestAnswers({});
+                                          setShowTestResult({});
+                                        }}
+                                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm text-white rounded-md transition-colors whitespace-nowrap"
+                                        style={{ backgroundColor: '#2B478B' }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3666'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
+                                      >
+                                        테스트 시작
+                                      </Button>
+                                      <Button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (confirm(`"${session.title}" 목록을 삭제하시겠습니까?`)) {
+                                            setViewedWordLists(prev => prev.filter(s => s.id !== session.id));
+                                            toast.success('단어 목록이 삭제되었습니다.');
+                                          }
+                                        }}
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-red-600 border-red-300 hover:bg-red-50 flex-shrink-0"
+                                      >
+                                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
                               ))}
                               
-                              <Button
-                                onClick={() => setWordListPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={wordListPage === totalPages}
-                                className="w-10 h-10 p-0 rounded-xl bg-[#8E9BBA] hover:bg-[#7A88A8] text-white disabled:opacity-50 border-none transition-colors"
-                              >
-                                <ChevronRight className="w-5 h-5" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
-                    <BookmarkPlus className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h4 className="text-lg font-bold text-gray-500 mb-2">
-                      학습한 단어 목록이 없습니다
-                    </h4>
-                    <p className="text-sm text-gray-400">
-                      Start 버튼을 눌러 단어 학습을 시작하세요.
-                    </p>
+                              {/* Pagination */}
+                              {totalPages > 1 && (
+                                <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-gray-200">
+                                  <Button
+                                    onClick={() => setWordListPage(prev => Math.max(1, prev - 1))}
+                                    disabled={wordListPage === 1}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-8 h-8 p-0"
+                                  >
+                                    <ChevronLeft className="w-4 h-4" />
+                                  </Button>
+                                  
+                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <Button
+                                      key={page}
+                                      onClick={() => setWordListPage(page)}
+                                      variant={wordListPage === page ? "default" : "outline"}
+                                      size="sm"
+                                      className="w-8 h-8 p-0"
+                                      style={wordListPage === page ? { backgroundColor: '#2B478B' } : {}}
+                                    >
+                                      {page}
+                                    </Button>
+                                  ))}
+                                  
+                                  <Button
+                                    onClick={() => setWordListPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={wordListPage === totalPages}
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-8 h-8 p-0"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BookmarkPlus className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <h4 className="text-lg font-medium text-gray-500 mb-2">
+                          학습한 단어 목록이 없습니다
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Start 버튼을 눌러 단어 학습을 시작하세요.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            
+                </div>
+
                 {/* Completed Tests Section */}
                 {completedWordTests.length > 0 && (
                   <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
@@ -3083,42 +3122,42 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </div>
             ) : selectedWordList ? (
               // Word Study Mode (List, Flashcard, or Test)
-              <div className="bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
                 {/* Header with back button */}
-                <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
-                  <div className="flex items-center gap-3">
-                    <button
+                <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-6">
+                  <div className="flex items-center gap-2">
+                    <Button
                       onClick={handleBackToWordLists}
-                      className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors flex-shrink-0"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs px-2 py-1 h-7 flex-shrink-0"
                     >
-                      <ChevronLeft className="w-4 h-4 text-gray-600" />
-                    </button>
+                      ←
+                    </Button>
                     <div className="flex-1 min-w-0">
-                      <h2 className="text-base sm:text-lg font-bold text-gray-900 truncate">{selectedWordList.title}</h2>
-                      <p className="text-[11px] text-gray-400 truncate hidden sm:block">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
+                      <h2 className="text-base sm:text-lg font-semibold text-gray-800 truncate">{selectedWordList.title}</h2>
+                      <p className="text-xs text-gray-500 truncate hidden sm:block">{selectedWordList.desktopTimestamp || selectedWordList.mobileTimestamp}</p>
                     </div>
                     {/* Mobile download button */}
                     <button
                       onClick={() => handleDownloadQuestions('both')}
-                      className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-[11px] font-medium bg-gray-100 text-gray-500 hover:text-red-500 hover:bg-red-50 whitespace-nowrap flex-shrink-0"
+                      className="sm:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-md transition-all text-[11px] bg-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
                       title="PDF 다운로드"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-3 h-3" />
+                      <span>다운</span>
                     </button>
                   </div>
-                  {/* Modern Tabs */}
-                  <div className="flex items-center gap-1 p-1 bg-gray-100/80 rounded-2xl sm:self-start">
+                  <div className="grid grid-cols-3 gap-1.5 sm:flex sm:gap-1.5 sm:overflow-x-auto pb-1">
                     <button
                       onClick={() => setWordStudyMode('list')}
-                      className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
+                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
                         wordStudyMode === 'list'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
+                          : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                      </svg>
+                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>단어 목록</span>
                     </button>
                     <button
@@ -3127,43 +3166,39 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                         setCurrentWordIndex(0);
                         setIsFlashcardFlipped(false);
                       }}
-                      className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
+                      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap ${
                         wordStudyMode === 'flashcard'
-                          ? 'bg-white text-gray-900 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
+                          ? 'bg-white border-2 border-gray-300 text-gray-700 font-medium'
+                          : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
+                      <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                       <span>플래시카드</span>
                     </button>
                     <div className="relative">
                       <button
                         onClick={() => setShowTestDialog(!showTestDialog)}
-                        className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap font-medium ${
+                        className={`flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-6 py-2 rounded-full transition-all text-xs sm:text-sm whitespace-nowrap w-full ${
                           wordStudyMode === 'test'
-                            ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-200'
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-blue-600 text-white border-2 border-blue-600 font-medium'
+                            : 'bg-gray-100 border-2 border-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                         title="테스트 옵션"
                       >
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                         <span>Test</span>
                       </button>
                       
-                      {/* Test Options Popover - Modern */}
+                      {/* Test Options Popover */}
                       {showTestDialog && (
                         <>
+                          {/* Backdrop to close popover when clicking outside */}
                           <div 
                             className="fixed inset-0 z-40" 
                             onClick={() => setShowTestDialog(false)}
                           />
-                          <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-50 min-w-max">
-                            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">테스트 유형 선택</p>
-                            <div className="flex flex-col sm:flex-row gap-2">
+                          <div className="absolute top-full mt-2 left-0 sm:-left-12 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50 min-w-max">
+                            <div className="flex flex-col sm:flex-row gap-1.5">
                               <button
                                 onClick={() => {
                                   setTestType('multiple');
@@ -3174,14 +3209,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-indigo-50 transition-all min-w-[110px] group"
+                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
                               >
-                                <div className="w-9 h-9 rounded-xl bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center transition-colors">
-                                  <span className="text-base">📝</span>
-                                </div>
+                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
                                 <div className="text-center">
-                                  <div className="text-[11px] font-semibold text-gray-800">객관식</div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">4지선다형</div>
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">객관식</div>
+                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">4지선다형</div>
                                 </div>
                               </button>
                               
@@ -3195,14 +3228,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-purple-50 transition-all min-w-[110px] group"
+                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
                               >
-                                <div className="w-9 h-9 rounded-xl bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
-                                  <span className="text-base">✏️</span>
-                                </div>
+                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
                                 <div className="text-center">
-                                  <div className="text-[11px] font-semibold text-gray-800">주관식</div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">직접 입력형</div>
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">주관식</div>
+                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">직접 입력형</div>
                                 </div>
                               </button>
                               
@@ -3216,14 +3247,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                                   setSubjectiveAnswer('');
                                   setShowTestDialog(false);
                                 }}
-                                className="flex flex-col items-center gap-2 px-4 py-3 rounded-xl hover:bg-emerald-50 transition-all min-w-[110px] group"
+                                className="flex flex-col items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all min-w-[100px] sm:min-w-[110px]"
                               >
-                                <div className="w-9 h-9 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center transition-colors">
-                                  <span className="text-base">🔄</span>
-                                </div>
+                                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600" />
                                 <div className="text-center">
-                                  <div className="text-[11px] font-semibold text-gray-800">혼합형</div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5">객관식+주관식</div>
+                                  <div className="text-[10px] sm:text-[11px] font-medium text-gray-800">객관식+주관식</div>
+                                  <div className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">혼합형</div>
                                 </div>
                               </button>
                             </div>
@@ -3231,10 +3260,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                         </>
                       )}
                     </div>
-                    <div className="hidden sm:block w-px h-6 bg-gray-300/60 mx-1"></div>
+                    <div className="w-px h-8 bg-gray-300 mx-1 hidden sm:block"></div>
                     <button
                       onClick={() => handleDownloadQuestions('both')}
-                      className="hidden sm:flex items-center gap-1.5 px-4 py-2 sm:py-2.5 rounded-xl transition-all text-xs sm:text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 whitespace-nowrap font-medium"
+                      className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-full transition-all text-sm bg-gray-100 border-2 border-gray-100 text-red-500 hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
                       title="시험지+답안지 다운로드"
                     >
                       <Download className="w-4 h-4" />
@@ -3245,52 +3274,23 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
                 {/* Word Study Content */}
                 {wordStudyMode === 'list' && (
-                  <div className="space-y-2 sm:space-y-3">
-                    {/* Word count badge */}
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">총 {selectedWordList.words.length}개 단어</span>
-                    </div>
+                  <div className="space-y-3 sm:space-y-4">
                     {selectedWordList.words.map((word: any, index: number) => (
-                      <div key={index} className="group relative bg-white rounded-2xl border border-gray-100 hover:border-indigo-100 hover:shadow-md transition-all duration-200 overflow-hidden">
-                        <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5">
-                          {/* Number badge */}
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-50 group-hover:bg-indigo-50 flex items-center justify-center flex-shrink-0 transition-colors">
-                            <span className="text-xs sm:text-sm font-bold text-gray-400 group-hover:text-indigo-500 transition-colors">{index + 1}</span>
+                      <div key={index} className="border border-gray-200 rounded-lg p-3 sm:p-4 flex gap-2.5 sm:gap-3 items-start">
+                        <span className="text-xs sm:text-sm text-gray-400 font-medium mt-0.5 sm:mt-1 flex-shrink-0 w-5 sm:w-7 text-right">{index + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                            <h3 className="text-base sm:text-lg font-medium text-gray-800">{word.word}</h3>
+                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0 ${
+                              word.difficulty === '어려움' ? 'bg-red-100 text-red-600' :
+                              word.difficulty === '보통' ? 'bg-yellow-100 text-yellow-600' :
+                              'bg-green-100 text-green-600'
+                            }`}>
+                              {word.difficulty}
+                            </span>
                           </div>
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-sm sm:text-base font-bold text-gray-800">{word.word || word.english}</h3>
-                              {(word.korean) && (
-                                <span className="text-xs text-indigo-500 font-medium">{word.korean}</span>
-                              )}
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                word.difficulty === '어려움' ? 'bg-red-50 text-red-500' :
-                                word.difficulty === '보통' ? 'bg-amber-50 text-amber-500' :
-                                'bg-emerald-50 text-emerald-500'
-                              }`}>
-                                {word.difficulty}
-                              </span>
-                            </div>
-                            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{word.definition}</p>
-                          </div>
-                          {/* Hover action - speak */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if ('speechSynthesis' in window) {
-                                const utterance = new SpeechSynthesisUtterance(word.word || word.english);
-                                utterance.lang = 'en-US';
-                                window.speechSynthesis.speak(utterance);
-                              }
-                            }}
-                            className="p-2 rounded-xl text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
-                          >
-                            <Volume2 className="w-4 h-4" />
-                          </button>
+                          <p className="text-sm sm:text-base text-gray-600">{word.definition}</p>
                         </div>
-                        {/* Bottom accent line on hover */}
-                        <div className="h-0.5 bg-gradient-to-r from-indigo-500 to-violet-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
                       </div>
                     ))}
                   </div>
@@ -3451,7 +3451,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           )}
 
           {/* Pagination */}
-          {smartPracticeTab !== 'SAT VOCA' && (smartPracticeTab === '단어관리' ? totalWordPages > 1 : totalPages > 1) && (
+          {(smartPracticeTab === '단어관리' ? totalWordPages > 1 : totalPages > 1) && (
             <div className="flex justify-center items-center gap-2">
               <Button
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
@@ -3858,39 +3858,46 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <p className="text-gray-600">AI가 분석한 개��� 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
           </div>
 
-          {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 */}
-          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit">
-            {courseCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryChange(category.id)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  selectedCourseCategory === category.id
-                    ? 'bg-[#3D5AA1] text-white shadow-md'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
+          {/* Category Tabs - Updated to match Training page style */}
+          <div className="mb-6">
+            <div className="flex gap-2 border-b border-gray-200">
+              {courseCategories.map((category) => {
+                return (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id)}
+                    className={`px-6 py-3 text-sm transition-colors rounded-t-lg ${
+                      selectedCourseCategory === category.id
+                        ? 'text-white font-medium'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                    }`}
+                    style={selectedCourseCategory === category.id ? { backgroundColor: '#3D5AA1' } : {}}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Filters - 화이트 박스 틀 적용 */}
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-8">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-gray-700">정렬</span>
-              <select className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:border-[#3D5AA1] bg-gray-50">
-                <option>시간순</option>
-                <option>인기순</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-gray-700">과목</span>
-              <select className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:border-[#3D5AA1] bg-gray-50">
-                <option>전체</option>
-                <option>독해문법</option>
-                <option>수학</option>
-              </select>
+          {/* Filters - for all categories */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">정렬</label>
+                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option>시간순</option>
+                  <option>인기순</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">과목</label>
+                <select className="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                  <option>전체</option>
+                  <option>독해문법</option>
+                  <option>수학</option>
+                </select>
+              </div>
             </div>
           </div>
 

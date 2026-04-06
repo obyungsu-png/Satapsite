@@ -37,9 +37,20 @@ export function ExamNavigation({
   return (
     <div className="flex items-center justify-between px-2 py-2 md:p-4 border-t-2 border-dashed border-black" style={{ backgroundColor: '#E8EEF7' }}>
       
-      {/* ===== Mobile Layout: [< Back] [2/27 ^] [Next >] ===== */}
+      {/* ===== Mobile Layout: [2/27 ^] [< Back] [Next >] ===== */}
       <div className="flex md:hidden items-center w-full gap-2">
-        {/* Back button - left */}
+        {/* Question indicator - left */}
+        <div
+          className="bg-gray-800 text-white px-3 py-2 rounded-full flex items-center gap-1.5 cursor-pointer hover:bg-gray-700 transition-colors shrink-0"
+          onClick={onShowOverview}
+        >
+          <span className="text-[13px] font-medium whitespace-nowrap">
+            {currentQuestion} / {totalQuestions}
+          </span>
+          <ChevronUp className="h-3.5 w-3.5 text-white" />
+        </div>
+
+        {/* Back button */}
         {canGoPrevious ? (
           <Button
             onClick={onPrevious}
@@ -61,18 +72,7 @@ export function ExamNavigation({
           </Button>
         )}
 
-        {/* Question indicator - center */}
-        <div
-          className="bg-gray-800 text-white px-3 py-2 rounded-full flex items-center gap-1.5 cursor-pointer hover:bg-gray-700 transition-colors shrink-0"
-          onClick={onShowOverview}
-        >
-          <span className="text-[13px] font-medium whitespace-nowrap">
-            {currentQuestion} / {totalQuestions}
-          </span>
-          <ChevronUp className="h-3.5 w-3.5 text-white" />
-        </div>
-
-        {/* Next button - right */}
+        {/* Next button */}
         {canGoNext ? (
           <Button
             onClick={onNext}
