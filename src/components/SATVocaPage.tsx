@@ -1245,7 +1245,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
 
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
-    <Dialog open={step === STEP.SAVE_AND_DOWNLOAD} onOpenChange={(open) => !open && setStep(isMobile ? STEP.DAY_SELECTION : STEP.WORD_SELECTION)}>
+    <Dialog open={step === STEP.SAVE_AND_DOWNLOAD} modal={!(showDownloadModal || showTestTypeModal)} onOpenChange={(open) => !open && setStep(isMobile ? STEP.DAY_SELECTION : STEP.WORD_SELECTION)}>
       <DialogContent className={step3DialogClassName}>
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
