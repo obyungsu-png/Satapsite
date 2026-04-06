@@ -604,7 +604,8 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   if (step === 1) {
     return (
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 pb-24 md:pb-8">
-        <div className="bg-white rounded-lg md:border md:border-gray-300 md:p-10 p-4">
+        {/* 중앙 정렬을 위한 DialogContent 스타일 적용 */}
+        <div className="bg-white rounded-lg md:border md:border-gray-300 md:p-10 p-4 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[95vw] max-w-2xl md:max-w-3xl shadow-xl">
           {/* Title */}
           <div className="mb-6 md:mb-8">
             <h2 className="text-xl md:text-2xl font-semibold text-gray-900">
