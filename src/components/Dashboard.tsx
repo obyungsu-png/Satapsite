@@ -1,6 +1,6 @@
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Button } from "./ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner@2.0.3";
@@ -679,6 +679,8 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     trainingDifficulty?: string;
     trainingSource?: string;
   }>>([]);
+  // 최초 데이터 로드 후 첫 저장 useEffect는 건너뛴다
+  const skipNextUploadedFilesSave = useRef(true);
   const [isUploading, setIsUploading] = useState(false);
   
   // Load uploaded files from Supabase or localStorage on mount
@@ -700,6 +702,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
           if (data.files && Array.isArray(data.files) && data.files.length > 0) {
             console.log('✅ Supabase에서 uploadedFiles 로드 성공:', data.files.length, '개');
             setUploadedFiles(data.files);
+            skipNextUploadedFilesSave.current = true;
             localStorage.setItem('sat_practice_tests', JSON.stringify(data.files));
             return;
           }
@@ -716,6 +719,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
           if (Array.isArray(parsed)) {
             console.log('📂 localStorage에서 uploadedFiles 로드:', parsed.length, '개');
             setUploadedFiles(parsed);
+            skipNextUploadedFilesSave.current = true;
             
             // localStorage 데이터를 Supabase에 백업 (setUploadedFiles의 save useEffect에서 자동 처리)
           }
@@ -730,6 +734,10 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   
   // Save uploaded files to localStorage AND Supabase whenever they change
   useEffect(() => {
+    if (skipNextUploadedFilesSave.current) {
+      skipNextUploadedFilesSave.current = false;
+      return;
+    }
     if (uploadedFiles.length === 0) return;
 
     // 1. localStorage에 즉시 저장
