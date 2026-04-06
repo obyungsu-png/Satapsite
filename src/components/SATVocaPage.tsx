@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
-import { Button, type ButtonProps } from "./ui/button";
+import { Button } from "./ui/button";
 import { Check, Minus, Plus, RefreshCw, Trash2, FileText, Calendar, X } from "lucide-react";
 import { generateSATWordsForDay } from "./vocaWordSets";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { TestTypeSelectionModal } from "./TestTypeSelectionModal";
 import { SATVocaTest } from "./SATVocaTest";
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { kvGet } from '../utils/supabase/client';
 
 interface SATWord {
   id: number;
@@ -64,18 +64,15 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   const [allSavedDays, setAllSavedDays] = useState<any[]>([]);
 
   useEffect(() => {
-    const apiBase = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1`;
     const load = async () => {
       try {
-        const [wRes, dRes] = await Promise.all([
-          fetch(`${apiBase}/words`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` } }),
-          fetch(`${apiBase}/days`, { headers: { 'Authorization': `Bearer ${publicAnonKey}` } })
+        const [words, days] = await Promise.all([
+          kvGet('sat_voca_words'),
+          kvGet('sat_voca_days')
         ]);
-        const wData = await wRes.json();
-        const dData = await dRes.json();
-        if (wData.success && Array.isArray(wData.words) && wData.words.length > 0) {
-          setAllSavedWords(wData.words);
-          setAllSavedDays(dData.days || []);
+        if (Array.isArray(words) && words.length > 0) {
+          setAllSavedWords(words);
+          setAllSavedDays(days || []);
           return;
         }
       } catch {}
@@ -671,6 +668,11 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                   >
                     {selectedDays.length === availableDays.length ? '전체해제' : '전체선택'}
                   </Button>
+                </div>
+              </div>
+
+              {/* Day List with Scroll */}
+              <div className="border border-gray-300 rounded-xl p-3 md:p-4 overflow-y-auto bg-gradient-to-b from-gray-50 to-white h-[350px] md:h-[500px]">
                 {availableDays.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400">
                     <p>등록된 {vocaCategory === 'general' ? 'DAY' : '연도'}가 없습니다.</p>
@@ -706,9 +708,6 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
             {/* Right: Question Count */}
             <div>
