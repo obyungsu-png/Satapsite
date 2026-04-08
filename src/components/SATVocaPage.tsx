@@ -1,11 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Check, Minus, Plus, RefreshCw, Trash2, FileText, Calendar, X } from "lucide-react";
 import { generateSATWordsForDay } from "./vocaWordSets";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 import { TestTypeSelectionModal } from "./TestTypeSelectionModal";
 import { SATVocaTest } from "./SATVocaTest";
-import { kvGet } from '../utils/supabase/client';
 
 interface SATWord {
   id: number;
@@ -59,44 +58,27 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   const [isTestActive, setIsTestActive] = useState(false);
   const [activeTestInfo, setActiveTestInfo] = useState<any>(null);
 
-  // Raw word/day data from Supabase (or localStorage fallback)
-  const [allSavedWords, setAllSavedWords] = useState<any[]>([]);
-  const [allSavedDays, setAllSavedDays] = useState<any[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [words, days] = await Promise.all([
-          kvGet('sat_voca_words'),
-          kvGet('sat_voca_days')
-        ]);
-        if (Array.isArray(words) && words.length > 0) {
-          setAllSavedWords(words);
-          setAllSavedDays(days || []);
-          return;
-        }
-      } catch {}
-      // Fallback to localStorage
-      const sw = localStorage.getItem('satVocaWords');
-      const sd = localStorage.getItem('satVocaDays');
-      if (sw) setAllSavedWords(JSON.parse(sw));
-      if (sd) setAllSavedDays(JSON.parse(sd));
-    };
-    load();
-  }, []);
-
   const availableDays = useMemo(() => {
-    if (allSavedDays.length === 0) return [];
-    return allSavedDays.filter((d: any) => (d.category || 'general') === vocaCategory);
-  }, [vocaCategory, allSavedDays]);
+    const savedDays = localStorage.getItem('satVocaDays');
+    if (!savedDays) return Array.from({ length: 30 }, (_, i) => ({ day: i + 1, name: `DAY ${i + 1}`, wordCount: 0 }));
+    const allDays = JSON.parse(savedDays);
+    return allDays.filter((d: any) => (d.category || 'general') === vocaCategory);
+  }, [vocaCategory]);
 
   const totalAvailableWordsCount = useMemo(() => {
-    return allSavedWords.filter((w: any) => (w.category || 'general') === vocaCategory).length;
-  }, [vocaCategory, allSavedWords]);
+    const savedWords = localStorage.getItem('satVocaWords');
+    if (!savedWords) return 0;
+    const allWords = JSON.parse(savedWords);
+    return allWords.filter((w: any) => (w.category || 'general') === vocaCategory).length;
+  }, [vocaCategory]);
 
   // Get available words based on selected days and category
   const availableWords = useMemo(() => {
-    const categoryWords = allSavedWords.filter((w: any) => (w.category || 'general') === vocaCategory);
+    const savedWords = localStorage.getItem('satVocaWords');
+    if (!savedWords) return [];
+    
+    const allWords = JSON.parse(savedWords);
+    const categoryWords = allWords.filter((w: any) => (w.category || 'general') === vocaCategory);
     
     if (selectedDays.length === 0) return [];
     
@@ -603,7 +585,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 1: DAY Selection Screen
   if (step === 1) {
     return (
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 pb-24 md:pb-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8">
         <div className="bg-white rounded-lg md:border md:border-gray-300 md:p-10 p-4">
           {/* Title */}
           <div className="mb-6 md:mb-8">
@@ -960,7 +942,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 2: Word Selection Screen (Modal)
   const Step2Modal = (
     <Dialog open={step === 2} onOpenChange={(open) => !open && setStep(1)}>
-      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[68vh] md:!h-[85vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[92vh] md:!h-[85vh] p-0 overflow-hidden flex flex-col [&>button]:hidden">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</DialogTitle>
         <DialogDescription className="sr-only">
           전체 단어 리스트에서 출제할 단어를 선택하고 출제 리스트를 관리할 수 있습니다.
@@ -1197,7 +1179,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
   // Step 3: Save and Download Screen (Modal)
   const Step3Modal = (
     <Dialog open={step === 3} onOpenChange={(open) => !open && setStep(2)}>
-      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[68vh] md:!max-h-[90vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[92vh] md:!max-h-[90vh] p-0 overflow-hidden [&>button]:hidden">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 2. 저장 및 다운로드</DialogTitle>
         <DialogDescription className="sr-only">
           출��� 결과를 확인하고 테스트 정보를 설정한 후 다운로드하거나 테스트를 시작할 수 있습니다.

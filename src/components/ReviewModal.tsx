@@ -2,7 +2,6 @@ import { useState } from "react";
 import { X, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Globe, Search, FileText } from "lucide-react";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
-import { useEffect } from "react";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -11,12 +10,9 @@ interface ReviewModalProps {
     id: number;
     passage: string;
     question: string;
-    choices: Array<{
-      id: string;
-      text: string;
-    }>;
+    choices: { id: string; text: string }[];
   };
-  selectedAnswer?: string | null;
+  selectedAnswer?: string;
   correctAnswer: string;
   onPrevious: () => void;
   onNext: () => void;
@@ -40,84 +36,66 @@ export function ReviewModal({
   difficulty,
 }: ReviewModalProps) {
   const [showExplanation, setShowExplanation] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [fullscreenTab, setFullscreenTab] = useState<string | null>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'translation' | 'analysis' | 'vocabulary' | 'similarProblems' | null>(null);
   const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
   const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
   const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [fullscreenTab, setFullscreenTab] = useState<'translation' | 'analysis' | 'vocabulary' | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setShowExplanation(true);
-    setActiveTab(null);
-    setFullscreenTab(null);
-    setIsFullScreen(false);
-    setSimilarProblemIndex(0);
-    setSimilarProblemAnswers({});
-    setShowSimilarResults({});
-  }, [isOpen, question.id]);
-
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   const userAnswer = selectedAnswer ? selectedAnswer.toUpperCase() : null;
-  const correctAnswerUpper = correctAnswer?.toUpperCase() || "A";
+  const correctAnswerUpper = (correctAnswer || 'A').toUpperCase();
   const isCorrect = userAnswer === correctAnswerUpper;
   const isOmitted = !userAnswer;
 
+  // Mock similar questions based on questionType and difficulty
   const getSimilarQuestions = () => {
-    const typeLabel = questionType || "Central Ideas and Details";
-    const diffLabel = difficulty || "중간";
-
+    const typeLabel = questionType || 'Central Ideas and Details';
+    const diffLabel = difficulty || '보통';
+    
     return [
       {
         id: 1,
-        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim, contrasts it with a weaker alternative, and supports the stronger interpretation with evidence.`,
-        question: "Which choice best states the main idea of the passage?",
+        passage: `"The scientist's findings were so ______ that even her harshest critics had to acknowledge the validity of her research."`,
+        question: 'Which choice completes the text with the most logical and precise word or phrase?',
         choices: [
-          { id: "a", text: "The author rejects the need for evidence in analysis." },
-          { id: "b", text: "The author supports a stronger interpretation with evidence." },
-          { id: "c", text: "The passage argues that all interpretations are equally valid." },
-          { id: "d", text: "The passage focuses mainly on a historical timeline." },
+          { id: 'a', text: 'ambiguous' },
+          { id: 'b', text: 'compelling' },
+          { id: 'c', text: 'trivial' },
+          { id: 'd', text: 'controversial' },
         ],
-        correctAnswer: "b",
+        correctAnswer: 'b',
       },
       {
         id: 2,
-        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second explanation better matches the data in the passage.`,
-        question: "Based on the passage, which statement is most accurate?",
+        passage: `Example passage for ${typeLabel} at ${diffLabel} difficulty level.`,
+        question: 'Based on the passage, which statement is most accurate?',
         choices: [
-          { id: "a", text: "The first explanation is fully confirmed by the data." },
-          { id: "b", text: "Neither explanation relates to the evidence presented." },
-          { id: "c", text: "The second explanation is better supported by the evidence." },
-          { id: "d", text: "The passage recommends ignoring the available data." },
+          { id: 'a', text: 'The first interpretation' },
+          { id: 'b', text: 'The second interpretation' },
+          { id: 'c', text: 'The third interpretation' },
+          { id: 'd', text: 'The fourth interpretation' },
         ],
-        correctAnswer: "c",
+        correctAnswer: 'c',
       },
       {
         id: 3,
-        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression from an initial concession to a reinforcing point.`,
-        question: "Which of the following best completes the text with the most logical and precise word or phrase?",
+        passage: `Sample passage for similar question 3. This final example of ${typeLabel} at ${diffLabel} level provides additional practice.`,
+        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
         choices: [
-          { id: "a", text: "nevertheless" },
-          { id: "b", text: "furthermore" },
-          { id: "c", text: "however" },
-          { id: "d", text: "instead" },
+          { id: 'a', text: 'nevertheless' },
+          { id: 'b', text: 'furthermore' },
+          { id: 'c', text: 'however' },
+          { id: 'd', text: 'therefore' },
         ],
-        correctAnswer: "b",
+        correctAnswer: 'b',
       },
     ];
   };
 
   const similarQuestions = getSimilarQuestions();
-
-  // Auto close fullscreen when all 3 similar problems are completed
-  // Next 버튼에서 복귀하도록 변경 (자동 복귀 제거)
 
   // Fullscreen Similar Problems View
   if (isFullScreen && activeTab === 'similarProblems') {
@@ -127,9 +105,9 @@ export function ReviewModal({
     const isCorrectAnswer = userSimilarAnswer === simQ.correctAnswer.toUpperCase();
 
     return (
-      <div className="fixed inset-0 bg-purple-50 z-50 flex flex-col">
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
         {/* Fullscreen Header */}
-        <div className="border-b border-purple-300 px-6 py-4 flex items-center justify-between bg-purple-100">
+        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
@@ -157,7 +135,7 @@ export function ReviewModal({
         {/* Fullscreen Content - Split View */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Passage */}
-          <div className="w-1/2 border-r border-purple-300 overflow-y-auto p-8 bg-purple-50">
+          <div className="w-1/2 border-r border-gray-200 overflow-y-auto p-8 bg-white">
             {/* Similar Problem Navigation */}
             <div className="flex items-center justify-center gap-2 mb-6">
               {similarQuestions.map((_, idx) => (
@@ -166,8 +144,8 @@ export function ReviewModal({
                   onClick={() => setSimilarProblemIndex(idx)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                     similarProblemIndex === idx
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-purple-200 text-purple-700 hover:bg-purple-300'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                   }`}
                 >
                   {idx + 1}
@@ -183,7 +161,7 @@ export function ReviewModal({
           </div>
 
           {/* Right Panel - Question and Answer */}
-          <div className="w-1/2 overflow-y-auto p-8 bg-purple-100">
+          <div className="w-1/2 overflow-y-auto p-8 bg-gray-50">
             {/* Header with Type/Difficulty and Status */}
             <div className="mb-6 space-y-3">
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
@@ -213,7 +191,7 @@ export function ReviewModal({
             {/* Question */}
             <div className="mb-6">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                   Q
                 </div>
                 <p className="text-gray-900 text-base leading-relaxed">
@@ -249,8 +227,8 @@ export function ReviewModal({
                           ? 'border-red-500 bg-red-50'
                           : 'border-gray-200 bg-white'
                         : isUserChoice
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50/30'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                     } ${hasAnswered ? 'cursor-default' : 'cursor-pointer'}`}
                   >
                     <div className="flex items-start gap-3">
@@ -299,7 +277,7 @@ export function ReviewModal({
                       [similarProblemIndex]: true
                     }));
                   }}
-                  className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
+                  className="px-8 py-3 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
                 >
                   다음
                 </button>
@@ -307,27 +285,10 @@ export function ReviewModal({
             )}
 
             {/* Progress Indicator */}
-            <div className="mb-6 text-center text-sm text-purple-600">
+            <div className="mb-6 text-center text-sm text-gray-500">
               {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length} / 3 완료
             </div>
 
-                    {/* Next button for returning after all 3 problems */}
-                    {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length === 3 && (
-                      <div className="flex justify-center mb-6">
-                        <button
-                          onClick={() => {
-                            setSimilarProblemIndex(0);
-                            setSimilarProblemAnswers({});
-                            setShowSimilarResults({});
-                            setIsFullScreen(false);
-                            setActiveTab(null);
-                          }}
-                          className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
             {/* Tab Navigation */}
             <div className="border-t border-gray-200 pt-6">
               <div className="flex gap-2 mb-4">
@@ -596,7 +557,7 @@ export function ReviewModal({
                   }}
                   className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
                     activeTab === 'similarProblems'
-                      ? 'bg-purple-50 text-purple-900 border-2 border-purple-400'
+                      ? 'bg-white text-gray-900 border-2 border-gray-300'
                       : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
                   }`}
                   style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
