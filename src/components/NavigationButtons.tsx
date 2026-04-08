@@ -45,7 +45,7 @@ export function NavigationButtons({
       
       {/* Button bar */}
       <div
-        className="flex items-center justify-center md:justify-end gap-4 py-4 px-6 md:mr-16"
+        className="flex items-center justify-end gap-4 py-4 px-6 md:mr-16"
         style={{ backgroundColor: variant === 'exam' ? '#E8EEF7' : 'transparent' }}
       >
         {showBack && (
