@@ -3,7 +3,6 @@ import { Button } from './ui/button';
 import { Plus, Edit3, Trash2, Save, X, Download, Upload, Search, Settings, FolderPlus } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { generateSATWordsForDay } from './vocaWordSets';
-import { kvGet, kvSet } from '../utils/supabase/client';
 
 interface VocaWord {
   id: string;
@@ -29,7 +28,6 @@ export function SATVocaManagement() {
   const [days, setDays] = useState<DayInfo[]>([]);
   const [vocaCategory, setVocaCategory] = useState<'general' | 'yearly'>('general');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [categoryTab, setCategoryTab] = useState<'all' | 'general' | 'yearly'>('general');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDayManagement, setShowDayManagement] = useState(false);
@@ -39,7 +37,7 @@ export function SATVocaManagement() {
   // Day management state
   const [editingDayNumber, setEditingDayNumber] = useState<number | null>(null);
   const [editingDayName, setEditingDayName] = useState('');
-  const [newDayNumber, setNewDayNumber] = useState<number>(1);
+  const [newDayNumber, setNewDayNumber] = useState<number>(31);
   const [newDayName, setNewDayName] = useState('');
   
   // Add new word form
@@ -56,35 +54,26 @@ export function SATVocaManagement() {
   // Editing word form
   const [editingWord, setEditingWord] = useState<Partial<VocaWord>>({});
 
-  // Supabase sync helpers (direct DB via supabase-js client)
-  const fetchWordsFromSupabase = async (): Promise<VocaWord[] | null> => {
-    const data = await kvGet('sat_voca_words');
-    return Array.isArray(data) && data.length > 0 ? data : null;
-  };
-
-  const fetchDaysFromSupabase = async (): Promise<DayInfo[] | null> => {
-    const data = await kvGet('sat_voca_days');
-    return Array.isArray(data) && data.length > 0 ? data : null;
-  };
-
-  const syncWordsToSupabase = async (w: VocaWord[]) => {
-    await kvSet('sat_voca_words', w);
-  };
-
-  const syncDaysToSupabase = async (d: DayInfo[]) => {
-    await kvSet('sat_voca_days', d);
-  };
-
-  // Load words from Supabase first, then localStorage fallback, then initialize
+  // Load words from localStorage or initialize from vocaWordSets
   useEffect(() => {
-    const loadData = async () => {
-      // Build canonical 'general' seed data
-      const seedWords: VocaWord[] = [];
-      const seedDays: DayInfo[] = [];
+    const savedWords = localStorage.getItem('satVocaWords');
+    const savedDays = localStorage.getItem('satVocaDays');
+    
+    if (savedWords && savedDays) {
+      const parsedWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
+      const parsedDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
+      setWords(parsedWords);
+      setDays(parsedDays);
+    } else {
+      // Initialize with existing SAT VOCA data (1,500 words)
+      const initialWords: VocaWord[] = [];
+      const initialDays: DayInfo[] = [];
+      
       for (let day = 1; day <= 30; day++) {
         const dayWords = generateSATWordsForDay(day);
+        
         dayWords.forEach((word, index) => {
-          seedWords.push({
+          initialWords.push({
             id: `${day}-${index + 1}`,
             day,
             english: word.english,
@@ -96,75 +85,45 @@ export function SATVocaManagement() {
             category: 'general'
           });
         });
-        seedDays.push({ day, name: `DAY ${day}`, wordCount: dayWords.length, category: 'general' });
+        
+        initialDays.push({
+          day,
+          name: `DAY ${day}`,
+          wordCount: dayWords.length,
+          category: 'general'
+        });
       }
-
-      // Try Supabase first
-      const supaWords = await fetchWordsFromSupabase();
-      const supaDays = await fetchDaysFromSupabase();
-
-      let allWords: VocaWord[] = [];
-      let allDays: DayInfo[] = [];
-
-      if (supaWords && supaDays) {
-        allWords = supaWords.map((w: any) => ({ ...w, category: w.category || 'general' }));
-        allDays = supaDays.map((d: any) => ({ ...d, category: d.category || 'general' }));
-      } else {
-        // Fallback to localStorage
-        const savedWords = localStorage.getItem('satVocaWords');
-        const savedDays = localStorage.getItem('satVocaDays');
-        if (savedWords && savedDays) {
-          allWords = JSON.parse(savedWords).map((w: any) => ({ ...w, category: w.category || 'general' }));
-          allDays = JSON.parse(savedDays).map((d: any) => ({ ...d, category: d.category || 'general' }));
-        }
-      }
-
-      // Always enforce: 'general' words for DAY 1-30 = seed data (50 each)
-      const yearlyWords = allWords.filter(w => w.category === 'yearly');
-      const yearlyDays = allDays.filter(d => d.category === 'yearly');
-      // Keep any user-added general days beyond DAY 30
-      const extraGeneralDays = allDays.filter(d => d.category === 'general' && d.day > 30);
-      const extraGeneralWords = allWords.filter(w => w.category === 'general' && w.day > 30);
-
-      const finalWords = [...seedWords, ...extraGeneralWords, ...yearlyWords];
-      const finalDays = [...seedDays, ...extraGeneralDays, ...yearlyDays];
-
-      setWords(finalWords);
-      setDays(finalDays);
-      localStorage.setItem('satVocaWords', JSON.stringify(finalWords));
-      localStorage.setItem('satVocaDays', JSON.stringify(finalDays));
-      syncWordsToSupabase(finalWords);
-      syncDaysToSupabase(finalDays);
-    };
-    loadData();
+      
+      setWords(initialWords);
+      setDays(initialDays);
+      localStorage.setItem('satVocaWords', JSON.stringify(initialWords));
+      localStorage.setItem('satVocaDays', JSON.stringify(initialDays));
+    }
   }, []);
 
-  // Update day word counts (category-aware)
+  // Update day word counts
   useEffect(() => {
     const updatedDays = days.map(day => ({
       ...day,
-      wordCount: words.filter(w => w.day === day.day && (w.category || 'general') === (day.category || 'general')).length
+      wordCount: words.filter(w => w.day === day.day).length
     }));
     
     if (JSON.stringify(updatedDays) !== JSON.stringify(days)) {
       setDays(updatedDays);
       localStorage.setItem('satVocaDays', JSON.stringify(updatedDays));
-      syncDaysToSupabase(updatedDays);
     }
   }, [words]);
 
-  // Save words to localStorage + Supabase
+  // Save words to localStorage
   const saveWords = (updatedWords: VocaWord[]) => {
     setWords(updatedWords);
     localStorage.setItem('satVocaWords', JSON.stringify(updatedWords));
-    syncWordsToSupabase(updatedWords);
   };
 
-  // Save days to localStorage + Supabase
+  // Save days to localStorage
   const saveDays = (updatedDays: DayInfo[]) => {
     setDays(updatedDays);
     localStorage.setItem('satVocaDays', JSON.stringify(updatedDays));
-    syncDaysToSupabase(updatedDays);
   };
 
   // Bulk upload words
@@ -176,14 +135,14 @@ export function SATVocaManagement() {
 
     const lines = bulkText.split('\n').filter(line => line.trim() !== '');
     const parsedData: VocaWord[] = lines.map((line, index) => {
-      const parts = line.trim().split('\t');
+      const parts = line.trim().split(/\s+/);
       return {
         id: `${newWord.day}-${Date.now()}-${index}`,
         day: newWord.day as number,
         english: parts[0] || "",
         korean: parts[1] || "",
         definition: parts[2] || "",
-        synonym: parts[3] || "",
+        synonym: parts.slice(3).join(" "),
         antonym: '',
         example: '',
         category: vocaCategory
@@ -283,7 +242,7 @@ export function SATVocaManagement() {
       return;
     }
 
-    if (days.some(d => d.day === newDayNumber && d.category === vocaCategory)) {
+    if (days.some(d => d.day === newDayNumber)) {
       toast.error(`DAY ${newDayNumber}은(는) 이미 존재합니다.`);
       return;
     }
@@ -330,17 +289,17 @@ export function SATVocaManagement() {
 
   // Delete DAY
   const handleDeleteDay = (dayNumber: number) => {
-    const dayInfo = days.find(d => d.day === dayNumber && (d.category || 'general') === vocaCategory);
+    const dayInfo = days.find(d => d.day === dayNumber);
     if (dayInfo && dayInfo.wordCount > 0) {
       if (!confirm(`${dayInfo.name}에 ${dayInfo.wordCount}개의 단어가 있습니다. 정말 삭제하시겠습니까?`)) {
         return;
       }
-      // Delete only words in this day AND current category
-      const updatedWords = words.filter(w => !(w.day === dayNumber && (w.category || 'general') === vocaCategory));
+      // Delete all words in this day
+      const updatedWords = words.filter(w => w.day !== dayNumber);
       saveWords(updatedWords);
     }
 
-    const updatedDays = days.filter(d => !(d.day === dayNumber && (d.category || 'general') === vocaCategory));
+    const updatedDays = days.filter(d => d.day !== dayNumber);
     saveDays(updatedDays);
     
     if (selectedDay === dayNumber) {
@@ -431,31 +390,17 @@ export function SATVocaManagement() {
   };
 
   // Filter days by category
-  const filteredDays = days.filter(d => categoryTab === 'all' ? true : d.category === vocaCategory);
+  const filteredDays = days.filter(d => d.category === vocaCategory);
 
   // Filter words
   const filteredWords = words.filter(w => {
-    const matchesCategory = categoryTab === 'all' ? true : w.category === vocaCategory;
+    const matchesCategory = w.category === vocaCategory;
     const matchesDay = selectedDay === null || w.day === selectedDay;
     const matchesSearch = !searchTerm || 
       w.english.toLowerCase().includes(searchTerm.toLowerCase()) ||
       w.korean.includes(searchTerm);
     return matchesCategory && matchesDay && matchesSearch;
   });
-
-  // Supabase 저장 함수 (단어 전체 동기화)
-  const saveWordsToSupabase = async (words: VocaWord[]) => {
-    const ok = await kvSet('sat_voca_words', words);
-    if (ok) console.log('✅ Supabase에 단어 저장 완료');
-    else console.log('⚠️ Supabase 저장 실패');
-  };
-
-  // Supabase 저장 함수 (DAY 전체 동기화)
-  const saveDaysToSupabase = async (days: DayInfo[]) => {
-    const ok = await kvSet('sat_voca_days', days);
-    if (ok) console.log('✅ Supabase에 DAY 저장 완료');
-    else console.log('⚠️ Supabase DAY 저장 실패');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -468,32 +413,23 @@ export function SATVocaManagement() {
           <div className="flex gap-4 mt-6">
             <button
               onClick={() => {
-                setCategoryTab('all');
                 setVocaCategory('general');
                 setSelectedDay(null);
+                const categoryDays = days.filter(d => d.category === 'general');
+                setNewDayNumber(categoryDays.length > 0 ? Math.max(...categoryDays.map(d => d.day)) + 1 : 1);
               }}
-              className={`px-4 py-2 font-bold border-b-2 transition-colors ${categoryTab === 'all' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-            >
-              전체 단어
-            </button>
-            <button
-              onClick={() => {
-                setCategoryTab('general');
-                setVocaCategory('general');
-                setSelectedDay(null);
-              }}
-              className={`px-4 py-2 font-bold border-b-2 transition-colors ${categoryTab === 'general' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-2 font-bold border-b-2 transition-colors ${vocaCategory === 'general' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
               SAT 어휘 출제
             </button>
             <button
               onClick={() => {
-                setCategoryTab('yearly');
                 setVocaCategory('yearly');
                 setSelectedDay(null);
-                setNewDayNumber(1);
+                const categoryDays = days.filter(d => d.category === 'yearly');
+                setNewDayNumber(categoryDays.length > 0 ? Math.max(...categoryDays.map(d => d.day)) + 1 : 1);
               }}
-              className={`px-4 py-2 font-bold border-b-2 transition-colors ${categoryTab === 'yearly' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              className={`px-4 py-2 font-bold border-b-2 transition-colors ${vocaCategory === 'yearly' ? 'border-teal-600 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
             >
               연도별 단어
             </button>
@@ -587,7 +523,7 @@ export function SATVocaManagement() {
                     value={newDayNumber}
                     onChange={(e) => setNewDayNumber(parseInt(e.target.value) || 1)}
                     className="w-24 p-2 border border-gray-300 rounded"
-                    placeholder="번호 (예: 1)"
+                    placeholder="번호"
                     min="1"
                   />
                   <input
@@ -672,11 +608,11 @@ export function SATVocaManagement() {
       )}
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        <div className="flex flex-col gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Add New Word Form */}
-          <div className="w-full">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-8">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-6">
               <h2 className="text-base sm:text-lg mb-3 sm:mb-4 flex items-center gap-2">
                 <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                 {vocaCategory === 'general' ? '새 단어 추가' : '연도별 단어 추가'}
@@ -718,16 +654,13 @@ export function SATVocaManagement() {
                       <textarea
                         value={bulkText}
                         onChange={(e) => setBulkText(e.target.value)}
-                        className="w-full p-2 text-xs sm:text-sm border border-gray-300 rounded-lg font-mono min-h-[220px] sm:min-h-[300px] resize-vertical"
-                        rows={14}
-                        placeholder={
-                          `예시)\nsimultaneous\t동시의\thappening at the same time; synchronous\tconcurrent, synchronous\nabandon\t포기하다\tgive up something; forsake\tstop, throw out`
-                        }
+                        className="w-full p-2 text-xs sm:text-sm border border-gray-300 rounded-lg font-mono"
+                        rows={12}
+                        placeholder="예시)&#10;abandon 포기하다 give_up_something forsake, stop, throw out&#10;apple 사과 a_fruit 빨간_사과, 풋사과"
                       />
                       <p className="text-[10px] text-gray-500 mt-1 leading-tight">
                         * 줄바꿈으로 여러 단어를 입력할 수 있습니다. <br/>
-                        * 단어, 뜻, 영영, 동의어 순서로 <b>탭(→)</b>으로 구분해 주세요.<br/>
-                        * 예시: simultaneous[탭]동시의[탭]happening at the same time; synchronous[탭]concurrent, synchronous
+                        * 단어, 뜻, 영영, 동의어 순서로 입력해주세요. (공백 구분)
                       </p>
                     </div>
                     <Button
@@ -820,7 +753,7 @@ export function SATVocaManagement() {
           </div>
 
           {/* Word List */}
-          <div className="w-full">
+          <div className="lg:col-span-2">
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg">
@@ -989,5 +922,3 @@ export function SATVocaManagement() {
     </div>
   );
 }
-
-// (Supabase sync is now handled by kvSet inside the component)
