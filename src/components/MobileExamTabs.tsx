@@ -120,31 +120,31 @@ export function MobileExamTabs({
         ) : (
           /* Questions view - collapsed passage summary + question */
           <div className="flex flex-col h-full">
-            {/* Collapsed passage summary - compact Expand/Collapse toggle */}
+            {/* Collapsed passage summary - same font size as question text */}
             {passage && passage.trim().length > 0 && (
-              <div className="mx-4 mt-1">
+              <div className="mx-4 mt-3">
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                  {passageExpanded && (
-                    <div className="px-4 py-3">
-                      <p
-                        className="text-gray-800 leading-[1.6]"
-                        style={{
-                          fontSize: '18px',
-                          fontFamily: '"Times New Roman", Times, serif',
-                          fontWeight: 400,
-                        }}
-                      >
-                        {passage}
-                      </p>
-                    </div>
-                  )}
+                  <div className="px-4 py-3">
+                    <p
+                      className="text-gray-800 leading-[1.6]"
+                      style={{
+                        fontSize: '18px',
+                        fontFamily: '"Times New Roman", Times, serif',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {passageExpanded
+                        ? passage
+                        : passagePreview}
+                    </p>
+                  </div>
                   <button
                     onClick={() => setPassageExpanded(!passageExpanded)}
-                    className="w-full flex items-center justify-end gap-1.5 px-3 py-1.5 text-[#0d6e6e] font-semibold hover:bg-gray-100 transition-colors"
-                    style={{ fontSize: '13px' }}
+                    className="w-full flex items-center justify-end gap-1.5 px-4 py-2 text-[#0d6e6e] font-semibold hover:bg-gray-100 transition-colors border-t border-gray-200"
+                    style={{ fontSize: '15px' }}
                   >
                     {passageExpanded ? "Collapse" : "Expand"}
-                    {passageExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {passageExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 </div>
               </div>
