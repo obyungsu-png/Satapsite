@@ -1393,38 +1393,29 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
               <h2 className="text-base md:text-xl text-center mb-3 md:mb-6 font-semibold" style={{ color: '#3DB89E' }}>
                 SAT 어휘 시험지 다운로드
               </h2>
-              <div className="flex flex-col md:flex-row items-center justify-center gap-2.5 md:gap-4">
+              <div className="flex flex-row flex-wrap items-center justify-center gap-1 w-full">
                 <Button
                   onClick={handleDownloadPDF}
                   variant="outline"
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-red-500 text-sm md:text-base"
+                  className="flex-1 min-w-[90px] max-w-[120px] flex items-center justify-center gap-1 px-2 py-2 rounded-lg border-2 hover:border-red-500 text-xs md:text-base"
                   style={{ borderColor: '#E0E0E0' }}
                 >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-red-500 flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
-                  </div>
-                  <span className="text-sm md:text-base">PDF 다운로드</span>
+                  <span className="text-xs md:text-base">PDF</span>
                 </Button>
                 <Button
                   onClick={handleDownloadWord}
                   variant="outline"
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg border-2 hover:border-blue-500 text-sm md:text-base"
+                  className="flex-1 min-w-[90px] max-w-[120px] flex items-center justify-center gap-1 px-2 py-2 rounded-lg border-2 hover:border-blue-500 text-xs md:text-base"
                   style={{ borderColor: '#E0E0E0' }}
                 >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-blue-500 flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5 text-white" />
-                  </div>
-                  <span className="text-sm md:text-base">워드 다운로드</span>
+                  <span className="text-xs md:text-base">워드</span>
                 </Button>
                 <Button
                   onClick={handleStartTest}
-                  className="w-full md:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-4 rounded-lg text-white hover:opacity-90 transition-opacity text-sm md:text-base"
+                  className="flex-1 min-w-[90px] max-w-[120px] flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-white hover:opacity-90 transition-opacity text-xs md:text-base"
                   style={{ backgroundColor: '#3DB89E' }}
                 >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center bg-white flex-shrink-0">
-                    <FileText className="w-3.5 h-3.5 md:w-5 md:h-5" style={{ color: '#3DB89E' }} />
-                  </div>
-                  <span className="text-sm md:text-base">테스트 시작</span>
+                  <span className="text-xs md:text-base">테스트</span>
                 </Button>
               </div>
             </div>
