@@ -2636,14 +2636,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <>
             {/* 필터 그룹 컨테이너 - 화이트 박스 스타일 적용 */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-4">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Subject</span>
-                <div className="flex gap-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0">Subject</span>
+                <div className="flex flex-nowrap gap-2 overflow-x-auto">
                   {['전체', 'Reading', 'Math'].map((sub) => (
                     <button
                       key={sub}
                       onClick={() => setSmartPracticeSubject(sub)}
-                      className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
                         smartPracticeSubject === sub
                           ? 'bg-[#3D5AA1] text-white'
                           : 'bg-gray-100 text-gray-500 hover:bg-gray-200'

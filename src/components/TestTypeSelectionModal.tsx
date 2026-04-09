@@ -10,7 +10,7 @@ interface TestTypeSelectionModalProps {
 export function TestTypeSelectionModal({ isOpen, onClose, onSelect }: TestTypeSelectionModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md z-[100]" overlayClassName="backdrop-blur-sm bg-black/40 z-[90]">
         <DialogTitle className="text-center text-xl mb-6">시험 유형 선택</DialogTitle>
         <DialogDescription className="sr-only">
           객관식, 주관식, 또는 객관식+주관식 혼합 시험 유형을 선택하세요.
