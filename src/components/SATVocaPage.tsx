@@ -1389,7 +1389,7 @@ export function SATVocaPage({ onStartTest }: SATVocaPageProps) {
             </div>
 
             {/* Download Section */}
-            <div className="mt-4 md:mt-8 pt-3 md:pt-6 border-t border-gray-200 pb-4">
+           <div className="flex-1 px-3 md:px-6 py-2 md:py-6 overflow-y-auto max-h-[calc(68vh-180px)] md:max-h-[calc(90vh-180px)]">
               <h2 className="text-base md:text-xl text-center mb-3 md:mb-6 font-semibold" style={{ color: '#3DB89E' }}>
                 SAT 어휘 시험지 다운로드
               </h2>
