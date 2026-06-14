@@ -3855,7 +3855,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-medium text-gray-800 mb-2">강의 및 특강</h1>
-            <p className="text-gray-600">AI가 분석한 개��� 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
+            <p className="text-gray-600">AI가 분석한 개인 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
           </div>
 
           {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 */}
