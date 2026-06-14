@@ -3533,30 +3533,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             </div>
           )}
 
-          {/* Advertisement Banner - Moved to Bottom */}
-          {(smartPracticeTab !== 'SAT VOCA') && (
-            <div className="mt-6">
-              <div className="rounded-md p-3" style={{ backgroundColor: '#F5F7FA', border: '1px solid #E0E4E8' }}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs text-gray-700">SAT 프리미엄 학습 자료</h3>
-                    <p className="text-[10px] text-gray-500 mt-0.5">
-                      전문가가 엄선한 고품질 SAT 학습 자료로 목표 점수를 달성하세요.
-                    </p>
-                  </div>
-                  <motion.button
-                    onClick={() => window.open('https://example.com', '_blank')}
-                    className="px-3 py-1.5 text-white text-[10px] rounded-md transition-all whitespace-nowrap"
-                    style={{ backgroundColor: '#3D5AA1' }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    자세히 보기
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     );
