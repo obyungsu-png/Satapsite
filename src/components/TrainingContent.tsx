@@ -330,7 +330,7 @@ export function TrainingContent({
               }`}
               style={trainingAttemptFilter === '최근 일주일' ? { backgroundColor: '#3D5AA1' } : {}}
             >
-              최 일주일 오답
+              최근 일주일 오답
             </button>
           </div>
         </div>
