@@ -90,7 +90,7 @@ export function ScoreDetailModal({
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-xl overflow-hidden bg-white flex flex-col">
+        <div className="w-full h-full overflow-hidden bg-white flex flex-col">
           {/* Review Header */}
           <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
             <div className="flex items-center gap-4">
@@ -291,7 +291,7 @@ export function ScoreDetailModal({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="w-full h-full md:max-w-7xl md:h-[90vh] md:rounded-xl overflow-hidden bg-gray-50 flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full h-full overflow-hidden bg-gray-50 flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="border-b border-gray-200 px-3 md:px-6 py-3 md:py-4 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2 md:gap-4 min-w-0">
