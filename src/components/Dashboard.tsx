@@ -4746,7 +4746,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   }`}
                   style={activeTab === '강의 및 특강' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
                 >
-                  Pattern 뽀개기
+                  Pattern Drill
                 </button>
                 <button
                   onClick={() => {
@@ -5139,7 +5139,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             }}
           >
             <GraduationCap size={22} strokeWidth={activeTab === '강의 및 특강' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
-            <span className="text-xs mt-0.5 font-medium">Pattern 뽀개기</span>
+            <span className="text-xs mt-0.5 font-medium">Pattern Drill</span>
           </button>
 
           {/* Training */}
