@@ -49,8 +49,8 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number; text: string } | null>(null);
   // Responsive default: 21px on mobile for better readability, 18px on desktop
   const [fontSize, setFontSize] = useState(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 768) return 21;
-    return 18;
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 23;
+    return 20;
   });
   const contentRef = useRef<HTMLDivElement>(null);
 

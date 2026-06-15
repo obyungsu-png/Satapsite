@@ -54,7 +54,7 @@ export function QuestionPanel({
 }: QuestionPanelProps) {
   const [abcMode, setAbcMode] = useState(false); // ABC mode inactive by default
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set()); // B is eliminated by default
-  const [fontSize, setFontSize] = useState(18); // Visually match Mark for Review size
+  const [fontSize, setFontSize] = useState(20); // Visually match Mark for Review size
   const [activeReviewTab, setActiveReviewTab] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
