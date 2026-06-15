@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ArrowLeft, Globe, Search, BookOpen } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, Globe, Search, BookOpen, Bookmark } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface ScoreDetailModalProps {
@@ -136,28 +136,41 @@ export function ScoreDetailModal({
           {/* Review Content */}
           <div className="flex-1 flex overflow-hidden">
             {/* Left: Passage */}
-            <div className="w-[60%] border-r border-gray-200 overflow-y-auto p-10 bg-white">
-              <div className="prose prose-sm max-w-none">
-                <p className="text-gray-800 leading-[1.9] whitespace-pre-line text-[20px] font-serif" style={{ fontFamily: 'Times New Roman, serif' }}>
+            <div className="w-[60%] border-r border-gray-200 overflow-y-auto px-8 pt-12 pb-8 bg-white">
+              <div className="max-w-2xl">
+                <p className="text-gray-900 leading-[1.8] whitespace-pre-line select-text" style={{ fontSize: '20px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
                   {reviewingQuestion.passage}
                 </p>
               </div>
             </div>
 
             {/* Right: Question and Explanation */}
-            <div className="w-[40%] overflow-y-auto p-10 bg-gray-50">
-              <div className="mb-6">
-                <div className="flex items-start gap-3 mb-6">
-                  <div className="flex-shrink-0 w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center text-base font-medium">
-                    {reviewingQuestion.id}
+            <div className="w-[40%] overflow-y-auto px-8 pt-12 pb-8 bg-white">
+              <div className="max-w-2xl">
+                {/* Top Bar with Gray Background and Dashed Border (real test style) */}
+                <div className="bg-[#f0f0f0] pl-0 pr-3 py-0 rounded-none border-b-2 border-dashed border-black mb-4 relative flex items-stretch h-[42px] overflow-hidden">
+                  <div className="bg-black text-white w-[42px] flex items-center justify-center shrink-0">
+                    <span className="font-bold" style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif' }}>{reviewingQuestion.id}</span>
                   </div>
-                  <p className="text-gray-900 text-[20px] leading-relaxed font-medium">
+                  <div className="flex items-center justify-between flex-1 pl-4">
+                    <div className="flex items-center gap-2">
+                      <Bookmark className="h-[16px] w-[16px] text-[#555]" strokeWidth={2} />
+                      <span className="text-[15px] font-medium text-[#333]" style={{ fontFamily: 'sans-serif' }}>
+                        Mark for Review
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Question Text */}
+                <div className="mb-5">
+                  <p className="text-[#222] leading-[1.6]" style={{ fontSize: '20px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
                     {reviewingQuestion.question}
                   </p>
                 </div>
 
-                {/* Choices */}
-                <div className="space-y-3 mb-8">
+                {/* Choices (real test style with correct/incorrect highlighting) */}
+                <div className="pb-6 space-y-2">
                   {reviewingQuestion.choices?.map((choice: any) => {
                     const choiceUpper = choice.id.toUpperCase();
                     const isUserChoice = userAnswer === choiceUpper;
@@ -166,32 +179,32 @@ export function ScoreDetailModal({
                     return (
                       <div
                         key={choice.id}
-                        className={`p-4 rounded-lg border-2 transition-all ${
+                        className={`p-3 border transition-all duration-150 relative flex items-center gap-4 rounded-lg ${
                           isCorrectChoice
-                            ? "border-green-500 bg-green-50"
+                            ? "border-green-500 border-2 bg-green-50"
                             : isUserChoice
-                            ? "border-red-500 bg-red-50"
-                            : "border-gray-200 bg-white"
+                            ? "border-red-500 border-2 bg-red-50"
+                            : "border-[#888] bg-white"
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <span className="text-[18px] text-gray-700 font-bold">
-                            {choiceUpper}.
-                          </span>
-                          <span className="text-[18px] text-gray-900 flex-1">
-                            {choice.text}
-                          </span>
-                          {isCorrectChoice && (
-                            <span className="text-sm text-green-700 font-bold">
-                              ✓ Correct
-                            </span>
-                          )}
-                          {isUserChoice && !isCorrectChoice && (
-                            <span className="text-sm text-red-700 font-bold">
-                              ✗ Your Answer
-                            </span>
-                          )}
+                        <div className={`w-7 h-7 min-w-7 min-h-7 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
+                          isCorrectChoice
+                            ? "border-green-600 bg-green-600 text-white"
+                            : isUserChoice
+                            ? "border-red-500 bg-red-500 text-white"
+                            : "border-[#666] text-[#666]"
+                        }`} style={{ fontSize: '14px', fontWeight: '700' }}>
+                          {choiceUpper}
                         </div>
+                        <span className={`flex-1 ${isCorrectChoice ? "text-green-700" : isUserChoice ? "text-red-600" : "text-[#000]"}`} style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.6' }}>
+                          {choice.text}
+                        </span>
+                        {isCorrectChoice && (
+                          <span className="text-sm text-green-700 font-bold shrink-0">✓ Correct</span>
+                        )}
+                        {isUserChoice && !isCorrectChoice && (
+                          <span className="text-sm text-red-700 font-bold shrink-0">✗ Your Answer</span>
+                        )}
                       </div>
                     );
                   })}
