@@ -32,12 +32,12 @@ export function MobileStep2Modal({
 }: MobileStep2ModalProps) {
   return (
     <Dialog open={step === 2} onOpenChange={(open) => !open && setStep(1)}>
-      <DialogContent className="!max-w-[95vw] md:!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[68vh] md:!h-[85vh] !bottom-auto !top-[6vh] md:!top-auto p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
+      <DialogContent className="!max-w-[95vw] md:!max-w-[1400px] !w-[95vw] md:!w-[90vw] !h-[68vh] md:!h-[85vh] !bottom-auto !top-[6vh] !translate-y-0 md:!top-auto md:!translate-y-[-50%] p-0 overflow-hidden flex flex-col [&>button]:hidden !z-[60]">
         <DialogTitle className="sr-only">SAT 어휘 시험 출제하기 - Step 1. 출제 단어 확인 및 선택</DialogTitle>
         <DialogDescription className="sr-only">
           전체 단어 리스트에서 출제할 단어를 선택하고 출제 리스트를 관리할 수 있습니다.
         </DialogDescription>
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full min-h-0">
           {/* Header */}
           <div className="text-white text-center py-3 md:py-4 px-4 md:px-6 relative" style={{ backgroundColor: '#3DB89E' }}>
             <h1 className="text-sm md:text-xl font-semibold leading-tight">
@@ -84,7 +84,7 @@ export function MobileStep2Modal({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-auto px-2 md:px-6 py-3 md:py-4 bg-gray-50">
+          <div className="flex-1 min-h-0 overflow-auto px-2 md:px-6 py-3 md:py-4 bg-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
               {/* Left: All Words */}
               <div className="bg-white rounded-lg border border-gray-300 shadow-sm">

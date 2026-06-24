@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Plus, Edit3, Trash2, Save, X, Download, Upload, Search, Settings, FolderPlus } from 'lucide-react';
 import { toast } from 'sonner@2.0.3';
 import { generateSATWordsForDay } from './vocaWordSets';
-import { kvGet, kvSet } from '../utils/supabase/client';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface VocaWord {
   id: string;
@@ -56,23 +56,49 @@ export function SATVocaManagement() {
   // Editing word form
   const [editingWord, setEditingWord] = useState<Partial<VocaWord>>({});
 
-  // Supabase sync helpers (direct DB via supabase-js client)
+  // Supabase sync helpers
+  const apiBase = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1`;
+  
   const fetchWordsFromSupabase = async (): Promise<VocaWord[] | null> => {
-    const data = await kvGet('sat_voca_words');
-    return Array.isArray(data) && data.length > 0 ? data : null;
+    try {
+      const res = await fetch(`${apiBase}/words`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.words) && data.words.length > 0) return data.words;
+      return null;
+    } catch { return null; }
   };
 
   const fetchDaysFromSupabase = async (): Promise<DayInfo[] | null> => {
-    const data = await kvGet('sat_voca_days');
-    return Array.isArray(data) && data.length > 0 ? data : null;
+    try {
+      const res = await fetch(`${apiBase}/days`, {
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` }
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.days) && data.days.length > 0) return data.days;
+      return null;
+    } catch { return null; }
   };
 
   const syncWordsToSupabase = async (w: VocaWord[]) => {
-    await kvSet('sat_voca_words', w);
+    try {
+      await fetch(`${apiBase}/words`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ words: w })
+      });
+    } catch (e) { console.log('Supabase word sync failed:', e); }
   };
 
   const syncDaysToSupabase = async (d: DayInfo[]) => {
-    await kvSet('sat_voca_days', d);
+    try {
+      await fetch(`${apiBase}/days`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${publicAnonKey}` },
+        body: JSON.stringify({ days: d })
+      });
+    } catch (e) { console.log('Supabase day sync failed:', e); }
   };
 
   // Load words from Supabase first, then localStorage fallback, then initialize
@@ -445,16 +471,46 @@ export function SATVocaManagement() {
 
   // Supabase 저장 함수 (단어 전체 동기화)
   const saveWordsToSupabase = async (words: VocaWord[]) => {
-    const ok = await kvSet('sat_voca_words', words);
-    if (ok) console.log('✅ Supabase에 단어 저장 완료');
-    else console.log('⚠️ Supabase 저장 실패');
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/words`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ words }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('⚠️ Supabase 저장 실패:', errorText);
+      } else {
+        console.log('✅ Supabase에 단어 저장 완료');
+      }
+    } catch (error) {
+      console.log('⚠️ Supabase 저장 실패:', error);
+    }
   };
 
   // Supabase 저장 함수 (DAY 전체 동기화)
   const saveDaysToSupabase = async (days: DayInfo[]) => {
-    const ok = await kvSet('sat_voca_days', days);
-    if (ok) console.log('✅ Supabase에 DAY 저장 완료');
-    else console.log('⚠️ Supabase DAY 저장 실패');
+    try {
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/days`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ days }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('⚠️ Supabase DAY 저장 실패:', errorText);
+      } else {
+        console.log('✅ Supabase에 DAY 저장 완료');
+      }
+    } catch (error) {
+      console.log('⚠️ Supabase DAY 저장 실패:', error);
+    }
   };
 
   return (
@@ -990,4 +1046,46 @@ export function SATVocaManagement() {
   );
 }
 
-// (Supabase sync is now handled by kvSet inside the component)
+// Supabase 저장 함수 (단어 전체 동기화)
+const saveWordsToSupabase = async (words: VocaWord[]) => {
+  try {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/words`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ words }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('⚠️ Supabase 저장 실패:', errorText);
+    } else {
+      console.log('✅ Supabase에 단어 저장 완료');
+    }
+  } catch (error) {
+    console.log('⚠️ Supabase 저장 실패:', error);
+  }
+};
+
+// Supabase 저장 함수 (DAY 전체 동기화)
+const saveDaysToSupabase = async (days: DayInfo[]) => {
+  try {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/days`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ days }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('⚠️ Supabase DAY 저장 실패:', errorText);
+    } else {
+      console.log('✅ Supabase에 DAY 저장 완료');
+    }
+  } catch (error) {
+    console.log('⚠️ Supabase DAY 저장 실패:', error);
+  }
+};
