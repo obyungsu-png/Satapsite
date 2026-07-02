@@ -163,8 +163,8 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           line-height: 1.5;
         }
         .sat-chat-bubble.user {
-          background-color: #6366f1;
-          color: white;
+          background: linear-gradient(135deg, #a9c7ff 0%, #76dbe5 100%);
+          color: #1f2937;
           border-bottom-right-radius: 2px;
         }
         .sat-chat-bubble.ai {
@@ -316,7 +316,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           transition: color 0.15s ease;
         }
         .sat-ai-suggestion:hover {
-          color: #6366f1;
+          color: #0f766e;
         }
       `}</style>
 
@@ -364,7 +364,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
               <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
               <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadGradient)" />
               <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorGradient)" stroke="#1f2530" strokeWidth="1.2" />
-              <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#57d3de" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
               <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
               <path d="M21 34.2H27" stroke="#8bb3bf" strokeWidth="1.1" strokeLinecap="round" />
@@ -401,7 +401,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                     <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
                     <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadMiniGradient)" />
                     <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorMiniGradient)" stroke="#1f2530" strokeWidth="1.2" />
-                    <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#57d3de" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
                     <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
                     <defs>
@@ -418,7 +418,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                   </svg>
                 </span>
                 <span className="font-bold text-gray-800">SAT AI 튜터</span>
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'linear-gradient(135deg, #dbeafe 0%, #cffafe 100%)', color: '#0f766e' }}>
                   {getAIModel()}
                 </span>
               </div>
@@ -510,7 +510,8 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                 <Button
                   type="submit"
                   size="icon"
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                  className="text-white shrink-0 hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg, #a9c7ff 0%, #76dbe5 100%)' }}
                   disabled={!chatInput.trim() || isAiLoading}
                 >
                   <Send className="w-4 h-4" />
