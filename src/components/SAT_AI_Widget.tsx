@@ -281,12 +281,25 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           height: 100%;
           width: 420px;
           max-width: 100vw;
-          background: #fff;
+          background: linear-gradient(180deg, #f5fbff 0%, #ffffff 42%, #f7fefe 100%);
           z-index: 61;
-          box-shadow: -8px 0 30px rgba(0,0,0,0.15);
+          box-shadow: -8px 0 30px rgba(14, 116, 144, 0.16);
           display: flex;
           flex-direction: column;
           animation: satAiSlideIn 0.25s ease;
+        }
+        .sat-ai-panel-header {
+          background: linear-gradient(135deg, rgba(219, 234, 254, 0.9) 0%, rgba(207, 250, 254, 0.9) 100%);
+          border-bottom: 1px solid rgba(125, 211, 252, 0.45);
+        }
+        .sat-ai-welcome-card {
+          background: linear-gradient(135deg, rgba(239, 246, 255, 0.92) 0%, rgba(236, 254, 255, 0.92) 100%);
+          border: 1px solid rgba(125, 211, 252, 0.32);
+          box-shadow: 0 14px 34px rgba(14, 116, 144, 0.08);
+        }
+        .sat-ai-input-bar {
+          background: linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(240, 253, 250, 0.95) 100%);
+          border-top: 1px solid rgba(125, 211, 252, 0.35);
         }
         @keyframes satAiSlideIn {
           from { transform: translateX(100%); }
@@ -388,7 +401,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
         <>
           <div className="sat-ai-panel-overlay" onClick={() => setIsOpen(false)} />
           <div className="sat-ai-panel">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
+            <div className="flex items-center justify-between px-5 py-4 sat-ai-panel-header">
               <div className="flex items-center gap-2">
                 <span className="sat-ai-fab" style={{ width: 36, height: 36 }}>
                   <svg width="30" height="30" viewBox="0 0 48 48" fill="none" aria-hidden="true">
@@ -434,7 +447,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                     ? '현재 푸는 문제에 대해 궁금한 점을 편하게 물어보세요'
                     : '문제 풀이, 유형 분석, 공부 방법 등 무엇이든 편하게 물어보세요'}
                 </p>
-                <div className="bg-gray-50 rounded-2xl px-4">
+                <div className="sat-ai-welcome-card rounded-2xl px-4">
                   {suggestedQuestions.map((q, idx) => (
                     <button
                       key={idx}
@@ -448,7 +461,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                 </div>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-5 py-4 bg-gray-50/50">
+              <div className="flex-1 overflow-y-auto px-5 py-4" style={{ background: 'linear-gradient(180deg, rgba(240, 249, 255, 0.62) 0%, rgba(240, 253, 250, 0.62) 100%)' }}>
                 <div className="flex flex-col space-y-4">
                   {chatMessages.map((msg, idx) => {
                     const cleanContent = msg.content.replace(/<think[\s\S]*?<\/think>/gi, '').trim();
@@ -488,7 +501,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
               </div>
             )}
 
-            <div className="p-3 border-t bg-white shrink-0">
+            <div className="p-3 shrink-0 sat-ai-input-bar">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -500,7 +513,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="질문을 입력하세요..."
-                  className="flex-1 text-sm bg-gray-50 focus:bg-white transition-colors"
+                  className="flex-1 text-sm bg-white/80 border-cyan-100 focus:bg-white focus:border-cyan-300 transition-colors"
                   disabled={isAiLoading}
                 />
                 <Button
