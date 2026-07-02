@@ -653,6 +653,86 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   }
 });
 
+// AI Chat endpoint (used by SAT_AI_Widget) — multi-turn chat, keeps API keys server-side
+app.post('/make-server-46fa08c1/ai-chat', async (c) => {
+  try {
+    const { model, messages } = await c.req.json();
+
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return c.json({ success: false, error: 'messages must be a non-empty array' }, 400);
+    }
+
+    const requestedModel = typeof model === 'string' && model.trim() ? model : 'deepseek-chat';
+    const isGlmModel = requestedModel.startsWith('glm-');
+
+    let apiKey: string | undefined;
+    let endpoint: string;
+    let requestModel: string;
+
+    if (isGlmModel) {
+      apiKey = Deno.env.get('GLM_API_KEY');
+      endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+      requestModel = requestedModel;
+
+      if (!apiKey) {
+        return c.json({
+          success: false,
+          error: 'GLM_API_KEY not configured',
+          message: 'GLM 모델을 사용하려면 GLM_API_KEY가 필요합니다.'
+        }, 500);
+      }
+    } else {
+      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+      endpoint = 'https://api.deepseek.com/v1/chat/completions';
+      requestModel = requestedModel || 'deepseek-chat';
+
+      if (!apiKey) {
+        return c.json({
+          success: false,
+          error: 'DEEPSEEK_API_KEY not configured',
+          message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.'
+        }, 500);
+      }
+    }
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: requestModel,
+        messages,
+        max_tokens: 800,
+        temperature: 0.7,
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('AI chat API error:', errorText);
+      return c.json({
+        success: false,
+        error: isGlmModel ? 'GLM API request failed' : 'DeepSeek API request failed',
+        details: errorText
+      }, response.status);
+    }
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || '';
+
+    return c.json({ success: true, reply });
+  } catch (error) {
+    console.error('AI chat error:', error);
+    return c.json({
+      success: false,
+      error: 'AI chat failed',
+      details: String(error)
+    }, 500);
+  }
+});
+
 // ==============================================
 // SAT Vocabulary Routes
 // ==============================================
