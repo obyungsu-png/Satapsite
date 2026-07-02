@@ -10,14 +10,14 @@ interface ChatMessage {
 }
 
 function getAIModel(): string {
-  return localStorage.getItem('selectedAIModel') || 'glm-4.7';
+  return localStorage.getItem('selectedAIModel') || 'SGR-2.0';
 }
 
 const GLM_ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions';
 
 const suggestedQuestions = [
-  '이 문제 유형의 핵심 포인트는 뭐야?',
+  '이 문제를 분석해줘',
   '이런 문제를 빨리 푸는 팁을 알려줘',
   '비슷한 유형의 문제를 더 연습하고 싶어',
   '오답 노트를 어떻게 작성해야 해?',
@@ -58,7 +58,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
   };
 
   const buildSystemPrompt = () => {
-    let base = '당신은 SAT 시험 전문 AI 튜터입니다. 한국인 학생이 SAT를 준비하는 것을 돕고 있습니다. 친절하고 명확하게 한국어로 답변해주세요. 답변은 간결하고 실용적으로 해주세요.';
+    let base = '당신은 SAT 시험 전문 AI 튜터입니다. 한국인 학생이 SAT를 준비하는 것을 돕고 있습니다. 친절하고 명확하게 한국어로 답변해주세요. 답변은 간결하고 실용적으로 해주세요.\n\n학생이 "이 문제를 분석해줘"라고 물으면, 다음 항목을 모두 포함한 종합 분석을 제공하세요:\n1. 문제 분석: 지문/문제의 핵심 내용과 출제 의도\n2. 핵심 포인트: 이 유형의 문제를 풀 때 반드시 체크해야 할 점\n3. 핵심 단어: 지문과 선택지에서 중요한 영어 단어와 뜻\n4. 오답 노트: 틀릴 수 있는 함정과 오답을 피하는 방법\n5. 풀이 전략: 빠르고 정확하게 푸는 팁\n\n질문이 분석을 요구하지 않더라도, 필요한 경우 위 항목 중 관련된 내용을 자연스럽게 섞어서 답변해주세요.';
 
     if (context?.question) {
       base += `\n\n현재 학생이 푸는 문제:\n- 문제: ${context.question}`;
@@ -87,7 +87,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
 
     try {
       const model = getAIModel();
-      const isGlm = model.startsWith('glm-');
+      const isGlm = model.toLowerCase().startsWith('glm-') || model.toLowerCase() === 'sgr-2.0';
       const endpoint = isGlm ? GLM_ENDPOINT : DEEPSEEK_ENDPOINT;
       const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
 
