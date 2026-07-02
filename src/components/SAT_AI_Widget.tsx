@@ -186,12 +186,12 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           height: 50px;
           padding: 0;
           border-radius: 14px;
-          border: 1px solid rgba(255, 255, 255, 0.46);
+          border: 1px solid rgba(255, 255, 255, 0.72);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 10px 24px rgba(84, 49, 184, 0.24), inset 0 1px 0 rgba(255,255,255,0.3);
+          box-shadow: 0 10px 24px rgba(96, 165, 250, 0.22), inset 0 1px 0 rgba(255,255,255,0.42);
           transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
           position: relative;
           overflow: hidden;
@@ -202,23 +202,19 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           inset: 4px 7px auto;
           height: 16px;
           border-radius: 999px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0));
+          background: linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0));
           pointer-events: none;
         }
         .sat-ai-action-btn:hover {
           transform: translateY(-2px) scale(1.03);
-          box-shadow: 0 14px 28px rgba(84, 49, 184, 0.34), 0 0 0 3px rgba(94, 234, 212, 0.16);
-          filter: saturate(1.05);
+          box-shadow: 0 14px 28px rgba(96, 165, 250, 0.3), 0 0 0 3px rgba(125, 211, 252, 0.18);
+          filter: saturate(1.04);
         }
-        .sat-ai-action-btn.practice {
-          background:
-            radial-gradient(circle at 70% 18%, rgba(94, 234, 212, 0.55) 0 9%, transparent 26%),
-            linear-gradient(145deg, #bda4ff 0%, #8f63f0 58%, #6f4ad8 100%);
-        }
+        .sat-ai-action-btn.practice,
         .sat-ai-action-btn.ai {
           background:
-            radial-gradient(circle at 68% 18%, rgba(94, 234, 212, 0.72) 0 8%, transparent 24%),
-            linear-gradient(145deg, #bca2ff 0%, #8d61ef 50%, #6846c7 100%);
+            radial-gradient(circle at 34% 24%, rgba(199, 218, 255, 0.9) 0 20%, transparent 42%),
+            linear-gradient(135deg, #a9c7ff 0%, #96d8f2 52%, #76dbe5 100%);
         }
         .sat-ai-action-btn svg {
           position: relative;
@@ -327,7 +323,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           transition: color 0.15s ease;
         }
         .sat-ai-suggestion:hover {
-          color: #6366f1;
+          color: #0f766e;
         }
       `}</style>
 
@@ -341,21 +337,12 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
             title="Practice"
           >
             <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-              <path d="M10 12.5C10 10.6 11.5 9 13.4 9H21.4V32.5H13.4C11.5 32.5 10 30.9 10 29V12.5Z" fill="url(#practiceLeftPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-              <path d="M22.6 9H30.6C32.5 9 34 10.6 34 12.5V29C34 30.9 32.5 32.5 30.6 32.5H22.6V9Z" fill="url(#practiceRightPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-              <path d="M21.9 10V33" stroke="rgba(255,255,255,0.76)" strokeWidth="1.6" strokeLinecap="round" />
-              <path d="M14.7 15.8H18.6M14.7 20H18.4M25.5 15.8H29.3M25.5 20H29.1" stroke="#261b61" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
-              <path d="M12.4 29.8C15 27.7 18.4 27.7 21.4 30.1C24.5 27.7 28 27.7 31.6 29.8" stroke="#5eead4" strokeWidth="1.6" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="practiceLeftPageGradient" x1="10" y1="9" x2="22" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ffffff" />
-                  <stop offset="1" stopColor="#dbeafe" />
-                </linearGradient>
-                <linearGradient id="practiceRightPageGradient" x1="22" y1="9" x2="35" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ecfeff" />
-                  <stop offset="1" stopColor="#bfdbfe" />
-                </linearGradient>
-              </defs>
+              <rect x="12" y="8.5" width="20" height="27" rx="5" fill="rgba(255,255,255,0.92)" stroke="rgba(255,255,255,0.95)" strokeWidth="2" />
+              <path d="M17 16.5L19 18.5L23 14.5" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M25.5 17H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
+              <path d="M17 25L19 27L23 23" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M25.5 25.5H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
+              <circle cx="22" cy="10" r="2.2" fill="#7dd3fc" />
             </svg>
           </button>
           <span className="sat-ai-action-label">Practice</span>
@@ -373,7 +360,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
               <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
               <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadGradient)" />
               <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorGradient)" stroke="#1f2530" strokeWidth="1.2" />
-              <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#57d3de" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
               <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
               <path d="M21 34.2H27" stroke="#8bb3bf" strokeWidth="1.1" strokeLinecap="round" />
@@ -410,7 +397,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                     <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
                     <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadMiniGradient)" />
                     <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorMiniGradient)" stroke="#1f2530" strokeWidth="1.2" />
-                    <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#57d3de" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
                     <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
                     <defs>
