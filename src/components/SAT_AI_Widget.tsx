@@ -192,12 +192,12 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           height: 50px;
           padding: 0;
           border-radius: 14px;
-          border: 1px solid rgba(255, 255, 255, 0.46);
+          border: 1px solid rgba(255, 255, 255, 0.7);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 10px 24px rgba(84, 49, 184, 0.24), inset 0 1px 0 rgba(255,255,255,0.3);
+          box-shadow: 0 10px 24px rgba(96, 165, 250, 0.22), inset 0 1px 0 rgba(255,255,255,0.4);
           transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
           position: relative;
           overflow: hidden;
@@ -208,23 +208,19 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           inset: 4px 7px auto;
           height: 16px;
           border-radius: 999px;
-          background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0));
+          background: linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0));
           pointer-events: none;
         }
         .sat-ai-action-btn:hover {
           transform: translateY(-2px) scale(1.03);
-          box-shadow: 0 14px 28px rgba(84, 49, 184, 0.34), 0 0 0 3px rgba(94, 234, 212, 0.16);
-          filter: saturate(1.05);
+          box-shadow: 0 14px 28px rgba(96, 165, 250, 0.3), 0 0 0 3px rgba(125, 211, 252, 0.18);
+          filter: saturate(1.04);
         }
-        .sat-ai-action-btn.practice {
-          background:
-            radial-gradient(circle at 70% 18%, rgba(94, 234, 212, 0.55) 0 9%, transparent 26%),
-            linear-gradient(145deg, #bda4ff 0%, #8f63f0 58%, #6f4ad8 100%);
-        }
+        .sat-ai-action-btn.practice,
         .sat-ai-action-btn.ai {
           background:
-            radial-gradient(circle at 68% 18%, rgba(94, 234, 212, 0.72) 0 8%, transparent 24%),
-            linear-gradient(145deg, #bca2ff 0%, #8d61ef 50%, #6846c7 100%);
+            radial-gradient(circle at 34% 24%, rgba(199, 218, 255, 0.95) 0 20%, transparent 42%),
+            linear-gradient(135deg, #a9c7ff 0%, #96d8f2 52%, #76dbe5 100%);
         }
         .sat-ai-action-btn svg {
           position: relative;
@@ -326,33 +322,35 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
 
       {/* Action buttons — Practice and AI Tutor (가로 정렬) */}
       <div className="sat-ai-action-row">
-        <div className="sat-ai-action-col">
-          <button
-            onClick={() => onPracticeClick?.()}
-            className="sat-ai-action-btn practice"
-            aria-label="Practice"
-            title="Practice"
-          >
-            <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-              <path d="M10 12.5C10 10.6 11.5 9 13.4 9H21.4V32.5H13.4C11.5 32.5 10 30.9 10 29V12.5Z" fill="url(#practiceLeftPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-              <path d="M22.6 9H30.6C32.5 9 34 10.6 34 12.5V29C34 30.9 32.5 32.5 30.6 32.5H22.6V9Z" fill="url(#practiceRightPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-              <path d="M21.9 10V33" stroke="rgba(255,255,255,0.76)" strokeWidth="1.6" strokeLinecap="round" />
-              <path d="M14.7 15.8H18.6M14.7 20H18.4M25.5 15.8H29.3M25.5 20H29.1" stroke="#261b61" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
-              <path d="M12.4 29.8C15 27.7 18.4 27.7 21.4 30.1C24.5 27.7 28 27.7 31.6 29.8" stroke="#5eead4" strokeWidth="1.6" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="practiceLeftPageGradient" x1="10" y1="9" x2="22" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ffffff" />
-                  <stop offset="1" stopColor="#dbeafe" />
-                </linearGradient>
-                <linearGradient id="practiceRightPageGradient" x1="22" y1="9" x2="35" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#ecfeff" />
-                  <stop offset="1" stopColor="#bfdbfe" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </button>
-          <span className="sat-ai-action-label">Practice</span>
-        </div>
+        {onPracticeClick && (
+          <div className="sat-ai-action-col">
+            <button
+              onClick={() => onPracticeClick?.()}
+              className="sat-ai-action-btn practice"
+              aria-label="Practice"
+              title="Practice"
+            >
+              <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+                <path d="M10 12.5C10 10.6 11.5 9 13.4 9H21.4V32.5H13.4C11.5 32.5 10 30.9 10 29V12.5Z" fill="url(#practiceLeftPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
+                <path d="M22.6 9H30.6C32.5 9 34 10.6 34 12.5V29C34 30.9 32.5 32.5 30.6 32.5H22.6V9Z" fill="url(#practiceRightPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
+                <path d="M21.9 10V33" stroke="rgba(255,255,255,0.76)" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M14.7 15.8H18.6M14.7 20H18.4M25.5 15.8H29.3M25.5 20H29.1" stroke="#261b61" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
+                <path d="M12.4 29.8C15 27.7 18.4 27.7 21.4 30.1C24.5 27.7 28 27.7 31.6 29.8" stroke="#5eead4" strokeWidth="1.6" strokeLinecap="round" />
+                <defs>
+                  <linearGradient id="practiceLeftPageGradient" x1="10" y1="9" x2="22" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ffffff" />
+                    <stop offset="1" stopColor="#dbeafe" />
+                  </linearGradient>
+                  <linearGradient id="practiceRightPageGradient" x1="22" y1="9" x2="35" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ecfeff" />
+                    <stop offset="1" stopColor="#bfdbfe" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </button>
+            <span className="sat-ai-action-label">Practice</span>
+          </div>
+        )}
         <div className="sat-ai-action-col">
           <button
             onClick={() => setIsOpen(true)}
