@@ -286,6 +286,7 @@ export default function App() {
   const [isPracticeReview, setIsPracticeReview] = useState(false); // New state for "시작하기(복습용)"
   const [showSimilarOverlay, setShowSimilarOverlay] = useState(false);
   const [similarQuestions, setSimilarQuestions] = useState<any[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
   const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
   const [similarProblemAnswers, setSimilarProblemAnswers] = useState<Record<number, string>>({});
   const [showSimilarResults, setShowSimilarResults] = useState<Record<number, boolean>>({});
@@ -1393,50 +1394,76 @@ export default function App() {
                   onShowSimilarProblems={() => {
                     const typeLabel = currentQuestion.category || currentQuestion.trainingType || 'Central Ideas and Details';
                     const diffLabel = currentQuestion.difficulty || '중간';
-                    const generated = [
-                      {
-                        id: 1,
-                        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim, contrasts it with a weaker alternative, and supports the stronger interpretation with evidence.`,
-                        question: 'Which choice best states the main idea of the passage?',
-                        choices: [
-                          { id: 'a', text: 'The author rejects the need for evidence in analysis.' },
-                          { id: 'b', text: 'The author supports a stronger interpretation with evidence.' },
-                          { id: 'c', text: 'The passage argues that all interpretations are equally valid.' },
-                          { id: 'd', text: 'The passage focuses mainly on a historical timeline.' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                      {
-                        id: 2,
-                        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second explanation better matches the data.`,
-                        question: 'Based on the passage, which statement is most accurate?',
-                        choices: [
-                          { id: 'a', text: 'The first explanation is fully confirmed by the data.' },
-                          { id: 'b', text: 'Neither explanation relates to the evidence presented.' },
-                          { id: 'c', text: 'The second explanation is better supported by the evidence.' },
-                          { id: 'd', text: 'The passage recommends ignoring the available data.' },
-                        ],
-                        correctAnswer: 'c',
-                      },
-                      {
-                        id: 3,
-                        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression.`,
-                        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
-                        choices: [
-                          { id: 'a', text: 'nevertheless' },
-                          { id: 'b', text: 'furthermore' },
-                          { id: 'c', text: 'however' },
-                          { id: 'd', text: 'instead' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                    ];
-                    setSimilarQuestions(generated);
-                    setSimilarProblemIndex(0);
-                    setSimilarProblemAnswers({});
-                    setShowSimilarResults({});
-                    setSimilarFullscreenTab(null);
-                    setShowSimilarOverlay(true);
+                    const subject = currentTestInfo?.type === 'Math' ? 'Math' : '독해문법';
+
+                    const sameTypeQs = questions.filter((q: any) => {
+                      if (q.id === currentQuestion.id) return false;
+                      const qType = q.category || q.trainingType || '';
+                      return qType.toLowerCase().includes(typeLabel.toLowerCase()) || typeLabel.toLowerCase().includes(qType.toLowerCase());
+                    }).slice(0, 3);
+
+                    if (sameTypeQs.length >= 3) {
+                      const mapped = sameTypeQs.map((q: any, idx: number) => ({
+                        id: idx + 1,
+                        passage: q.passage || '',
+                        question: q.question || '',
+                        choices: q.choices || [],
+                        correctAnswer: q.correctAnswer || 'a',
+                      }));
+                      setSimilarQuestions(mapped);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+                      setShowSimilarOverlay(true);
+                    } else {
+                      setShowSimilarOverlay(true);
+                      setSimilarQuestions([]);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+
+                      const model = localStorage.getItem('selectedAIModel') || 'glm-4.7';
+                      const isGlm = model.startsWith('glm-');
+                      const endpoint = isGlm
+                        ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+                        : 'https://api.deepseek.com/v1/chat/completions';
+                      const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
+
+                      fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({
+                          model,
+                          messages: [
+                            { role: 'system', content: '당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형과 난이도를 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요.' },
+                            { role: 'user', content: `문제 유형: ${typeLabel}\n과목: ${subject}\n난이도: ${diffLabel}\n\n현재 문제: ${currentQuestion.question}\n\n위 유형과 비슷한 SAT 연습 문제 3개를 JSON 배열로 만들어주세요.` }
+                          ],
+                          max_tokens: 2000,
+                          temperature: 0.8,
+                        })
+                      })
+                      .then(r => r.json())
+                      .then(data => {
+                        try {
+                          const content = data.choices?.[0]?.message?.content || '';
+                          const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                          const parsed = JSON.parse(cleaned);
+                          const valid = Array.isArray(parsed)
+                            ? parsed.slice(0, 3).map((q: any, i: number) => ({
+                                id: i + 1, passage: q.passage || '', question: q.question || '',
+                                choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
+                                  id: String.fromCharCode(97 + ci), text: typeof c === 'string' ? c : c.text || ''
+                                })) : [],
+                                correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
+                              }))
+                            : [];
+                          if (valid.length > 0) setSimilarQuestions(valid);
+                        } catch (e) { console.error('Parse error:', e); }
+                      })
+                      .catch(err => console.error('Fetch error:', err));
+                    }
                   }}
                 />
               </div>
@@ -1465,50 +1492,87 @@ export default function App() {
                 onShowSimilarProblems={() => {
                     const typeLabel = currentQuestion.category || currentQuestion.trainingType || 'Central Ideas and Details';
                     const diffLabel = currentQuestion.difficulty || '중간';
-                    const generated = [
-                      {
-                        id: 1,
-                        passage: `Practice passage 1 for ${typeLabel} at ${diffLabel} difficulty. The author introduces a central claim and supports the stronger interpretation with evidence.`,
-                        question: 'Which choice best states the main idea of the passage?',
-                        choices: [
-                          { id: 'a', text: 'The author rejects the need for evidence in analysis.' },
-                          { id: 'b', text: 'The author supports a stronger interpretation with evidence.' },
-                          { id: 'c', text: 'The passage argues that all interpretations are equally valid.' },
-                          { id: 'd', text: 'The passage focuses mainly on a historical timeline.' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                      {
-                        id: 2,
-                        passage: `Practice passage 2 for ${typeLabel} at ${diffLabel} difficulty. A researcher compares two explanations and concludes that the second better matches the data.`,
-                        question: 'Based on the passage, which statement is most accurate?',
-                        choices: [
-                          { id: 'a', text: 'The first explanation is fully confirmed by the data.' },
-                          { id: 'b', text: 'Neither explanation relates to the evidence presented.' },
-                          { id: 'c', text: 'The second explanation is better supported by the evidence.' },
-                          { id: 'd', text: 'The passage recommends ignoring the available data.' },
-                        ],
-                        correctAnswer: 'c',
-                      },
-                      {
-                        id: 3,
-                        passage: `Practice passage 3 for ${typeLabel} at ${diffLabel} difficulty. The final sentence requires a transition that strengthens the logical progression.`,
-                        question: 'Which of the following best completes the text with the most logical and precise word or phrase?',
-                        choices: [
-                          { id: 'a', text: 'nevertheless' },
-                          { id: 'b', text: 'furthermore' },
-                          { id: 'c', text: 'however' },
-                          { id: 'd', text: 'instead' },
-                        ],
-                        correctAnswer: 'b',
-                      },
-                    ];
-                    setSimilarQuestions(generated);
-                    setSimilarProblemIndex(0);
-                    setSimilarProblemAnswers({});
-                    setShowSimilarResults({});
-                    setSimilarFullscreenTab(null);
-                    setShowSimilarOverlay(true);
+                    const subject = currentTestInfo?.type === 'Math' ? 'Math' : '독해문법';
+
+                    // Filter questions from the current test that share the same category/type (excluding current question)
+                    const sameTypeQs = questions.filter((q: any) => {
+                      if (q.id === currentQuestion.id) return false;
+                      const qType = q.category || q.trainingType || '';
+                      return qType.toLowerCase().includes(typeLabel.toLowerCase()) || typeLabel.toLowerCase().includes(qType.toLowerCase());
+                    }).slice(0, 3);
+
+                    if (sameTypeQs.length >= 3) {
+                      const mapped = sameTypeQs.map((q: any, idx: number) => ({
+                        id: idx + 1,
+                        passage: q.passage || '',
+                        question: q.question || '',
+                        choices: q.choices || [],
+                        correctAnswer: q.correctAnswer || 'a',
+                      }));
+                      setSimilarQuestions(mapped);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+                      setShowSimilarOverlay(true);
+                    } else {
+                      // Generate via AI if not enough matching questions
+                      setShowSimilarOverlay(true);
+                      setSimilarQuestions([]);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+
+                      const model = localStorage.getItem('selectedAIModel') || 'glm-4.7';
+                      const isGlm = model.startsWith('glm-');
+                      const endpoint = isGlm
+                        ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+                        : 'https://api.deepseek.com/v1/chat/completions';
+                      const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
+
+                      fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({
+                          model,
+                          messages: [
+                            { role: 'system', content: `당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형과 난이도를 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.` },
+                            { role: 'user', content: `문제 유형: ${typeLabel}\n과목: ${subject}\n난이도: ${diffLabel}\n\n현재 문제: ${currentQuestion.question}\n\n위 유형과 비슷한 SAT 연습 문제 3개를 JSON 배열로 만들어주세요. 형식: [{"id":1,"passage":"...","question":"...","choices":[{"id":"a","text":"..."},{"id":"b","text":"..."},{"id":"c","text":"..."},{"id":"d","text":"..."}],"correctAnswer":"b"}]` }
+                          ],
+                          max_tokens: 2000,
+                          temperature: 0.8,
+                        })
+                      })
+                      .then(r => r.json())
+                      .then(data => {
+                        try {
+                          const content = data.choices?.[0]?.message?.content || '';
+                          const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                          const parsed = JSON.parse(cleaned);
+                          const valid = Array.isArray(parsed)
+                            ? parsed.slice(0, 3).map((q: any, i: number) => ({
+                                id: i + 1,
+                                passage: q.passage || '',
+                                question: q.question || '',
+                                choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
+                                  id: String.fromCharCode(97 + ci),
+                                  text: typeof c === 'string' ? c : c.text || ''
+                                })) : [],
+                                correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
+                              }))
+                            : [];
+                          if (valid.length > 0) {
+                            setSimilarQuestions(valid);
+                          }
+                        } catch (e) {
+                          console.error('Failed to parse AI similar questions:', e);
+                        }
+                      })
+                      .catch(err => {
+                        console.error('AI similar questions fetch error:', err);
+                      });
+                    }
                 }}
               />
             </div>
@@ -1554,7 +1618,22 @@ export default function App() {
           />
         )}
 
-        {/* Similar Problems Overlay - Exam-style layout */}
+        {/* Similar Problems Overlay */}
+        {showSimilarOverlay && (() => {
+          // Loading state while AI generates questions
+          if (similarQuestions.length === 0) {
+            return (
+              <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(15,23,42,0.35)' }}>
+                <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  <p className="text-gray-700 font-semibold text-base">AI가 비슷한 유형의 문제를 생성 중...</p>
+                  <p className="text-gray-400 text-sm">잠시만 기다려주세요</p>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
         {showSimilarOverlay && similarQuestions.length > 0 && (() => {
           const simQ = similarQuestions[similarProblemIndex];
           const hasAnswered = showSimilarResults[similarProblemIndex];

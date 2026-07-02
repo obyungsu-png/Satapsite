@@ -548,15 +548,38 @@ app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
 // AI Analysis endpoint
 app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   try {
-    const { type, question, passage, choices } = await c.req.json();
-    
-    const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    if (!deepseekApiKey) {
-      return c.json({ 
-        success: false, 
-        error: 'DEEPSEEK_API_KEY not configured',
-        message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.' 
-      }, 500);
+    const { type, question, passage, choices, model } = await c.req.json();
+    const requestedModel = typeof model === 'string' && model.trim() ? model : 'deepseek-chat';
+    const isGlmModel = requestedModel.startsWith('glm-');
+
+    let apiKey: string | undefined;
+    let endpoint: string;
+    let requestModel: string;
+
+    if (isGlmModel) {
+      apiKey = Deno.env.get('GLM_API_KEY');
+      endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+      requestModel = requestedModel;
+
+      if (!apiKey) {
+        return c.json({
+          success: false,
+          error: 'GLM_API_KEY not configured',
+          message: 'GLM 모델을 사용하려면 GLM_API_KEY가 필요합니다.'
+        }, 500);
+      }
+    } else {
+      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+      endpoint = 'https://api.deepseek.com/v1/chat/completions';
+      requestModel = requestedModel || 'deepseek-chat';
+
+      if (!apiKey) {
+        return c.json({
+          success: false,
+          error: 'DEEPSEEK_API_KEY not configured',
+          message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.'
+        }, 500);
+      }
     }
 
     // Build prompt based on analysis type
@@ -578,15 +601,15 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
         return c.json({ success: false, error: 'Invalid analysis type' }, 400);
     }
 
-    // Call DeepSeek API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    // Call AI API
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${deepseekApiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: requestModel,
         messages: [
           {
             role: 'system',
@@ -604,11 +627,11 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
-      return c.json({ 
-        success: false, 
-        error: 'DeepSeek API request failed',
-        details: errorText 
+      console.error('AI API error:', errorText);
+      return c.json({
+        success: false,
+        error: isGlmModel ? 'GLM API request failed' : 'DeepSeek API request failed',
+        details: errorText
       }, response.status);
     }
 

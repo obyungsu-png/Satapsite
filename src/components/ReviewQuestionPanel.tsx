@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { SAT_AI_Widget } from "./SAT_AI_Widget";
 
 interface ReviewQuestionPanelProps {
   question: any;
@@ -181,6 +182,18 @@ export function ReviewQuestionPanel({
           </Button>
         </div>
       </div>
+
+      {/* SAT AI Widget - FAB + Chat Panel */}
+      <SAT_AI_Widget
+        context={{
+          question: question.text,
+          passage: question.passage,
+          choices: question.options?.map((o: any) => o.text || (typeof o === 'string' ? o : String(o))) || [],
+          correctAnswer,
+          userAnswer: selectedAnswer,
+          isCorrect: selectedAnswer?.toLowerCase() === correctAnswer?.toLowerCase(),
+        }}
+      />
     </div>
   );
 }

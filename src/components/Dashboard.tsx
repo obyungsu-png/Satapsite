@@ -4174,6 +4174,56 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   )}
                 </div>
               </div>
+            ) : uploadTab === '관리자모드' ? (
+              <div className="space-y-6">
+                {/* AI 모델 설정 */}
+                <div className="bg-white rounded-lg border border-gray-200 p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Zap className="h-6 w-6 text-indigo-500" />
+                    <h2 className="text-2xl font-bold text-gray-900">AI 모델 설정</h2>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-6">
+                    문제 풀이 시 사용할 AI 모델을 선택하세요. 선택한 모델은 AI 분석 기능에서 자동으로 사용됩니다.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { value: 'deepseek-chat', label: 'DeepSeek', desc: 'DeepSeek Chat 모델', color: 'blue' },
+                      { value: 'glm-4.7', label: 'GLM 4.7', desc: 'Zhipu AI GLM 4.7 모델', color: 'green' },
+                      { value: 'glm-5.2', label: 'GLM 5.2', desc: 'Zhipu AI GLM 5.2 모델', color: 'purple' }
+                    ].map((model) => {
+                      const isSelected = localStorage.getItem('selectedAIModel') === model.value;
+                      return (
+                        <button
+                          key={model.value}
+                          onClick={() => {
+                            localStorage.setItem('selectedAIModel', model.value);
+                            toast.success(`AI 모델이 ${model.label}(으)로 변경되었습니다.`);
+                            setUploadTab(prev => prev);
+                          }}
+                          className={`p-4 rounded-xl border-2 transition-all text-left ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-bold text-gray-900">{model.label}</span>
+                            {isSelected && (
+                              <Check className="h-5 w-5 text-indigo-500" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">{model.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      💡 현재 선택된 모델: <strong>{localStorage.getItem('selectedAIModel') || 'glm-4.7'}</strong> — 문제 풀이 화면의 AI 분석에서 이 모델이 사용됩니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Upload Form */}

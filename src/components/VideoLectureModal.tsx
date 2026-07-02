@@ -1,9 +1,21 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { X, Zap, BookOpen, Target, Languages, CheckCircle, Sparkles, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner@2.0.3";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+
+const AI_MODEL_OPTIONS = [
+  { value: 'deepseek-chat', label: 'DeepSeek' },
+  { value: 'glm-4.7', label: 'GLM 4.7' },
+  { value: 'glm-5.2', label: 'GLM 5.2' }
+] as const;
+
+type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
+
+function getStoredAIModel(): AIModel {
+  return (localStorage.getItem('selectedAIModel') as AIModel) || 'glm-4.7';
+}
 
 interface VideoLectureModalProps {
   isOpen: boolean;
@@ -17,6 +29,11 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
   const [activeAITab, setActiveAITab] = useState<'해석' | '분석' | '단어' | '정답'>('해석');
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiResponses, setAIResponses] = useState<Record<string, string>>({});
+  const [selectedModel, setSelectedModel] = useState<AIModel>(getStoredAIModel);
+
+  useEffect(() => {
+    setSelectedModel(getStoredAIModel());
+  }, [isOpen]);
 
   // AI 기능 순서: 해석 → 분석 → 단어 → 정답
   const aiTabs = [
@@ -39,6 +56,7 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
         },
         body: JSON.stringify({
           type,
+          model: selectedModel,
           question: currentQuestion?.question || '',
           passage: currentQuestion?.passage || '',
           choices: currentQuestion?.choices || []
@@ -56,7 +74,7 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
           ...prev,
           [type]: data.response
         }));
-        toast.success(`${type} AI 분석 완료!`);
+        toast.success(`${type} AI 분석 완료! (${AI_MODEL_OPTIONS.find((option) => option.value === selectedModel)?.label})`);
       } else {
         throw new Error(data.error || 'AI 분석 실패');
       }
@@ -65,10 +83,10 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
       
       // Fallback to mock response for demo
       const mockResponses: Record<string, string> = {
-        '해석': `**지문 해석**\n\n이 지문은 [주제]에 대해 설명하고 있습니다.\n\n주요 내용:\n- 첫 번째 단락: ...\n- 두 번째 단락: ...\n- 핵심 논지: ...\n\n(DeepSeek API 연결 필요 - 현재는 데모 모드)`,
-        '분석': `**문제 분석**\n\n이 문제는 [유형] 문제입니다.\n\n핵심 포인트:\n✓ 출제 의도: ...\n✓ 해결 전략: ...\n✓ 주의사항: ...\n\n(DeepSeek API 연결 필요 - 현재는 데모 모드)`,
-        '단어': `**핵심 단어**\n\n📚 중요 어휘:\n\n1. **agglomeration** - 집적, 집합\n   예문: urban agglomeration economies\n\n2. **foster** - 촉진하다, 육성하다\n   예문: foster innovation\n\n(DeepSeek API 연결 필요 - 현재는 데모 모드)`,
-        '정답': `**정답 해설**\n\n✅ 정답: B\n\n선택지 분석:\nA. ❌ [이유]\nB. ✅ [정답 근거]\nC. ❌ [이유]\nD. ❌ [이유]\n\n(DeepSeek API 연결 필요 - 현재는 데모 모드)`
+        '해석': `**지문 해석**\n\n이 지문은 [주제]에 대해 설명하고 있습니다.\n\n주요 내용:\n- 첫 번째 단락: ...\n- 두 번째 단락: ...\n- 핵심 논지: ...\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
+        '분석': `**문제 분석**\n\n이 문제는 [유형] 문제입니다.\n\n핵심 포인트:\n✓ 출제 의도: ...\n✓ 해결 전략: ...\n✓ 주의사항: ...\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
+        '단어': `**핵심 단어**\n\n📚 중요 어휘:\n\n1. **agglomeration** - 집적, 집합\n   예문: urban agglomeration economies\n\n2. **foster** - 촉진하다, 육성하다\n   예문: foster innovation\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
+        '정답': `**정답 해설**\n\n✅ 정답: B\n\n선택지 분석:\nA. ❌ [이유]\nB. ✅ [정답 근거]\nC. ❌ [이유]\nD. ❌ [이유]\n\n(AI API 연결 필요 - 현재는 데모 모드)`
       };
       
       setAIResponses(prev => ({
@@ -76,7 +94,7 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
         [type]: mockResponses[type] || '내용을 생성 중입니다...'
       }));
       
-      toast.info('데모 모드로 실행 중입니다. DeepSeek API 연결이 필요합니다.');
+      toast.info('데모 모드로 실행 중입니다. AI API 연결이 필요합니다.');
     } finally {
       setIsAILoading(false);
     }
