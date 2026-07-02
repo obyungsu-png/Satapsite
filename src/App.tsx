@@ -22,11 +22,12 @@ import { Button } from "./components/ui/button";
 import { AdBanner } from "./components/AdBanner";
 import { toast } from "sonner@2.0.3";
 import { Toaster } from "./components/ui/sonner";
-import { X, Bookmark, ArrowLeft, Globe, Search as SearchIcon, BookOpen, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Bookmark, ArrowLeft, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Download } from "lucide-react";
 import { BluebookExpandButton } from "./components/BluebookExpandButton";
 import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
 import { MobileExamTabs } from "./components/MobileExamTabs";
+import { SAT_AI_Widget } from "./components/SAT_AI_Widget";
 import { mathQuestions } from "./mathQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
 import expandIconsSprite from "figma:asset/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
@@ -1795,54 +1796,17 @@ export default function App() {
                       </div>
                     )}
 
-                    {/* 하단 탭 (해석/해설/단어) */}
-                    <div className="border-t border-gray-200 pt-5">
-                      <div className="flex gap-2 mb-4">
-                        {[
-                          { key: 'translation', icon: Globe, label: '해석' },
-                          { key: 'analysis', icon: SearchIcon, label: '해설' },
-                          { key: 'vocabulary', icon: BookOpen, label: '단어' },
-                        ].map(tab => (
-                          <button
-                            key={tab.key}
-                            onClick={() => setSimilarFullscreenTab(similarFullscreenTab === tab.key ? null : tab.key)}
-                            className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-1.5 ${
-                              similarFullscreenTab === tab.key
-                                ? 'bg-gray-100 text-gray-900 border border-gray-300 font-semibold'
-                                : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
-                            }`}
-                          >
-                            <tab.icon className="h-3.5 w-3.5" />
-                            {tab.label}
-                          </button>
-                        ))}
-                      </div>
-                      {similarFullscreenTab && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 min-h-[120px] max-h-[260px] overflow-y-auto">
-                          {similarFullscreenTab === 'translation' ? (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3">이 문제는 문맥에 맞는 적절한 단어를 선택하는 문제입니다.</p>
-                              <p>정답은 <strong>{simQ.correctAnswer.toUpperCase()}</strong>입니다.</p>
-                            </div>
-                          ) : similarFullscreenTab === 'analysis' ? (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3"><strong>문제 해설:</strong></p>
-                              <p>정답은 <strong>{simQ.correctAnswer.toUpperCase()}</strong>입니다. 전체 문맥을 파악하고 분석해야 합니다.</p>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-gray-700 leading-relaxed">
-                              <p className="mb-3 font-semibold">핵심 어휘:</p>
-                              <ul className="space-y-2 list-disc list-inside">
-                                <li><strong>compelling</strong> - 설득력 있는</li>
-                                <li><strong>acknowledge</strong> - 인정하다</li>
-                                <li><strong>validity</strong> - 타당성</li>
-                                <li><strong>ambiguous</strong> - 모호한</li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    {/* AI 위젯 */}
+                    <SAT_AI_Widget
+                      context={{
+                        question: simQ.question,
+                        passage: simQ.passage,
+                        choices: simQ.choices?.map((c: any) => c.text || c),
+                        correctAnswer: simQ.correctAnswer,
+                        userAnswer: similarProblemAnswers[similarProblemIndex],
+                        isCorrect: hasAnswered ? isCorrectAnswer : undefined,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
