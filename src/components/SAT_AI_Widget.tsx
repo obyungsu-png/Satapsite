@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Send, Bot, User, BookOpen } from 'lucide-react';
+import { X, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -192,23 +192,43 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
           height: 50px;
           padding: 0;
           border-radius: 14px;
-          border: none;
+          border: 1px solid rgba(255, 255, 255, 0.46);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          box-shadow: 0 10px 24px rgba(84, 49, 184, 0.24), inset 0 1px 0 rgba(255,255,255,0.3);
+          transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+          position: relative;
+          overflow: hidden;
+        }
+        .sat-ai-action-btn::before {
+          content: '';
+          position: absolute;
+          inset: 4px 7px auto;
+          height: 16px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0));
+          pointer-events: none;
         }
         .sat-ai-action-btn:hover {
           transform: translateY(-2px) scale(1.03);
-          box-shadow: 0 8px 20px rgba(139, 92, 246, 0.35);
+          box-shadow: 0 14px 28px rgba(84, 49, 184, 0.34), 0 0 0 3px rgba(94, 234, 212, 0.16);
+          filter: saturate(1.05);
         }
         .sat-ai-action-btn.practice {
-          background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 100%);
+          background:
+            radial-gradient(circle at 70% 18%, rgba(94, 234, 212, 0.55) 0 9%, transparent 26%),
+            linear-gradient(145deg, #bda4ff 0%, #8f63f0 58%, #6f4ad8 100%);
         }
         .sat-ai-action-btn.ai {
-          background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #8b5cf6 100%);
+          background:
+            radial-gradient(circle at 68% 18%, rgba(94, 234, 212, 0.72) 0 8%, transparent 24%),
+            linear-gradient(145deg, #bca2ff 0%, #8d61ef 50%, #6846c7 100%);
+        }
+        .sat-ai-action-btn svg {
+          position: relative;
+          z-index: 1;
         }
         .sat-ai-action-label {
           font-size: 10px;
@@ -313,7 +333,23 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
             aria-label="Practice"
             title="Practice"
           >
-            <BookOpen className="w-4 h-4" style={{ color: '#ffffff' }} />
+            <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+              <path d="M10 12.5C10 10.6 11.5 9 13.4 9H21.4V32.5H13.4C11.5 32.5 10 30.9 10 29V12.5Z" fill="url(#practiceLeftPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
+              <path d="M22.6 9H30.6C32.5 9 34 10.6 34 12.5V29C34 30.9 32.5 32.5 30.6 32.5H22.6V9Z" fill="url(#practiceRightPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
+              <path d="M21.9 10V33" stroke="rgba(255,255,255,0.76)" strokeWidth="1.6" strokeLinecap="round" />
+              <path d="M14.7 15.8H18.6M14.7 20H18.4M25.5 15.8H29.3M25.5 20H29.1" stroke="#261b61" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
+              <path d="M12.4 29.8C15 27.7 18.4 27.7 21.4 30.1C24.5 27.7 28 27.7 31.6 29.8" stroke="#5eead4" strokeWidth="1.6" strokeLinecap="round" />
+              <defs>
+                <linearGradient id="practiceLeftPageGradient" x1="10" y1="9" x2="22" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#ffffff" />
+                  <stop offset="1" stopColor="#dbeafe" />
+                </linearGradient>
+                <linearGradient id="practiceRightPageGradient" x1="22" y1="9" x2="35" y2="32" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#ecfeff" />
+                  <stop offset="1" stopColor="#bfdbfe" />
+                </linearGradient>
+              </defs>
+            </svg>
           </button>
           <span className="sat-ai-action-label">Practice</span>
         </div>
@@ -324,27 +360,29 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
             aria-label="AI 튜터"
             title="AI 튜터"
           >
-            <svg width="34" height="34" viewBox="0 0 40 42" fill="none">
-              {/* Left ear */}
-              <path d="M6 16 L8 4 L14 14" fill="#9ca3af" stroke="#6b7280" strokeWidth="1"/>
-              <path d="M8 13 L9 6 L12 12" fill="#f3e8ff"/>
-              {/* Right ear */}
-              <path d="M26 14 L32 4 L34 16" fill="#9ca3af" stroke="#6b7280" strokeWidth="1"/>
-              <path d="M28 12 L31 6 L32 13" fill="#f3e8ff"/>
-              {/* Head base */}
-              <rect x="5" y="11" width="30" height="24" rx="10" fill="#d1d5db" stroke="#9ca3af" strokeWidth="1.2"/>
-              {/* Screen face */}
-              <rect x="9" y="15" width="22" height="15" rx="5" fill="#111827"/>
-              {/* Left eye - > shape glowing purple */}
-              <path d="M13 20 L17 22.5 L13 25" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="13.5" cy="20" r="1" fill="#c4b5fd"/>
-              {/* Right eye - dash glowing cyan */}
-              <line x1="23" y1="23" x2="29" y2="23" stroke="#67e8f9" strokeWidth="2.5" strokeLinecap="round"/>
-              <circle cx="29" cy="23" r="1" fill="#a5f3fc"/>
-              {/* Body / shoulders */}
-              <ellipse cx="20" cy="37" rx="10" ry="5" fill="#d1d5db" stroke="#9ca3af" strokeWidth="1"/>
-              {/* Body screen detail */}
-              <rect x="16" y="35" width="8" height="3" rx="1.5" fill="#9ca3af"/>
+            <svg width="38" height="38" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M13.5 16.5L10.3 7.5L17.9 13.5" fill="#c8d2df" stroke="#6f7684" strokeWidth="1.8" strokeLinejoin="round" />
+              <path d="M34.5 16.5L37.7 7.5L30.1 13.5" fill="#c8d2df" stroke="#6f7684" strokeWidth="1.8" strokeLinejoin="round" />
+              <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
+              <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadGradient)" />
+              <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorGradient)" stroke="#1f2530" strokeWidth="1.2" />
+              <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
+              <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
+              <path d="M21 34.2H27" stroke="#8bb3bf" strokeWidth="1.1" strokeLinecap="round" />
+              <circle cx="12.7" cy="24" r="2.4" fill="#8f9baa" />
+              <circle cx="35.3" cy="24" r="2.4" fill="#8f9baa" />
+              <defs>
+                <linearGradient id="aiBotHeadGradient" x1="14" y1="11" x2="32" y2="37" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#f8fbff" />
+                  <stop offset="0.52" stopColor="#b7c4d1" />
+                  <stop offset="1" stopColor="#7c8796" />
+                </linearGradient>
+                <linearGradient id="aiBotVisorGradient" x1="12" y1="17" x2="36" y2="29" gradientUnits="userSpaceOnUse">
+                  <stop stopColor="#101522" />
+                  <stop offset="1" stopColor="#28313f" />
+                </linearGradient>
+              </defs>
             </svg>
           </button>
           <span className="sat-ai-action-label">AI 튜터</span>
@@ -359,26 +397,26 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
             <div className="flex items-center justify-between px-5 py-4 border-b">
               <div className="flex items-center gap-2">
                 <span className="sat-ai-fab" style={{ width: 36, height: 36 }}>
-                  {/* Mini cute robot cat avatar */}
-                  <svg width="28" height="28" viewBox="0 0 40 42" fill="none">
-                    {/* Left ear */}
-                    <path d="M6 16 L8 4 L14 14" fill="#9ca3af" stroke="#6b7280" strokeWidth="1"/>
-                    <path d="M8 13 L9 6 L12 12" fill="#f3e8ff"/>
-                    {/* Right ear */}
-                    <path d="M26 14 L32 4 L34 16" fill="#9ca3af" stroke="#6b7280" strokeWidth="1"/>
-                    <path d="M28 12 L31 6 L32 13" fill="#f3e8ff"/>
-                    {/* Head base */}
-                    <rect x="5" y="11" width="30" height="24" rx="10" fill="#d1d5db" stroke="#9ca3af" strokeWidth="1.2"/>
-                    {/* Screen face */}
-                    <rect x="9" y="15" width="22" height="15" rx="5" fill="#111827"/>
-                    {/* Left eye */}
-                    <path d="M13 20 L17 22.5 L13 25" fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <circle cx="13.5" cy="20" r="1" fill="#c4b5fd"/>
-                    {/* Right eye */}
-                    <line x1="23" y1="23" x2="29" y2="23" stroke="#67e8f9" strokeWidth="2.5" strokeLinecap="round"/>
-                    <circle cx="29" cy="23" r="1" fill="#a5f3fc"/>
-                    {/* Body */}
-                    <ellipse cx="20" cy="37" rx="10" ry="5" fill="#d1d5db" stroke="#9ca3af" strokeWidth="1"/>
+                  <svg width="30" height="30" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <path d="M13.5 16.5L10.3 7.5L17.9 13.5" fill="#c8d2df" stroke="#6f7684" strokeWidth="1.8" strokeLinejoin="round" />
+                    <path d="M34.5 16.5L37.7 7.5L30.1 13.5" fill="#c8d2df" stroke="#6f7684" strokeWidth="1.8" strokeLinejoin="round" />
+                    <path d="M13.6 30.2C13.2 30.8 12.6 32 12.6 33.7C12.6 37.5 17.1 39.9 24 39.9C30.9 39.9 35.4 37.5 35.4 33.7C35.4 32 34.8 30.8 34.4 30.2" fill="#b9c5d2" />
+                    <rect x="9.5" y="12" width="29" height="23" rx="9" fill="url(#aiBotHeadMiniGradient)" />
+                    <rect x="12.4" y="17" width="23.2" height="12.2" rx="5.3" fill="url(#aiBotVisorMiniGradient)" stroke="#1f2530" strokeWidth="1.2" />
+                    <path d="M18.2 20.5L21.1 23.3L18.2 26.1" stroke="#7c3dff" strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M25.1 23.3H30.2" stroke="#5eead4" strokeWidth="2.8" strokeLinecap="round" />
+                    <ellipse cx="24" cy="34.2" rx="7.4" ry="2.8" fill="#ecfeff" stroke="#7f8b99" strokeWidth="1.4" />
+                    <defs>
+                      <linearGradient id="aiBotHeadMiniGradient" x1="14" y1="11" x2="32" y2="37" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#f8fbff" />
+                        <stop offset="0.52" stopColor="#b7c4d1" />
+                        <stop offset="1" stopColor="#7c8796" />
+                      </linearGradient>
+                      <linearGradient id="aiBotVisorMiniGradient" x1="12" y1="17" x2="36" y2="29" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#101522" />
+                        <stop offset="1" stopColor="#28313f" />
+                      </linearGradient>
+                    </defs>
                   </svg>
                 </span>
                 <span className="font-bold text-gray-800">SAT AI 튜터</span>
