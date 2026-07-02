@@ -331,19 +331,19 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
               title="Practice"
             >
               <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-                <path d="M10 12.5C10 10.6 11.5 9 13.4 9H21.4V32.5H13.4C11.5 32.5 10 30.9 10 29V12.5Z" fill="url(#practiceLeftPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-                <path d="M22.6 9H30.6C32.5 9 34 10.6 34 12.5V29C34 30.9 32.5 32.5 30.6 32.5H22.6V9Z" fill="url(#practiceRightPageGradient)" stroke="rgba(255,255,255,0.9)" strokeWidth="2.2" />
-                <path d="M21.9 10V33" stroke="rgba(255,255,255,0.76)" strokeWidth="1.6" strokeLinecap="round" />
-                <path d="M14.7 15.8H18.6M14.7 20H18.4M25.5 15.8H29.3M25.5 20H29.1" stroke="#261b61" strokeWidth="1.3" strokeLinecap="round" opacity="0.55" />
-                <path d="M12.4 29.8C15 27.7 18.4 27.7 21.4 30.1C24.5 27.7 28 27.7 31.6 29.8" stroke="#5eead4" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M11 13.5C11 11.9 12.3 10.6 13.9 10.6H21.5V32.4C18.7 30.7 15.5 30.7 12.6 32.1C11.8 32.5 11 31.9 11 31V13.5Z" fill="url(#practicePageLeftGradient)" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M22.5 10.6H30.1C31.7 10.6 33 11.9 33 13.5V31C33 31.9 32.2 32.5 31.4 32.1C28.5 30.7 25.3 30.7 22.5 32.4V10.6Z" fill="url(#practicePageRightGradient)" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M16 16.6H19.2M16 21.2H19.2M24.8 16.6H28M24.8 21.2H28" stroke="#8aa0c0" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M13.6 29.4C16 28.5 18.7 28.8 21.5 30.6C24.3 28.8 27 28.5 30.4 29.4" stroke="#3cc7bd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21.5 11.5V31.8" stroke="#c7d6ef" strokeWidth="1.5" strokeLinecap="round" />
                 <defs>
-                  <linearGradient id="practiceLeftPageGradient" x1="10" y1="9" x2="22" y2="32" gradientUnits="userSpaceOnUse">
+                  <linearGradient id="practicePageLeftGradient" x1="11" y1="10" x2="22" y2="32" gradientUnits="userSpaceOnUse">
                     <stop stopColor="#ffffff" />
-                    <stop offset="1" stopColor="#dbeafe" />
+                    <stop offset="1" stopColor="#eef7ff" />
                   </linearGradient>
-                  <linearGradient id="practiceRightPageGradient" x1="22" y1="9" x2="35" y2="32" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#ecfeff" />
-                    <stop offset="1" stopColor="#bfdbfe" />
+                  <linearGradient id="practicePageRightGradient" x1="22" y1="10" x2="33" y2="32" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#ffffff" />
+                    <stop offset="1" stopColor="#e8fbff" />
                   </linearGradient>
                 </defs>
               </svg>
