@@ -22,13 +22,13 @@ async function callAIDirect(model: string, messages: { role: string; content: st
   let modelName = model;
 
   if (m.includes('claude')) {
-    // Claude via apiclaude.cc proxy
+    // Claude via apiclaude.cc proxy (avoids CORS in dev)
     apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
-    endpoint = 'https://apiclaude.cc/v1/chat/completions';
+    endpoint = '/api/claude/chat/completions';
     modelName = 'claude-3-opus-20240229';
   } else if (m.includes('deepseek')) {
     apiKey = '';
-    endpoint = 'https://api.deepseek.com/v1/chat/completions';
+    endpoint = '/api/deepseek/chat/completions';
     modelName = 'deepseek-chat';
   } else if (m.includes('glm-5.2')) {
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';

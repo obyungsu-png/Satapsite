@@ -63,8 +63,20 @@
       target: 'esnext',
       outDir: 'build',
     },
-    server: {
-      port: 3000,
-      open: true,
+  server: {
+    port: 3000,
+    open: true,
+    proxy: {
+      '/api/claude': {
+        target: 'https://apiclaude.cc',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/claude/, '/v1'),
+      },
+      '/api/deepseek': {
+        target: 'https://api.deepseek.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deepseek/, '/v1'),
+      },
     },
+  },
   });
