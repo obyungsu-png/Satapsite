@@ -549,37 +549,16 @@ app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
 app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   try {
     const { type, question, passage, choices, model } = await c.req.json();
-    const requestedModel = typeof model === 'string' && model.trim() ? model : 'deepseek-chat';
-    const isGlmModel = requestedModel.startsWith('glm-');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
 
-    let apiKey: string | undefined;
-    let endpoint: string;
-    let requestModel: string;
-
-    if (isGlmModel) {
-      apiKey = Deno.env.get('GLM_API_KEY');
-      endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-      requestModel = requestedModel;
-
-      if (!apiKey) {
-        return c.json({
-          success: false,
-          error: 'GLM_API_KEY not configured',
-          message: 'GLM 모델을 사용하려면 GLM_API_KEY가 필요합니다.'
-        }, 500);
-      }
-    } else {
-      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-      endpoint = 'https://api.deepseek.com/v1/chat/completions';
-      requestModel = requestedModel || 'deepseek-chat';
-
-      if (!apiKey) {
-        return c.json({
-          success: false,
-          error: 'DEEPSEEK_API_KEY not configured',
-          message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.'
-        }, 500);
-      }
+    if (!apiKey) {
+      return c.json({
+        success: false,
+        error: 'OPENAI_API_KEY not configured',
+        message: 'AI 기능을 사용하려면 OpenAI API 키가 필요합니다.'
+      }, 500);
     }
 
     // Build prompt based on analysis type
@@ -662,37 +641,16 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
       return c.json({ success: false, error: 'messages must be a non-empty array' }, 400);
     }
 
-    const requestedModel = typeof model === 'string' && model.trim() ? model : 'deepseek-chat';
-    const isGlmModel = requestedModel.startsWith('glm-');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
 
-    let apiKey: string | undefined;
-    let endpoint: string;
-    let requestModel: string;
-
-    if (isGlmModel) {
-      apiKey = Deno.env.get('GLM_API_KEY');
-      endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-      requestModel = requestedModel;
-
-      if (!apiKey) {
-        return c.json({
-          success: false,
-          error: 'GLM_API_KEY not configured',
-          message: 'GLM 모델을 사용하려면 GLM_API_KEY가 필요합니다.'
-        }, 500);
-      }
-    } else {
-      apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-      endpoint = 'https://api.deepseek.com/v1/chat/completions';
-      requestModel = requestedModel || 'deepseek-chat';
-
-      if (!apiKey) {
-        return c.json({
-          success: false,
-          error: 'DEEPSEEK_API_KEY not configured',
-          message: 'AI 기능을 사용하려면 DeepSeek API 키가 필요합니다.'
-        }, 500);
-      }
+    if (!apiKey) {
+      return c.json({
+        success: false,
+        error: 'OPENAI_API_KEY not configured',
+        message: 'AI 기능을 사용하려면 OpenAI API 키가 필요합니다.'
+      }, 500);
     }
 
     const response = await fetch(endpoint, {
@@ -714,7 +672,7 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
       console.error('AI chat API error:', errorText);
       return c.json({
         success: false,
-        error: isGlmModel ? 'GLM API request failed' : 'DeepSeek API request failed',
+        error: 'OpenAI API request failed',
         details: errorText
       }, response.status);
     }
