@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Upload, FileText, BookOpen, Target, BarChart3, Settings, FileDown, PlusCircle, Edit3, Tags, Trash2, BookmarkPlus, Megaphone, FileUp } from 'lucide-react';
+import { Upload, FileText, BookOpen, Target, BarChart3, Settings, FileDown, PlusCircle, Edit3, Tags, Trash2, BookmarkPlus, Megaphone, FileUp, Zap, Check } from 'lucide-react';
 import { AdBanner } from './AdBanner';
 import { toast } from 'sonner@2.0.3';
 import { SATVocaManagement } from './SATVocaManagement';
@@ -822,6 +822,18 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
             >
               <Megaphone className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
               광고 관리
+            </button>
+            <button
+              onClick={() => setUploadTab('관리자모드')}
+              className={`px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                uploadTab === '관리자모드'
+                  ? 'border-indigo-500 text-indigo-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
+              관리자 모드 (LSM)
+              <span className="ml-1.5 sm:ml-2 bg-red-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full">Admin</span>
             </button>
           </div>
         </div>
@@ -1919,6 +1931,72 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                         </Button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Admin Mode Tab (LSM) */}
+            {uploadTab === '관리자모드' && (
+              <div className="space-y-6">
+                {/* AI 모델 설정 */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-8">
+                  <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                    <Zap className="h-6 w-6 text-indigo-500" />
+                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">AI 모델 설정</h2>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4 sm:mb-6">
+                    문제 풀이와 AI 튜터에 사용할 모델을 선택하세요. 선택한 모델은 AI 분석 기능에서 자동으로 사용됩니다.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {[
+                      { value: 'claude-4', label: 'Claude 4', desc: 'Claude 4 모델 (apiclaude.cc)', color: 'orange' },
+                      { value: 'deepseek-chat', label: 'DeepSeek', desc: 'DeepSeek Chat 모델', color: 'blue' },
+                      { value: 'glm-4.7', label: 'SGR 2.0', desc: 'SGR 2.0 모델', color: 'green' },
+                      { value: 'glm-5.2', label: 'GLM 5.2', desc: 'Zhipu AI GLM 5.2 모델', color: 'purple' }
+                    ].map((model) => {
+                      const isSelected = localStorage.getItem('selectedAIModel') === model.value;
+                      return (
+                        <button
+                          key={model.value}
+                          onClick={() => {
+                            localStorage.setItem('selectedAIModel', model.value);
+                            toast.success(`AI 모델이 ${model.label}(으)로 변경되었습니다.`);
+                            setUploadTab(prev => prev);
+                          }}
+                          className={`p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
+                            isSelected
+                              ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-bold text-gray-900 text-sm sm:text-base">{model.label}</span>
+                            {isSelected && (
+                              <Check className="h-5 w-5 text-indigo-500" />
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500">{model.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-800">
+                      💡 현재 선택된 모델: <strong>{localStorage.getItem('selectedAIModel') || 'deepseek-chat'}</strong> — Practice 화면의 AI 튜터와 문제 분석에서 이 모델이 사용됩니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 관리자 안내 */}
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 p-4 sm:p-6">
+                  <h3 className="text-base sm:text-lg font-bold text-indigo-900 mb-2">관리자 모드 (LSM)</h3>
+                  <p className="text-sm text-indigo-700 mb-3">
+                    이 영역에서는 AI 모델 설정, 콘텐츠 잠금 해제 등 시스템 전반의 관리 기능을 제공합니다.
+                  </p>
+                  <div className="text-xs text-indigo-600 space-y-1">
+                    <p>• Claude 4를 사용하려면 Supabase Edge Function에 APICLAUDE_API_KEY 환경변수를 등록하세요.</p>
+                    <p>• Endpoint: https://apiclaude.cc</p>
+                    <p>• API Key: 등록한 키</p>
                   </div>
                 </div>
               </div>
