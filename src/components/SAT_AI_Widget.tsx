@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -11,10 +10,67 @@ interface ChatMessage {
 }
 
 function getAIModel(): string {
-  return localStorage.getItem('selectedAIModel') || 'deepseek-chat';
+  return localStorage.getItem('selectedAIModel') || 'glm-5.2';
 }
 
-const AI_CHAT_ENDPOINT = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/ai-chat`;
+// Direct API call helper – no Edge Function needed
+async function callAIDirect(model: string, messages: { role: string; content: string }[]): Promise<string> {
+  const m = (model || '').toLowerCase();
+
+  let apiKey = '';
+  let endpoint = '';
+  let modelName = model;
+
+  if (m.includes('claude')) {
+    // Claude via apiclaude.cc proxy
+    apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+    endpoint = 'https://apiclaude.cc/v1/chat/completions';
+    modelName = 'claude-3-opus-20240229';
+  } else if (m.includes('deepseek')) {
+    apiKey = '';
+    endpoint = 'https://api.deepseek.com/v1/chat/completions';
+    modelName = 'deepseek-chat';
+  } else if (m.includes('glm-5.2')) {
+    apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
+    endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    modelName = 'glm-4.7';
+  } else if (m.includes('glm-4.7')) {
+    apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
+    endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    modelName = 'glm-4.7';
+  } else {
+    // Default: OpenAI
+    apiKey = '';
+    endpoint = 'https://api.openai.com/v1/chat/completions';
+    modelName = 'gpt-4o-mini';
+  }
+
+  if (!apiKey) {
+    throw new Error(`API key not configured for model: ${model}`);
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages,
+      max_tokens: 800,
+      temperature: 0.7,
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`API error (${response.status}): ${errText}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
+}
 
 const suggestedQuestions = [
   '이 문제를 분석해줘',
@@ -87,31 +143,20 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
 
     try {
       const model = getAIModel();
+      const messages = [
+        { role: 'system', content: buildSystemPrompt() },
+        ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
+      ];
 
-      const response = await fetch(AI_CHAT_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: buildSystemPrompt() },
-            ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
-          ],
-        })
-      });
+      const reply = await callAIDirect(model, messages);
 
-      const data = await response.json();
-
-      if (data.success && data.reply) {
+      if (reply) {
         setChatMessages(prev => [
           ...prev,
-          { role: 'assistant', content: data.reply, timestamp: Date.now() }
+          { role: 'assistant', content: reply, timestamp: Date.now() }
         ]);
       } else {
-        throw new Error(data.error || 'Invalid response');
+        throw new Error('Empty response from AI');
       }
     } catch (err) {
       console.error('SAT AI error:', err);
