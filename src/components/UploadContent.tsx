@@ -92,6 +92,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [uploadLocation, setUploadLocation] = useState('스마트 연습');
   const [uploadSubcategory, setUploadSubcategory] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedAIModel, setSelectedAIModel] = useState(() => localStorage.getItem('selectedAIModel') || 'deepseek-chat');
   
   // Add question type and difficulty state for 기출문제/공식문제
   const [questionType, setQuestionType] = useState('');
@@ -1954,14 +1955,14 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                       { value: 'glm-4.7', label: 'SGR 2.0', desc: 'SGR 2.0 모델', color: 'green' },
                       { value: 'glm-5.2', label: 'GLM 5.2', desc: 'Zhipu AI GLM 5.2 모델', color: 'purple' }
                     ].map((model) => {
-                      const isSelected = localStorage.getItem('selectedAIModel') === model.value;
+                      const isSelected = selectedAIModel === model.value;
                       return (
                         <button
                           key={model.value}
                           onClick={() => {
                             localStorage.setItem('selectedAIModel', model.value);
+                            setSelectedAIModel(model.value);
                             toast.success(`AI 모델이 ${model.label}(으)로 변경되었습니다.`);
-                            setUploadTab(prev => prev);
                           }}
                           className={`p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
                             isSelected
@@ -1982,7 +1983,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                   </div>
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
-                      💡 현재 선택된 모델: <strong>{localStorage.getItem('selectedAIModel') || 'deepseek-chat'}</strong> — Practice 화면의 AI 튜터와 문제 분석에서 이 모델이 사용됩니다.
+                      💡 현재 선택된 모델: <strong>{selectedAIModel}</strong> — Practice 화면의 AI 튜터와 문제 분석에서 이 모델이 사용됩니다.
                     </p>
                   </div>
                 </div>
