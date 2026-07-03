@@ -542,22 +542,62 @@ app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
 });
 
 // ==============================================
-// AI Analysis Routes (DeepSeek API)
+// AI Model Router – selects endpoint & key based on model
+// ==============================================
+function getAIConfig(model: string): { apiKey: string; endpoint: string; modelName: string } {
+  const modelLower = (model || '').toLowerCase();
+
+  // Claude 4 – apiclaude.cc proxy
+  if (modelLower.includes('claude')) {
+    const apiKey = Deno.env.get('APICLAUDE_API_KEY');
+    if (!apiKey) throw new Error('APICLAUDE_API_KEY not configured');
+    const endpoint = Deno.env.get('APICLAUDE_ENDPOINT') || 'https://apiclaude.cc/v1/chat/completions';
+    return { apiKey, endpoint, modelName: 'claude-3-opus-20240229' };
+  }
+
+  // DeepSeek
+  if (modelLower.includes('deepseek')) {
+    const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+    if (!apiKey) throw new Error('DEEPSEEK_API_KEY not configured');
+    return { apiKey, endpoint: 'https://api.deepseek.com/v1/chat/completions', modelName: 'deepseek-chat' };
+  }
+
+  // GLM (Zhipu AI)
+  if (modelLower.includes('glm')) {
+    const apiKey = Deno.env.get('GLM_API_KEY');
+    if (!apiKey) throw new Error('GLM_API_KEY not configured');
+    return { apiKey, endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', modelName: model };
+  }
+
+  // Default: OpenAI
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
+  return { apiKey, endpoint: 'https://api.openai.com/v1/chat/completions', modelName: model || 'gpt-4o-mini' };
+}
+
+// ==============================================
+// AI Analysis Routes
 // ==============================================
 
 // AI Analysis endpoint
 app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   try {
     const { type, question, passage, choices, model } = await c.req.json();
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
     const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
 
-    if (!apiKey) {
+    let apiKey: string;
+    let endpoint: string;
+    let aiModel: string;
+    try {
+      const config = getAIConfig(requestModel);
+      apiKey = config.apiKey;
+      endpoint = config.endpoint;
+      aiModel = config.modelName;
+    } catch (err: any) {
       return c.json({
         success: false,
-        error: 'OPENAI_API_KEY not configured',
-        message: 'AI 기능을 사용하려면 OpenAI API 키가 필요합니다.'
+        error: err.message || 'AI configuration error',
+        message: 'AI 모델 설정이 올바르지 않습니다. 환경변수를 확인해주세요.'
       }, 500);
     }
 
@@ -588,7 +628,7 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: requestModel,
+        model: aiModel,
         messages: [
           {
             role: 'system',
@@ -609,7 +649,7 @@ app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
       console.error('AI API error:', errorText);
       return c.json({
         success: false,
-        error: isGlmModel ? 'GLM API request failed' : 'DeepSeek API request failed',
+        error: 'AI API request failed',
         details: errorText
       }, response.status);
     }
@@ -641,15 +681,21 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
       return c.json({ success: false, error: 'messages must be a non-empty array' }, 400);
     }
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
     const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
 
-    if (!apiKey) {
+    let apiKey: string;
+    let endpoint: string;
+    let aiModel: string;
+    try {
+      const config = getAIConfig(requestModel);
+      apiKey = config.apiKey;
+      endpoint = config.endpoint;
+      aiModel = config.modelName;
+    } catch (err: any) {
       return c.json({
         success: false,
-        error: 'OPENAI_API_KEY not configured',
-        message: 'AI 기능을 사용하려면 OpenAI API 키가 필요합니다.'
+        error: err.message || 'AI configuration error',
+        message: 'AI 모델 설정이 올바르지 않습니다. 환경변수를 확인해주세요.'
       }, 500);
     }
 
@@ -660,7 +706,7 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: requestModel,
+        model: aiModel,
         messages,
         max_tokens: 800,
         temperature: 0.7,

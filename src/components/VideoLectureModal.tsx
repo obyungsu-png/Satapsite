@@ -6,6 +6,8 @@ import { toast } from "sonner@2.0.3";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const AI_MODEL_OPTIONS = [
+  { value: 'claude-4', label: 'Claude 4' },
+  { value: 'deepseek-chat', label: 'DeepSeek' },
   { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' }
