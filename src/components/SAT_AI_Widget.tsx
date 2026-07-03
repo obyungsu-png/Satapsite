@@ -14,7 +14,7 @@ function getAIModel(): string {
 }
 
 const API_ENDPOINT = 'https://apiclaude.cc/v1/chat/completions';
-const API_KEY = 'sk-e6eaedc68517277a475962539afbf7700bfbd497e307597aea178eccee027976';
+const API_KEY = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
 
 const suggestedQuestions = [
   '이 문제를 분석해줘',
