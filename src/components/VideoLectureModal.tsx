@@ -7,14 +7,14 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const AI_MODEL_OPTIONS = [
   { value: 'deepseek-chat', label: 'DeepSeek' },
-  { value: 'glm-4.7', label: 'GLM 4.7' },
+  { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' }
 ] as const;
 
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
 
 function getStoredAIModel(): AIModel {
-  return (localStorage.getItem('selectedAIModel') as AIModel) || 'glm-4.7';
+  return (localStorage.getItem('selectedAIModel') as AIModel) || 'deepseek-chat';
 }
 
 interface VideoLectureModalProps {

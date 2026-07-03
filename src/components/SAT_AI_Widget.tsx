@@ -11,7 +11,7 @@ interface ChatMessage {
 }
 
 function getAIModel(): string {
-  return localStorage.getItem('selectedAIModel') || 'glm-4.7';
+  return localStorage.getItem('selectedAIModel') || 'deepseek-chat';
 }
 
 const AI_CHAT_ENDPOINT = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/ai-chat`;

@@ -1425,7 +1425,7 @@ export default function App() {
                       setShowSimilarResults({});
                       setSimilarFullscreenTab(null);
 
-                      const model = localStorage.getItem('selectedAIModel') || 'glm-4.7';
+                      const model = localStorage.getItem('selectedAIModel') || 'deepseek-chat';
                       const isGlm = model.startsWith('glm-');
                       const endpoint = isGlm
                         ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
@@ -1525,7 +1525,7 @@ export default function App() {
                       setShowSimilarResults({});
                       setSimilarFullscreenTab(null);
 
-                      const model = localStorage.getItem('selectedAIModel') || 'glm-4.7';
+                      const model = localStorage.getItem('selectedAIModel') || 'deepseek-chat';
                       const isGlm = model.startsWith('glm-');
                       const endpoint = isGlm
                         ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
