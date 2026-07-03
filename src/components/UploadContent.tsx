@@ -2005,7 +2005,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
           </div>
         </div>
       </div>
-      <AdBanner />
+      {uploadTab !== '관리자모드' && <AdBanner />}
     </div>
   );
 }
