@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -13,8 +14,7 @@ function getAIModel(): string {
   return 'claude-1m';
 }
 
-const API_ENDPOINT = 'https://apiclaude.cc/v1/chat/completions';
-const API_KEY = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+const AI_CHAT_ENDPOINT = `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/ai-chat`;
 
 const suggestedQuestions = [
   '이 문제를 분석해줘',
@@ -88,11 +88,11 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
     try {
       const model = getAIModel();
 
-      const response = await fetch(API_ENDPOINT, {
+      const response = await fetch(AI_CHAT_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
+          'Authorization': `Bearer ${publicAnonKey}`
         },
         body: JSON.stringify({
           model,
@@ -100,21 +100,18 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
             { role: 'system', content: buildSystemPrompt() },
             ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
           ],
-          max_tokens: 800,
-          temperature: 0.7,
         })
       });
 
       const data = await response.json();
 
-      if (data.choices && data.choices[0]) {
-        const reply = data.choices[0].message.content;
+      if (data.success && data.reply) {
         setChatMessages(prev => [
           ...prev,
-          { role: 'assistant', content: reply, timestamp: Date.now() }
+          { role: 'assistant', content: data.reply, timestamp: Date.now() }
         ]);
       } else {
-        throw new Error(data.error?.message || 'Invalid response');
+        throw new Error(data.error || 'Invalid response');
       }
     } catch (err) {
       console.error('SAT AI error:', err);
