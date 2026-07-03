@@ -77,6 +77,11 @@
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/deepseek/, '/v1'),
       },
+      '/api/aihubmix': {
+        target: 'https://aihubmix.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/aihubmix/, '/v1'),
+      },
     },
   },
   });

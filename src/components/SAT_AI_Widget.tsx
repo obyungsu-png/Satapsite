@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { toast } from 'sonner@2.0.3';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -9,9 +10,20 @@ interface ChatMessage {
   timestamp: number;
 }
 
-function getAIModel(): string {
-  return localStorage.getItem('selectedAIModel') || 'glm-5.2';
+const AI_MODEL_OPTIONS = [
+  { value: 'claude-4', label: 'Claude 4' },
+  { value: 'deepseek-chat', label: 'DeepSeek' },
+  { value: 'glm-4.7', label: 'SGR 2.0' },
+  { value: 'glm-5.2', label: 'GLM 5.2' },
+  { value: 'rerank', label: 'Rerank' }
+] as const;
+
+type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
+
+function getStoredAIModel(): AIModel {
+  return (localStorage.getItem('selectedAIModel') as AIModel) || 'glm-5.2';
 }
+
 
 // Direct API call helper – no Edge Function needed
 async function callAIDirect(model: string, messages: { role: string; content: string }[]): Promise<string> {
@@ -38,6 +50,10 @@ async function callAIDirect(model: string, messages: { role: string; content: st
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
+  } else if (m.includes('rerank')) {
+    apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
+    endpoint = '/api/aihubmix/chat/completions';
+    modelName = 'cohere-rerank-v4.0-pro';
   } else {
     // Default: OpenAI
     apiKey = '';
@@ -97,6 +113,7 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(getStoredAIModel);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -108,6 +125,21 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
     window.addEventListener('sat-ai-open-widget', handleOpenWidget);
     return () => window.removeEventListener('sat-ai-open-widget', handleOpenWidget);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedModel(getStoredAIModel());
+    }
+  }, [isOpen]);
+
+  const handleModelChange = (value: string) => {
+    const model = value as AIModel;
+    localStorage.setItem('selectedAIModel', model);
+    setSelectedModel(model);
+    const label = AI_MODEL_OPTIONS.find((option) => option.value === model)?.label;
+    toast.success(`AI 모델이 ${label}(으)로 변경되었습니다.`);
+  };
+
 
   const handleSuggestedQuestion = (q: string) => {
     setChatInput(q);
@@ -142,13 +174,12 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
     setIsAiLoading(true);
 
     try {
-      const model = getAIModel();
       const messages = [
         { role: 'system', content: buildSystemPrompt() },
         ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
       ];
 
-      const reply = await callAIDirect(model, messages);
+      const reply = await callAIDirect(selectedModel, messages);
 
       if (reply) {
         setChatMessages(prev => [
@@ -459,9 +490,18 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                   </svg>
                 </span>
                 <span className="font-bold text-gray-800">SAT AI 튜터</span>
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
-                  {getAIModel()}
-                </span>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => handleModelChange(e.target.value)}
+                  className="h-6 text-xs px-2 py-0.5 bg-white/70 border border-indigo-200 hover:border-indigo-400 rounded-full outline-none cursor-pointer focus:ring-1 focus:ring-indigo-300 appearance-none"
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'none', backgroundImage: 'none', paddingRight: '20px' }}
+                >
+                  {AI_MODEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value} className="text-xs">
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
                 <X className="w-5 h-5" />
