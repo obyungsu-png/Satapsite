@@ -146,24 +146,26 @@ async function callAIStream(
     await doStreamFetch(endpoint, 'proxy');
   } catch (firstErr) {
     const err = firstErr instanceof Error ? firstErr : new Error(String(firstErr));
-    // If proxy returns 404 and we have a direct fallback, try direct
-    if (directEndpoint && (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('NOT_FOUND'))) {
-      console.log('[SAT AI] Proxy not available (404), trying direct…');
+    // If we have a direct fallback, try it on ANY proxy error (not just 404)
+    if (directEndpoint) {
+      console.log('[SAT AI] Proxy failed:', err.message, '- trying direct endpoint…');
       try {
         await doStreamFetch(directEndpoint, 'direct');
       } catch (directErr) {
         const dErr = directErr instanceof Error ? directErr : new Error(String(directErr));
-        if (dErr.message.includes('Failed to fetch') || dErr.message.includes('NetworkError')) {
-          onError(new Error('AI 서버 연결 실패: 프록시도 직접 호출도 불가능합니다. 운영 서버에 server.js 프록시를 배포해야 합니다.'));
-        } else {
-          onError(new Error(`AI 호출 실패 (직접): ${dErr.message}`));
-        }
+        onError(new Error(`AI 호출 실패: 프록시(${err.message}) / 직접(${dErr.message})`));
       }
     } else {
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        onError(new Error('AI 서버 연결 실패: 네트워크 오류입니다. 서버가 실행 중인지 확인해주세요.'));
-      } else {
-        onError(err);
+      // No direct fallback available — try direct endpoint for non-proxy routes too
+      const fallbackUrl = m.includes('deepseek')
+        ? 'https://api.deepseek.com/v1/chat/completions'
+        : 'https://apiclaude.cc/v1/chat/completions';
+      console.log('[SAT AI] No direct fallback configured, trying:', fallbackUrl);
+      try {
+        await doStreamFetch(fallbackUrl, 'direct-fallback');
+      } catch (fbErr) {
+        const fbE = fbErr instanceof Error ? fbErr : new Error(String(fbErr));
+        onError(new Error(`AI 서버 연결 실패: ${fbE.message}`));
       }
     }
   }

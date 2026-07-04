@@ -23,6 +23,10 @@ interface MathQuestionPanelProps {
   onShowVideoLecture?: (questionId: number) => void;
   imageUrl?: string;
   imageAlt?: string;
+  isPracticeReview?: boolean;
+  correctAnswer?: string;
+  explanation?: string;
+  onShowSimilarProblems?: () => void;
 }
 
 export function MathQuestionPanel({ 
@@ -37,11 +41,20 @@ export function MathQuestionPanel({
   onShowVideoLecture,
   imageUrl,
   imageAlt,
+  isPracticeReview = false,
+  correctAnswer,
+  explanation,
+  onShowSimilarProblems,
 }: MathQuestionPanelProps) {
   const [abcMode, setAbcMode] = useState(false);
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set());
-  const [isPracticeReview, setIsPracticeReview] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset answer feedback when question changes
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [questionNumber]);
 
   const handleEliminateChoice = (choiceId: string) => {
     setEliminatedChoices(prev => {
@@ -136,31 +149,42 @@ export function MathQuestionPanel({
           {choices.map((choice) => {
             const isSelected = selectedAnswer === choice.id;
             const isEliminated = eliminatedChoices.has(choice.id);
+            const isCorrectChoice = showAnswer && correctAnswer?.toUpperCase() === choice.id.toUpperCase();
+            const isWrongChoice = showAnswer && isSelected && correctAnswer?.toUpperCase() !== choice.id.toUpperCase();
             
             return (
               <div key={choice.id} className="flex items-center gap-2">
                 <div className="flex-1 relative">
                   <button
-                    onClick={() => onAnswerChange(choice.id)}
+                    onClick={() => !showAnswer && onAnswerChange(choice.id)}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 border transition-all duration-150 text-left rounded-lg ${
-                      isSelected 
-                        ? 'border-blue-500 border-2 bg-blue-50' 
-                        : 'border-gray-400 bg-white hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]'
-                    } ${isEliminated ? 'opacity-50' : ''}`}
+                      isCorrectChoice
+                        ? 'border-emerald-400 bg-emerald-50'
+                        : isWrongChoice
+                          ? 'border-red-400 bg-red-50'
+                          : isSelected 
+                            ? 'border-blue-500 border-2 bg-blue-50' 
+                            : 'border-gray-400 bg-white hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]'
+                    } ${isEliminated && !showAnswer ? 'opacity-50' : ''}`}
+                    style={showAnswer ? { cursor: 'default' } : {}}
                   >
                     {/* Circle with letter */}
                     <div className={`w-7 h-7 min-w-7 rounded-full border-[1.5px] flex items-center justify-center shrink-0 ${
-                      isSelected 
-                        ? 'border-blue-500 bg-white text-blue-500' 
-                        : 'border-gray-500 bg-white text-gray-700'
+                      isCorrectChoice
+                        ? 'border-emerald-500 bg-emerald-500 text-white'
+                        : isWrongChoice
+                          ? 'border-red-500 bg-red-500 text-white'
+                          : isSelected 
+                            ? 'border-blue-500 bg-white text-blue-500' 
+                            : 'border-gray-500 bg-white text-gray-700'
                     }`} style={{ fontSize: '13px', fontWeight: '600' }}>
                       {choice.id.toUpperCase()}
                     </div>
                     
                     {/* Answer text */}
                     <span className={`flex-1 ${
-                      isSelected ? 'text-gray-900' : 'text-gray-900'
-                    } ${isEliminated ? 'line-through' : ''}`} style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.4' }}>
+                      isCorrectChoice ? 'text-emerald-700' : isWrongChoice ? 'text-red-700' : isSelected ? 'text-gray-900' : 'text-gray-900'
+                    } ${isEliminated && !showAnswer ? 'line-through' : ''}`} style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.4' }}>
                       {choice.text}
                     </span>
                   </button>
@@ -198,17 +222,45 @@ export function MathQuestionPanel({
             );
           })}
         </div>
+        
+        {/* 정답 확인 버튼 (Training mode) */}
+        {isPracticeReview && selectedAnswer && !showAnswer && (
+          <div className="flex justify-center mt-4 mb-4">
+            <button
+              onClick={() => setShowAnswer(true)}
+              className="px-6 py-2.5 rounded-full text-white text-sm font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#0F766E' }}
+            >
+              정답 확인
+            </button>
+          </div>
+        )}
+
+        {/* 정답/오답 피드백 */}
+        {showAnswer && (
+          <div className={`p-4 rounded-lg text-sm mb-4 ${selectedAnswer?.toUpperCase() === correctAnswer?.toUpperCase() ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+            {selectedAnswer?.toUpperCase() === correctAnswer?.toUpperCase() 
+              ? '정답입니다! 👏' 
+              : `오답입니다. 정답은 ${correctAnswer?.toUpperCase()}입니다.`}
+            {explanation && (
+              <p className="mt-2 text-gray-700 leading-relaxed">{explanation}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* SAT AI Widget - FAB + Chat Panel */}
-      <SAT_AI_Widget
-        context={{
-          question,
-          choices: choices?.map((c) => c.text) || [],
-          correctAnswer: '',
-          userAnswer: selectedAnswer,
-        }}
-      />
+      {isPracticeReview && (
+        <SAT_AI_Widget
+          context={{
+            question,
+            choices: choices?.map((c) => c.text) || [],
+            correctAnswer: correctAnswer || '',
+            userAnswer: selectedAnswer,
+          }}
+          onPracticeClick={() => onShowSimilarProblems?.()}
+        />
+      )}
     </div>
   );
 }

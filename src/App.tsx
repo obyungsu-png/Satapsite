@@ -29,6 +29,7 @@ import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
 import { MobileExamTabs } from "./components/MobileExamTabs";
 import { SAT_AI_Widget } from "./components/SAT_AI_Widget";
 import { mathQuestions } from "./mathQuestions";
+import { getTrainingQuestions } from "./trainingQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
 import expandIconsSprite from "./assets/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
 import dragHandleImg from "./assets/af403f2609b757e96b427cbfdd300891837f3bc7.png";
@@ -574,19 +575,29 @@ export default function App() {
       setQuestions(defaultQuestions);
     }
     
-    // Training mode: skip landing pages, limit questions to selected count, show AI tutor
+    // Training mode: skip landing pages, use training questions by type/difficulty, show AI tutor
     if (testInfo?.trainingType) {
       setIsPracticeReview(true); // Show AI tutor in answer/explanation
       const countMap: Record<string, number> = { '5문제': 5, '10문제': 10, '20문제': 20 };
       const qCount = countMap[testInfo.questionCount] || 5;
       
-      // Re-set questions with proper count limit
+      // Use uploaded data if available
       if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
         setQuestions(testInfo.uploadedData.slice(0, qCount));
-      } else if (testInfo?.type === 'Math' || testInfo?.title?.includes('수학')) {
-        setQuestions(mathQuestions.slice(0, qCount));
       } else {
-        setQuestions(defaultQuestions.slice(0, qCount));
+        // Use training-specific placeholder questions filtered by type and difficulty
+        const trainingQs = getTrainingQuestions(
+          testInfo.trainingType,
+          testInfo.difficulty || '랜덤',
+          qCount
+        );
+        if (trainingQs.length > 0) {
+          setQuestions(trainingQs);
+        } else if (testInfo?.type === 'Math' || testInfo?.title?.includes('수학')) {
+          setQuestions(mathQuestions.slice(0, qCount));
+        } else {
+          setQuestions(defaultQuestions.slice(0, qCount));
+        }
       }
       
       setGameState('exam'); // Skip Preparing/Practice-Info/Time-Mode screens
@@ -1311,6 +1322,83 @@ export default function App() {
                   onShowVideoLecture={handleShowVideoLecture}
                   imageUrl={currentQuestion.imageUrl}
                   imageAlt={currentQuestion.imageAlt}
+                  isPracticeReview={isPracticeReview}
+                  correctAnswer={currentQuestion.correctAnswer}
+                  explanation={currentQuestion.explanation}
+                  onShowSimilarProblems={() => {
+                    const typeLabel = currentQuestion.category || currentQuestion.trainingType || 'Math';
+                    const diffLabel = currentQuestion.difficulty || '중간';
+                    const subject = 'Math';
+
+                    const sameTypeQs = questions.filter((q: any) => {
+                      if (q.id === currentQuestion.id) return false;
+                      const qType = q.category || q.trainingType || '';
+                      return qType.toLowerCase().includes(typeLabel.toLowerCase()) || typeLabel.toLowerCase().includes(qType.toLowerCase());
+                    }).slice(0, 3);
+
+                    if (sameTypeQs.length >= 3) {
+                      const mapped = sameTypeQs.map((q: any, idx: number) => ({
+                        id: idx + 1,
+                        passage: q.passage || '',
+                        question: q.question || '',
+                        choices: q.choices || [],
+                        correctAnswer: q.correctAnswer || 'a',
+                      }));
+                      setSimilarQuestions(mapped);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+                      setShowSimilarOverlay(true);
+                    } else {
+                      setShowSimilarOverlay(true);
+                      setSimilarQuestions([]);
+                      setSimilarProblemIndex(0);
+                      setSimilarProblemAnswers({});
+                      setShowSimilarResults({});
+                      setSimilarFullscreenTab(null);
+
+                      const model = localStorage.getItem('selectedAIModel') || 'gpt-4o-mini';
+                      const isGlm = model.startsWith('glm-');
+                      const endpoint = isGlm
+                        ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
+                        : 'https://api.deepseek.com/v1/chat/completions';
+                      const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
+
+                      fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                        body: JSON.stringify({
+                          model,
+                          messages: [
+                            { role: 'system', content: '당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형과 난이도를 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요.' },
+                            { role: 'user', content: `문제 유형: ${typeLabel}\n과목: ${subject}\n난이도: ${diffLabel}\n\n현재 문제: ${currentQuestion.question}\n\n위 유형과 비슷한 SAT 연습 문제 3개를 JSON 배열로 만들어주세요.` }
+                          ],
+                          max_tokens: 2000,
+                          temperature: 0.8,
+                        })
+                      })
+                      .then(r => r.json())
+                      .then(data => {
+                        try {
+                          const content = data.choices?.[0]?.message?.content || '';
+                          const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                          const parsed = JSON.parse(cleaned);
+                          const valid = Array.isArray(parsed)
+                            ? parsed.slice(0, 3).map((q: any, i: number) => ({
+                                id: i + 1, passage: q.passage || '', question: q.question || '',
+                                choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
+                                  id: String.fromCharCode(97 + ci), text: typeof c === 'string' ? c : c.text || ''
+                                })) : [],
+                                correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
+                              }))
+                            : [];
+                          if (valid.length > 0) setSimilarQuestions(valid);
+                        } catch (e) { console.error('Parse error:', e); }
+                      })
+                      .catch(err => console.error('Fetch error:', err));
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -1329,6 +1417,14 @@ export default function App() {
                 onShowVideoLecture={handleShowVideoLecture}
                 imageUrl={currentQuestion.imageUrl}
                 imageAlt={currentQuestion.imageAlt}
+                isPracticeReview={isPracticeReview}
+                correctAnswer={currentQuestion.correctAnswer}
+                explanation={currentQuestion.explanation}
+                onShowSimilarProblems={() => {
+                  setShowSimilarOverlay(true);
+                  setSimilarQuestions([]);
+                  setSimilarProblemIndex(0);
+                }}
               />
             </div>
           </>
@@ -1861,60 +1957,66 @@ export default function App() {
                       }}
                       onPracticeClick={() => {
                         setSimilarLoading(true);
-                        fetch('/api/claude/chat/completions', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a`,
-                          },
-                          body: JSON.stringify({
-                            model: 'claude-sonnet-5',
-                            messages: [
-                              { role: 'system', content: '당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형을 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요.' },
-                              { role: 'user', content: `다음은 SAT 연습 문제입니다:\n\n${simQ.question}\n\n위 문제와 같은 유형의 새로운 SAT 연습 문제 3개를 만들어주세요. JSON 배열로만 응답하세요.` }
-                            ],
-                            max_tokens: 2000,
-                            temperature: 0.8,
-                          })
-                        })
-                        .then(r => r.json())
-                        .then(data => {
-                          try {
-                            const content = data.choices?.[0]?.message?.content || '';
-                            const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-                            const parsed = JSON.parse(cleaned);
-                            const valid = Array.isArray(parsed)
-                              ? parsed.slice(0, 3).map((q: any, i: number) => ({
-                                  id: i + 1,
-                                  passage: q.passage || '',
-                                  question: q.question || '',
-                                  choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
-                                    id: String.fromCharCode(97 + ci),
-                                    text: typeof c === 'string' ? c : c.text || ''
-                                  })) : [],
-                                  correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
-                                }))
-                              : [];
-                            if (valid.length > 0) {
-                              setSimilarQuestions(valid);
-                              setSimilarProblemIndex(0);
-                              setSimilarProblemAnswers({});
-                              setShowSimilarResults({});
-                              setSimilarFullscreenTab(null);
-                              toast.success('새로운 연습 문제 3개가 생성되었습니다!');
-                            } else {
-                              toast.error('문제 생성에 실패했습니다. 다시 시도해주세요.');
+                        const apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+                        const requestBody = JSON.stringify({
+                          model: 'claude-sonnet-5',
+                          messages: [
+                            { role: 'system', content: '당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형을 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요.' },
+                            { role: 'user', content: `다음은 SAT 연습 문제입니다:\n\n${simQ.question}\n\n위 문제와 같은 유형의 새로운 SAT 연습 문제 3개를 만들어주세요. JSON 배열로만 응답하세요.` }
+                          ],
+                          max_tokens: 2000,
+                          temperature: 0.8,
+                        });
+                        const headers = {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${apiKey}`,
+                        };
+                        
+                        const tryEndpoint = async (url: string) => {
+                          const r = await fetch(url, { method: 'POST', headers, body: requestBody });
+                          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                          return r.json();
+                        };
+
+                        tryEndpoint('/api/claude/chat/completions')
+                          .catch(() => tryEndpoint('https://apiclaude.cc/v1/chat/completions'))
+                          .then(data => {
+                            try {
+                              const content = data.choices?.[0]?.message?.content || '';
+                              const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                              const parsed = JSON.parse(cleaned);
+                              const valid = Array.isArray(parsed)
+                                ? parsed.slice(0, 3).map((q: any, i: number) => ({
+                                    id: i + 1,
+                                    passage: q.passage || '',
+                                    question: q.question || '',
+                                    choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
+                                      id: String.fromCharCode(97 + ci),
+                                      text: typeof c === 'string' ? c : c.text || ''
+                                    })) : [],
+                                    correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
+                                  }))
+                                : [];
+                              if (valid.length > 0) {
+                                setSimilarQuestions(valid);
+                                setSimilarProblemIndex(0);
+                                setSimilarProblemAnswers({});
+                                setShowSimilarResults({});
+                                setSimilarFullscreenTab(null);
+                                toast.success('새로운 연습 문제 3개가 생성되었습니다!');
+                              } else {
+                                toast.error('문제 생성에 실패했습니다. 다시 시도해주세요.');
+                              }
+                            } catch (e) {
+                              console.error('Parse error:', e);
+                              toast.error('문제 생성 중 오류가 발생했습니다.');
                             }
-                          } catch (e) {
-                            console.error('Parse error:', e);
-                            toast.error('문제 생성 중 오류가 발생했습니다.');
-                          }
-                        })
-                        .catch(err => {
-                          console.error('Fetch error:', err);
-                          toast.error('AI 서버 연결에 실패했습니다.');
-                        })
-                        .finally(() => setSimilarLoading(false));
+                          })
+                          .catch(err => {
+                            console.error('Fetch error:', err);
+                            toast.error('AI 서버 연결에 실패했습니다.');
+                          })
+                          .finally(() => setSimilarLoading(false));
                       }}
                     />
                   </div>
