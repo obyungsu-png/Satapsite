@@ -26,7 +26,11 @@ function getStoredAIModel(): AIModel {
 
 
 // Direct API call helper – no Edge Function needed
-async function callAIDirect(model: string, messages: { role: string; content: string }[]): Promise<string> {
+async function callAIDirect(
+  model: string,
+  messages: { role: string; content: string }[],
+  context?: SAT_AI_WidgetProps['context']
+): Promise<string> {
   const m = (model || '').toLowerCase();
 
   let apiKey = '';
@@ -52,7 +56,7 @@ async function callAIDirect(model: string, messages: { role: string; content: st
     modelName = 'glm-4.7';
   } else if (m.includes('rerank')) {
     apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
-    endpoint = '/api/aihubmix/chat/completions';
+    endpoint = '/api/aihubmix/rerank';
     modelName = 'cohere-rerank-v4.0-pro';
   } else {
     // Default: OpenAI
@@ -63,6 +67,46 @@ async function callAIDirect(model: string, messages: { role: string; content: st
 
   if (!apiKey) {
     throw new Error(`API key not configured for model: ${model}`);
+  }
+
+  console.log('[SAT AI] request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
+
+  if (m.includes('rerank')) {
+    const query = [...messages].reverse().find((msg) => msg.role === 'user')?.content || '';
+    const documents = [
+      context?.passage || '',
+      context?.question || '',
+      ...(context?.choices || [])
+    ].filter((doc) => doc.trim().length > 0);
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        query,
+        documents,
+        top_n: documents.length,
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`API error (${response.status}): ${errText}`);
+    }
+
+    const data = await response.json();
+    const results = data.results || [];
+    if (results.length === 0) {
+      return 'Rerank 결과가 없습니다.';
+    }
+    return `Rerank 결과 (질문: "${query}")\n\n` + results.map((r: any, i: number) => {
+      const doc = documents[r.index] || '';
+      return `#${i + 1} index ${r.index} - score ${r.relevance_score}\n${doc}`;
+    }).join('\n\n');
   }
 
   const response = await fetch(endpoint, {
@@ -126,11 +170,6 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
     return () => window.removeEventListener('sat-ai-open-widget', handleOpenWidget);
   }, []);
 
-  useEffect(() => {
-    if (isOpen) {
-      setSelectedModel(getStoredAIModel());
-    }
-  }, [isOpen]);
 
   const handleModelChange = (value: string) => {
     const model = value as AIModel;
@@ -179,7 +218,8 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
         ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
       ];
 
-      const reply = await callAIDirect(selectedModel, messages);
+      const reply = await callAIDirect(selectedModel, messages, context);
+
 
       if (reply) {
         setChatMessages(prev => [
