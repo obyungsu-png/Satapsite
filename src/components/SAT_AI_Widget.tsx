@@ -15,8 +15,6 @@ const AI_MODEL_OPTIONS = [
   { value: 'deepseek-chat', label: 'DeepSeek' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' },
-  { value: 'rerank', label: 'Rerank' },
-  { value: 'rerank-qwen', label: 'Rerank Qwen' }
 ] as const;
 
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
@@ -55,14 +53,6 @@ async function callAIDirect(
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
-  } else if (m.includes('rerank-qwen')) {
-    apiKey = 'sk-alW5YWRBMZzvCEteE31aF39b336d4bEcAd5dBe070078D4Ef';
-    endpoint = '/api/inferera/rerank';
-    modelName = 'qwen3-reranker-8b';
-  } else if (m.includes('rerank')) {
-    apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
-    endpoint = '/api/aihubmix/rerank';
-    modelName = 'cohere-rerank-v4.0-pro';
   } else {
     // Default: OpenAI
     apiKey = '';
@@ -75,44 +65,6 @@ async function callAIDirect(
   }
 
   console.log('[SAT AI] request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
-
-  if (m.includes('rerank')) {
-    const query = [...messages].reverse().find((msg) => msg.role === 'user')?.content || '';
-    const documents = [
-      context?.passage || '',
-      context?.question || '',
-      ...(context?.choices || [])
-    ].filter((doc) => doc.trim().length > 0);
-
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: modelName,
-        query,
-        documents,
-        top_n: documents.length,
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API error (${response.status}): ${errText}`);
-    }
-
-    const data = await response.json();
-    const results = data.results || [];
-    if (results.length === 0) {
-      return 'Rerank 결과가 없습니다.';
-    }
-    return `Rerank 결과 (질문: "${query}")\n\n` + results.map((r: any, i: number) => {
-      const doc = documents[r.index] || '';
-      return `#${i + 1} index ${r.index} - score ${r.relevance_score}\n${doc}`;
-    }).join('\n\n');
-  }
 
   const response = await fetch(endpoint, {
     method: 'POST',
