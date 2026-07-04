@@ -1972,15 +1972,16 @@ export default function App() {
                           'Authorization': `Bearer ${apiKey}`,
                         };
                         
-                        const tryEndpoint = async (url: string) => {
-                          const r = await fetch(url, { method: 'POST', headers, body: requestBody });
+                        fetch('/api/claude/chat/completions', {
+                          method: 'POST',
+                          headers,
+                          body: requestBody,
+                        })
+                        .then(r => {
                           if (!r.ok) throw new Error(`HTTP ${r.status}`);
                           return r.json();
-                        };
-
-                        tryEndpoint('/api/claude/chat/completions')
-                          .catch(() => tryEndpoint('https://apiclaude.cc/v1/chat/completions'))
-                          .then(data => {
+                        })
+                        .then(data => {
                             try {
                               const content = data.choices?.[0]?.message?.content || '';
                               const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
