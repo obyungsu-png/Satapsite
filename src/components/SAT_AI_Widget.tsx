@@ -49,7 +49,7 @@ async function callAIDirect(
   } else if (m.includes('glm-5.2')) {
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-    modelName = 'glm-4.7';
+    modelName = 'glm-5.2';
   } else if (m.includes('glm-4.7')) {
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
