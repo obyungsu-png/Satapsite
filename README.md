@@ -1,11 +1,10 @@
 
-  # SAT Allmyexam
+# PAY Allmyexam
 
-  This is a code bundle for SAT Allmyexam. The original project is available at https://www.figma.com/design/WwWioC0mA3za5BQuqZbf3e/SAT-Allmyexam.
+This is a code bundle for PAY Allmyexam. The original project is available at https://www.figma.com/design/ug0DeRO6PTA19gXpxsIRoQ/PAY-Allmyexam.
 
-  ## Running the code
+## Running the code
 
-  Run `npm i` to install the dependencies.
+Run `npm i` to install the dependencies.
 
-  Run `npm run dev` to start the development server.
-  
+Run `npm run dev` to start the development server.
