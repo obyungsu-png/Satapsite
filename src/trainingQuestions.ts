@@ -136,6 +136,54 @@ const readingTextStructure: TrainingQuestion[] = [
   },
 ];
 
+const readingEvidenceQuantitative: TrainingQuestion[] = [
+  {
+    id: 151, question: "Which data point from the table best supports the claim that reading speed decreases with age?",
+    passage: "A study measured reading speeds across age groups:\n| Age Group | Avg. Words/Min |\n| 18-25 | 280 |\n| 26-40 | 250 |\n| 41-60 | 210 |\n| 61+ | 170 |",
+    choices: [{ id: "a", text: "The 18-25 group reads 280 words/min" }, { id: "b", text: "Each successive age group shows a lower reading speed" }, { id: "c", text: "The 61+ group reads 170 words/min" }, { id: "d", text: "The difference between 18-25 and 41-60 is 70 words/min" }],
+    correctAnswer: "b", explanation: "The consistent decrease across all age groups (280→250→210→170) best supports the claim that reading speed decreases with age.",
+    category: "Command of Evidence (Quantitative)", trainingType: "evidence-quantitative", difficulty: "Medium", type: "독해"
+  },
+  {
+    id: 152, question: "Based on the graph, which conclusion about renewable energy adoption is most supported?",
+    passage: "A bar chart shows renewable energy percentages by country: Germany 45%, Sweden 52%, France 23%, US 20%, Japan 18%.",
+    choices: [{ id: "a", text: "All European countries exceed 40% renewable energy" }, { id: "b", text: "Northern European countries lead in renewable energy adoption" }, { id: "c", text: "The US uses more renewable energy than Japan" }, { id: "d", text: "France and Germany have similar renewable energy percentages" }],
+    correctAnswer: "b", explanation: "Sweden (52%) and Germany (45%) — both Northern European — have the highest percentages, supporting B.",
+    category: "Command of Evidence (Quantitative)", trainingType: "evidence-quantitative", difficulty: "Hard", type: "독해"
+  },
+  {
+    id: 153, question: "Which statement is best supported by the data?",
+    passage: "Temperature data over 5 decades:\n| Decade | Avg Temp (°C) |\n| 1970s | 14.0 |\n| 1980s | 14.2 |\n| 1990s | 14.5 |\n| 2000s | 14.8 |\n| 2010s | 15.1 |",
+    choices: [{ id: "a", text: "Temperature increased by exactly 0.3°C each decade" }, { id: "b", text: "Average temperature has risen consistently over the period" }, { id: "c", text: "The 2010s were cooler than the 1990s" }, { id: "d", text: "Temperature remained constant until the 2000s" }],
+    correctAnswer: "b", explanation: "The data shows a consistent upward trend: 14.0→14.2→14.5→14.8→15.1, supporting B.",
+    category: "Command of Evidence (Quantitative)", trainingType: "evidence-quantitative", difficulty: "Easy", type: "독해"
+  },
+];
+
+const readingCrossText: TrainingQuestion[] = [
+  {
+    id: 161, question: "Both passages discuss the role of technology in education. How do the authors' perspectives differ?",
+    passage: "Passage 1: 'Technology has democratized access to knowledge, allowing students worldwide to learn from top instructors regardless of location.'\nPassage 2: 'While digital tools expand access, they often sacrifice depth of engagement. Screen-based learning can fragment attention and reduce critical thinking skills.'",
+    choices: [{ id: "a", text: "Passage 1 is optimistic while Passage 2 is cautious" }, { id: "b", text: "Both passages oppose technology in education" }, { id: "c", text: "Passage 2 is more optimistic than Passage 1" }, { id: "d", text: "The passages agree on technology's impact" }],
+    correctAnswer: "a", explanation: "Passage 1 highlights positive democratization, while Passage 2 warns about reduced engagement — they differ in optimism.",
+    category: "Cross-Text Connections", trainingType: "cross-text", difficulty: "Medium", type: "독해"
+  },
+  {
+    id: 162, question: "Based on both passages, which statement about urban development would both authors likely agree with?",
+    passage: "Passage 1: 'Urban parks provide essential green spaces that improve residents' mental health and reduce stress.'\nPassage 2: 'Well-designed public spaces foster community interaction and reduce social isolation in dense neighborhoods.'",
+    choices: [{ id: "a", text: "Urban public spaces benefit city residents' well-being" }, { id: "b", text: "All urban development should prioritize commercial spaces" }, { id: "c", text: "Parks are unnecessary in modern cities" }, { id: "d", text: "Mental health is unaffected by city design" }],
+    correctAnswer: "a", explanation: "Both passages support that public spaces (parks, well-designed areas) improve residents' well-being — mental health and social connection.",
+    category: "Cross-Text Connections", trainingType: "cross-text", difficulty: "Easy", type: "독해"
+  },
+  {
+    id: 163, question: "The two passages present different views on artificial intelligence. Which claim would the author of Passage 2 most likely challenge?",
+    passage: "Passage 1: 'AI systems can process vast amounts of data faster than humans, making them superior decision-makers in complex scenarios.'\nPassage 2: 'Human judgment incorporates ethical considerations and contextual understanding that algorithmic systems cannot replicate.'",
+    choices: [{ id: "a", text: "AI should be used to supplement human decision-making" }, { id: "b", text: "AI systems are superior decision-makers in all scenarios" }, { id: "c", text: "Human judgment has limitations" }, { id: "d", text: "Ethics play a role in decision-making" }],
+    correctAnswer: "b", explanation: "Passage 2 emphasizes human judgment's unique ethical and contextual abilities, directly challenging Passage 1's claim of AI superiority in all scenarios.",
+    category: "Cross-Text Connections", trainingType: "cross-text", difficulty: "Hard", type: "독해"
+  },
+];
+
 // ── 문법 (Grammar/Writing) ──
 
 const grammarPunctuation: TrainingQuestion[] = [
@@ -156,6 +204,111 @@ const grammarPunctuation: TrainingQuestion[] = [
     choices: [{ id: "a", text: ", who had studied abroad for two years," }, { id: "b", text: "—who had studied abroad for two years—" }, { id: "c", text: " (who had studied abroad for two years)" }, { id: "d", text: ",who had studied abroad for two years," }],
     correctAnswer: "b", explanation: "Em dashes are commonly used to set off non-essential information with emphasis, making B correct.",
     category: "Punctuation Marks", trainingType: "punctuation", difficulty: "Hard", type: "문법"
+  },
+];
+
+const grammarSentenceConnection: TrainingQuestion[] = [
+  {
+    id: 241, question: "Which choice most effectively connects the two sentences?\n\nThe museum closed for renovations. __ it will reopen with an expanded collection in 2026.",
+    choices: [{ id: "a", text: "After that," }, { id: "b", text: "In contrast," }, { id: "c", text: "Meanwhile," }, { id: "d", text: "Even so," }],
+    correctAnswer: "a", explanation: "'After that' logically connects the closing with the future reopening, showing temporal sequence.",
+    category: "Sentence Connection", trainingType: "sentence-connection", difficulty: "Easy", type: "문법"
+  },
+  {
+    id: 242, question: "Which choice creates the most logical connection?\n\nSolar panels reduce electricity costs. __ their production process generates some environmental waste.",
+    choices: [{ id: "a", text: "Moreover," }, { id: "b", text: "However," }, { id: "c", text: "Likewise," }, { id: "d", text: "As a result," }],
+    correctAnswer: "b", explanation: "'However' introduces a contrasting point — solar panels are beneficial but have a drawback.",
+    category: "Sentence Connection", trainingType: "sentence-connection", difficulty: "Medium", type: "문법"
+  },
+  {
+    id: 243, question: "Which choice creates the most coherent paragraph?\n\nMany insects pollinate crops. __ bees alone contribute over $15 billion annually to US agriculture.",
+    choices: [{ id: "a", text: "For example," }, { id: "b", text: "On the other hand," }, { id: "c", text: "Nevertheless," }, { id: "d", text: "In summary," }],
+    correctAnswer: "a", explanation: "'For example' introduces a specific illustration of the general claim about insect pollination.",
+    category: "Sentence Connection", trainingType: "sentence-connection", difficulty: "Hard", type: "문법"
+  },
+];
+
+const grammarNounsPronouns: TrainingQuestion[] = [
+  {
+    id: 251, question: "Which choice completes the text to conform to Standard English?\n\nThe committee __ reached a unanimous decision after three hours of debate.",
+    choices: [{ id: "a", text: "members" }, { id: "b", text: "member" }, { id: "c", text: "membership" }, { id: "d", text: "committees" }],
+    correctAnswer: "a", explanation: "'Members' is the plural noun that correctly agrees with the plural verb 'reached.'",
+    category: "Nouns, Pronouns", trainingType: "nouns-pronouns", difficulty: "Easy", type: "문법"
+  },
+  {
+    id: 252, question: "Which choice uses the correct pronoun?\n\nNeither the director nor the actors __ responsible for the delay.",
+    choices: [{ id: "a", text: "was" }, { id: "b", text: "were" }, { id: "c", text: "is" }, { id: "d", text: "has been" }],
+    correctAnswer: "b", explanation: "With 'neither...nor,' the verb agrees with the nearer subject 'actors' (plural), so 'were' is correct.",
+    category: "Nouns, Pronouns", trainingType: "nouns-pronouns", difficulty: "Medium", type: "문법"
+  },
+  {
+    id: 253, question: "Which pronoun correctly completes the sentence?\n\nEach of the students __ completed the assignment on time.",
+    choices: [{ id: "a", text: "has" }, { id: "b", text: "have" }, { id: "c", text: "had" }, { id: "d", text: "are" }],
+    correctAnswer: "a", explanation: "'Each' is a singular pronoun requiring a singular verb. 'Has' is the correct singular form.",
+    category: "Nouns, Pronouns", trainingType: "nouns-pronouns", difficulty: "Hard", type: "문법"
+  },
+];
+
+const grammarAdjectives: TrainingQuestion[] = [
+  {
+    id: 261, question: "Which choice uses adjectives correctly?\n\nThe __ sunset painted the sky in shades of orange and red.",
+    choices: [{ id: "a", text: "beautiful, breathtaking" }, { id: "b", text: "beautiful breathtaking" }, { id: "c", text: "beautifully breathtaking" }, { id: "d", text: "beautifully, breathtaking" }],
+    correctAnswer: "a", explanation: "Coordinate adjectives (both modifying 'sunset' independently) should be separated by a comma.",
+    category: "Adjectives", trainingType: "adjectives", difficulty: "Easy", type: "문법"
+  },
+  {
+    id: 262, question: "Which choice completes the sentence correctly?\n\nShe felt __ about the upcoming exam than her classmates.",
+    choices: [{ id: "a", text: "more anxious" }, { id: "b", text: "most anxious" }, { id: "c", text: "anxiouser" }, { id: "d", text: "anxiousmore" }],
+    correctAnswer: "a", explanation: "'More anxious' is the correct comparative form of 'anxious' (a multisyllabic adjective).",
+    category: "Adjectives", trainingType: "adjectives", difficulty: "Medium", type: "문법"
+  },
+  {
+    id: 263, question: "Which choice is correct?\n\nThis is the __ movie I have ever watched.",
+    choices: [{ id: "a", text: "worst" }, { id: "b", text: "worse" }, { id: "c", text: "baddest" }, { id: "d", text: "more bad" }],
+    correctAnswer: "a", explanation: "'Worst' is the superlative form of 'bad,' needed when comparing to all others ('ever watched').",
+    category: "Adjectives", trainingType: "adjectives", difficulty: "Hard", type: "문법"
+  },
+];
+
+const grammarAttributiveAdverbial: TrainingQuestion[] = [
+  {
+    id: 271, question: "Which choice correctly places the adverb?\n\nShe __ finished the project before the deadline.",
+    choices: [{ id: "a", text: "almost" }, { id: "b", text: "nearly almost" }, { id: "c", text: "almost nearly" }, { id: "d", text: "hardly almost" }],
+    correctAnswer: "a", explanation: "'Almost' correctly modifies 'finished,' placed directly before the verb it modifies.",
+    category: "Attributive, Adverbial", trainingType: "attributive-adverbial", difficulty: "Easy", type: "문법"
+  },
+  {
+    id: 272, question: "Which choice uses the adverbial phrase correctly?\n\nThe team worked __ to complete the assignment.",
+    choices: [{ id: "a", text: "diligently and efficiently" }, { id: "b", text: "diligently efficiently" }, { id: "c", text: "diligently, efficiently, and" }, { id: "d", text: "diligent and efficient" }],
+    correctAnswer: "a", explanation: "Coordinate adverbs should be connected with 'and,' and 'diligently and efficiently' properly modifies 'worked.'",
+    category: "Attributive, Adverbial", trainingType: "attributive-adverbial", difficulty: "Medium", type: "문법"
+  },
+  {
+    id: 273, question: "Which choice is grammatically correct?\n\nThe report was written __ by the senior analyst.",
+    choices: [{ id: "a", text: "exclusively" }, { id: "b", text: "exclusive" }, { id: "c", text: "exclusiveness" }, { id: "d", text: "exclusived" }],
+    correctAnswer: "a", explanation: "Adverbs (not adjectives) modify verbs. 'Exclusively' is the adverb form that correctly modifies 'was written.'",
+    category: "Attributive, Adverbial", trainingType: "attributive-adverbial", difficulty: "Hard", type: "문법"
+  },
+];
+
+const grammarAppositive: TrainingQuestion[] = [
+  {
+    id: 281, question: "Which choice correctly uses an appositive?\n\nDr. Park __ gave an inspiring lecture on climate change.",
+    choices: [{ id: "a", text: ", a renowned environmental scientist," }, { id: "b", text: "a renowned environmental scientist" }, { id: "c", text: ", renowned environmental scientist," }, { id: "d", text: "; a renowned environmental scientist;" }],
+    correctAnswer: "a", explanation: "An appositive phrase identifying Dr. Park should be set off by commas on both sides.",
+    category: "Appositive", trainingType: "appositive", difficulty: "Easy", type: "문법"
+  },
+  {
+    id: 282, question: "Which choice correctly punctuates the appositive?\n\nThe novel __ became an instant bestseller.",
+    choices: [{ id: "a", text: ", The Great Gatsby," }, { id: "b", text: "The Great Gatsby" }, { id: "c", text: "; The Great Gatsby" }, { id: "d", text: "— The Great Gatsby —" }],
+    correctAnswer: "a", explanation: "A non-restrictive appositive that identifies the novel should be enclosed in commas.",
+    category: "Appositive", trainingType: "appositive", difficulty: "Medium", type: "문법"
+  },
+  {
+    id: 283, question: "Which sentence correctly uses a restrictive appositive?\n\nMy friend __ is studying abroad this semester.",
+    choices: [{ id: "a", text: "Sarah" }, { id: "b", text: ", Sarah," }, { id: "c", text: "— Sarah —" }, { id: "d", text: ", Sarah" }],
+    correctAnswer: "a", explanation: "A restrictive appositive (essential for identification) should NOT be set off by commas. 'My friend Sarah' — no commas.",
+    category: "Appositive", trainingType: "appositive", difficulty: "Hard", type: "문법"
   },
 ];
 
@@ -205,6 +358,48 @@ const grammarVerb: TrainingQuestion[] = [
 ];
 
 // ── 수학 (Math) ──
+
+const mathBasicOperations: TrainingQuestion[] = [
+  {
+    id: 391, question: "What is the value of (12 × 5) - (8 + 17)?",
+    choices: [{ id: "a", text: "35" }, { id: "b", text: "60" }, { id: "c", text: "25" }, { id: "d", text: "43" }],
+    correctAnswer: "a", explanation: "12 × 5 = 60, 8 + 17 = 25, so 60 - 25 = 35.",
+    category: "Basic Operations", trainingType: "basic-operations", difficulty: "Easy", type: "수학"
+  },
+  {
+    id: 392, question: "If 48 ÷ 6 + 3 × 4 = ?, what is the result?",
+    choices: [{ id: "a", text: "20" }, { id: "b", text: "12" }, { id: "c", text: "32" }, { id: "d", text: "8" }],
+    correctAnswer: "a", explanation: "Following order of operations: 48 ÷ 6 = 8, 3 × 4 = 12, then 8 + 12 = 20.",
+    category: "Basic Operations", trainingType: "basic-operations", difficulty: "Medium", type: "수학"
+  },
+  {
+    id: 393, question: "What is the value of 2³ + √49?",
+    choices: [{ id: "a", text: "15" }, { id: "b", text: "8" }, { id: "c", text: "57" }, { id: "d", text: "13" }],
+    correctAnswer: "a", explanation: "2³ = 8, √49 = 7, so 8 + 7 = 15.",
+    category: "Basic Operations", trainingType: "basic-operations", difficulty: "Hard", type: "수학"
+  },
+];
+
+const mathBasicFunctions: TrainingQuestion[] = [
+  {
+    id: 401, question: "If f(x) = 3x - 1, what is f(4)?",
+    choices: [{ id: "a", text: "11" }, { id: "b", text: "12" }, { id: "c", text: "7" }, { id: "d", text: "13" }],
+    correctAnswer: "a", explanation: "f(4) = 3(4) - 1 = 12 - 1 = 11.",
+    category: "Basic Functions", trainingType: "basic-functions", difficulty: "Easy", type: "수학"
+  },
+  {
+    id: 402, question: "If g(x) = x² + 2x, what is g(-3)?",
+    choices: [{ id: "a", text: "3" }, { id: "b", text: "-3" }, { id: "c", text: "9" }, { id: "d", text: "15" }],
+    correctAnswer: "a", explanation: "g(-3) = (-3)² + 2(-3) = 9 - 6 = 3.",
+    category: "Basic Functions", trainingType: "basic-functions", difficulty: "Medium", type: "수학"
+  },
+  {
+    id: 403, question: "If h(x) = |x - 5|, what is the value of h(-2)?",
+    choices: [{ id: "a", text: "7" }, { id: "b", text: "3" }, { id: "c", text: "-7" }, { id: "d", text: "2" }],
+    correctAnswer: "a", explanation: "h(-2) = |-2 - 5| = |-7| = 7. Absolute value always returns a positive result.",
+    category: "Basic Functions", trainingType: "basic-functions", difficulty: "Hard", type: "수학"
+  },
+];
 
 const mathLinearFunctions: TrainingQuestion[] = [
   {
@@ -367,13 +562,22 @@ export const trainingQuestionsByType: Record<string, TrainingQuestion[]> = {
   'inferences': readingInferences,
   'words-context': readingWordsContext,
   'evidence-textual': readingEvidence,
+  'evidence-quantitative': readingEvidenceQuantitative,
   'text-structure': readingTextStructure,
+  'cross-text': readingCrossText,
   // Grammar
   'punctuation': grammarPunctuation,
+  'sentence-connection': grammarSentenceConnection,
   'transition': grammarTransition,
   'rhetorical-synthesis': grammarRhetoricalSynthesis,
   'verb-practice': grammarVerb,
+  'nouns-pronouns': grammarNounsPronouns,
+  'adjectives': grammarAdjectives,
+  'attributive-adverbial': grammarAttributiveAdverbial,
+  'appositive': grammarAppositive,
   // Math
+  'basic-operations': mathBasicOperations,
+  'basic-functions': mathBasicFunctions,
   'linear-functions': mathLinearFunctions,
   'quadratic-functions': mathQuadratic,
   'geometry': mathGeometry,
