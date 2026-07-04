@@ -38,7 +38,8 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
 
   if (m.includes('claude')) {
     apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
-    endpoint = '/api/claude/chat/completions';
+    // Try direct first (fast), proxy as fallback
+    endpoint = 'https://apiclaude.cc/v1/chat/completions';
     modelName = 'claude-sonnet-5';
   } else if (m.includes('deepseek')) {
     apiKey = '';
@@ -76,23 +77,47 @@ async function callAIStream(
   onError: (err: Error) => void,
 ): Promise<void> {
   const { apiKey, endpoint, modelName } = getAIConfig(model);
-  console.log('[SAT AI] stream request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
+
+  // For Claude: try direct call first (fast), fall back to server proxy if CORS blocks
+  const isClaude = (model || '').toLowerCase().includes('claude');
+  const proxyEndpoint = isClaude ? '/api/claude/chat/completions' : null;
+
+  async function tryFetch(url: string): Promise<Response | null> {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages,
+          max_tokens: 800,
+          temperature: 0.7,
+          stream: true,
+        })
+      });
+      return res;
+    } catch {
+      return null; // CORS or network error, try fallback
+    }
+  }
+
+  console.log('[SAT AI] stream request model:', model, '-> direct:', endpoint, 'fallback:', proxyEndpoint);
 
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        max_tokens: 800,
-        temperature: 0.7,
-        stream: true,
-      })
-    });
+    let response = await tryFetch(endpoint);
+
+    // Fall back to proxy if direct call failed and we have a proxy
+    if (!response && proxyEndpoint) {
+      console.log('[SAT AI] Direct call failed, trying proxy:', proxyEndpoint);
+      response = await tryFetch(proxyEndpoint);
+    }
+
+    if (!response) {
+      throw new Error('All endpoints failed');
+    }
 
     if (!response.ok) {
       const errText = await response.text();
