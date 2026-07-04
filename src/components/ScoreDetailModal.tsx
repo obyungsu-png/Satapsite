@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ArrowLeft, Globe, Search, BookOpen, Bookmark } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, Bookmark } from "lucide-react";
+import { SAT_AI_Widget } from "./SAT_AI_Widget";
 import { Button } from "./ui/button";
 
 interface ScoreDetailModalProps {
@@ -20,7 +21,6 @@ export function ScoreDetailModal({
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showScore, setShowScore] = useState(false);
   const [reviewingQuestion, setReviewingQuestion] = useState<any | null>(null);
-  const [activeDetailTab, setActiveDetailTab] = useState<'translation' | 'analysis' | 'vocabulary' | null>(null);
 
   if (!isOpen) return null;
   if (!questions || !Array.isArray(questions)) return null;
@@ -62,7 +62,6 @@ export function ScoreDetailModal({
 
   const handleReviewClick = (question: any) => {
     setReviewingQuestion(question);
-    setActiveDetailTab(null); // Reset tabs when switching questions
   };
 
   const handlePrevQuestion = () => {
@@ -70,7 +69,6 @@ export function ScoreDetailModal({
     const currentIndex = questions.findIndex(q => q.id === reviewingQuestion.id);
     if (currentIndex > 0) {
       setReviewingQuestion(questions[currentIndex - 1]);
-      setActiveDetailTab(null);
     }
   };
 
@@ -79,7 +77,6 @@ export function ScoreDetailModal({
     const currentIndex = questions.findIndex(q => q.id === reviewingQuestion.id);
     if (currentIndex < questions.length - 1) {
       setReviewingQuestion(questions[currentIndex + 1]);
-      setActiveDetailTab(null);
     }
   };
 
@@ -217,83 +214,17 @@ export function ScoreDetailModal({
                   </p>
                 </div>
 
-                {/* Tabs for Explanation */}
-                <div className="border-t border-gray-200 pt-6">
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={() => setActiveDetailTab(activeDetailTab === 'translation' ? null : 'translation')}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
-                        activeDetailTab === 'translation'
-                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
-                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
-                      }`}
-                    >
-                      <Globe className="h-4 w-4" />
-                      해석
-                    </button>
-                    <button
-                      onClick={() => setActiveDetailTab(activeDetailTab === 'analysis' ? null : 'analysis')}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
-                        activeDetailTab === 'analysis'
-                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
-                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
-                      }`}
-                    >
-                      <Search className="h-4 w-4" />
-                      해설
-                    </button>
-                    <button
-                      onClick={() => setActiveDetailTab(activeDetailTab === 'vocabulary' ? null : 'vocabulary')}
-                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm transition-all flex items-center justify-center gap-2 ${
-                        activeDetailTab === 'vocabulary'
-                          ? 'bg-[#00bcd4] text-white font-bold shadow-md transform scale-105'
-                          : 'bg-white text-gray-600 border border-gray-200 hover:border-[#00bcd4] hover:text-[#00bcd4]'
-                      }`}
-                    >
-                      <BookOpen className="h-4 w-4" />
-                      단어
-                    </button>
-                  </div>
-
-                  {activeDetailTab && (
-                    <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-                      {activeDetailTab === 'translation' && (
-                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
-                          <p className="font-bold mb-2 text-[#00bcd4]">지문 해석</p>
-                          <p className="whitespace-pre-line">
-                            {reviewingQuestion.id === 3 ? 
-                              `"응집 경제(agglomeration economies)"라는 용어는 특정 지역에 집중된(concentrate) 동일 산업군 내의 기업들이 누리는 경제적 이익을 의미합니다. 예를 들어, 영국의 컴퓨터 제조업체들이 서로 가깝게 위치하면 기업 간 정보 공유 가능성이 높아져 더 큰 기술 혁신을 촉진할 수 있고, 이를 더 쉽게 활용할 수 있습니다.` :
-                              reviewingQuestion.translation || "이 지문에 대한 한국어 해석이 준비 중입니다. 원문의 문맥과 구조를 분석하여 정확한 해석을 제공해 드립니다."}
-                          </p>
-                        </div>
-                      )}
-                      {activeDetailTab === 'analysis' && (
-                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
-                          <p className="font-bold mb-2 text-[#00bcd4]">정답 해설</p>
-                          <p className="mb-3">
-                            정답은 <strong>({correctAnswer})</strong>입니다.
-                          </p>
-                          <p>
-                            {reviewingQuestion.id === 3 ? 
-                              `문맥상 기업들이 특정 지역에 '모여 있다'는 의미가 필요합니다. 'concentrate'는 '집중시키다, 모으다'는 의미로, 뒤에 오는 'locate near one another'(서로 가깝게 위치하다)라는 문구와 가장 잘 어울립니다. 다른 선택지인 recur(재발하다), dissipate(소멸시키다), terminate(종료하다)는 문맥상 적절하지 않습니다.` :
-                              reviewingQuestion.explanation || "이 문제의 정답에 대한 논리적 근거와 오답 분석이 준비 중입니다. 문맥상의 단서와 논리적 흐름을 바탕으로 상세한 설명을 제공합니다."}
-                          </p>
-                        </div>
-                      )}
-                      {activeDetailTab === 'vocabulary' && (
-                        <div className="text-sm text-gray-700 leading-relaxed font-sans">
-                          <p className="font-bold mb-2 text-[#00bcd4]">주요 어휘</p>
-                          <ul className="space-y-3">
-                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">agglomeration:</span> <span>응집, 덩어리 - 기업이나 시설이 한 곳에 모이는 현상을 설명할 때 자주 쓰이는 SAT 빈출 어휘입니다.</span></li>
-                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">foster:</span> <span>육성하다, 촉진하다 - 아이디어나 환경을 조성하고 발전시키는 긍정적인 맥락에서 사용됩니다.</span></li>
-                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">innovation:</span> <span>혁신 - 새로운 기술이나 아이디어의 도입을 의미하며, 과학/기술 관련 지문에서 핵심어가 됩니다.</span></li>
-                            <li className="flex gap-2 items-start"><span className="font-bold text-gray-900 shrink-0">autonomous:</span> <span>자율적인, 독립적인 - 정치적 독립이나 스스로 제어하는 기계 등을 설명할 때 사용됩니다.</span></li>
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                {/* SAT AI Tutor */}
+                <SAT_AI_Widget
+                  context={{
+                    question: reviewingQuestion.question,
+                    passage: reviewingQuestion.passage || '',
+                    choices: reviewingQuestion.choices?.map((c: any) => c.text || c) || [],
+                    correctAnswer: reviewingQuestion.correctAnswer,
+                    userAnswer: selectedAnswers[reviewingQuestion.id],
+                    isCorrect,
+                  }}
+                />
               </div>
             </div>
           </div>

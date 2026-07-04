@@ -11,7 +11,7 @@ interface ChatMessage {
 }
 
 const AI_MODEL_OPTIONS = [
-  { value: 'claude-4', label: 'Claude 4' },
+  { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
   { value: 'deepseek-chat', label: 'DeepSeek' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' },
@@ -20,16 +20,16 @@ const AI_MODEL_OPTIONS = [
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
 
 function getStoredAIModel(): AIModel {
-  return (localStorage.getItem('selectedAIModel') as AIModel) || 'glm-5.2';
+  const stored = localStorage.getItem('selectedAIModel');
+  const valid = AI_MODEL_OPTIONS.find(o => o.value === stored);
+  if (valid) return valid.value;
+  localStorage.setItem('selectedAIModel', 'claude-sonnet-5');
+  return 'claude-sonnet-5';
 }
 
 
-// Direct API call helper – no Edge Function needed
-async function callAIDirect(
-  model: string,
-  messages: { role: string; content: string }[],
-  context?: SAT_AI_WidgetProps['context']
-): Promise<string> {
+// Streaming API call helper
+function getAIConfig(model: string): { apiKey: string; endpoint: string; modelName: string } {
   const m = (model || '').toLowerCase();
 
   let apiKey = '';
@@ -37,10 +37,9 @@ async function callAIDirect(
   let modelName = model;
 
   if (m.includes('claude')) {
-    // Claude via apiclaude.cc proxy (avoids CORS in dev)
     apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
     endpoint = '/api/claude/chat/completions';
-    modelName = 'claude-3-opus-20240229';
+    modelName = 'claude-sonnet-5';
   } else if (m.includes('deepseek')) {
     apiKey = '';
     endpoint = '/api/deepseek/chat/completions';
@@ -54,39 +53,89 @@ async function callAIDirect(
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
   } else {
-    // Default: OpenAI
     apiKey = '';
     endpoint = 'https://api.openai.com/v1/chat/completions';
     modelName = 'gpt-4o-mini';
   }
 
   if (!apiKey) {
-    throw new Error(`API key not configured for model: ${model}`);
+    console.warn('[SAT AI] Unknown model:', model, '- falling back to claude-sonnet-5');
+    apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+    endpoint = '/api/claude/chat/completions';
+    modelName = 'claude-sonnet-5';
   }
 
-  console.log('[SAT AI] request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
+  return { apiKey, endpoint, modelName };
+}
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages,
-      max_tokens: 800,
-      temperature: 0.7,
-    })
-  });
+async function callAIStream(
+  model: string,
+  messages: { role: string; content: string }[],
+  onToken: (token: string) => void,
+  onDone: () => void,
+  onError: (err: Error) => void,
+): Promise<void> {
+  const { apiKey, endpoint, modelName } = getAIConfig(model);
+  console.log('[SAT AI] stream request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`API error (${response.status}): ${errText}`);
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages,
+        max_tokens: 800,
+        temperature: 0.7,
+        stream: true,
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`API error (${response.status}): ${errText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body reader');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'data: [DONE]') continue;
+        if (!trimmed.startsWith('data: ')) continue;
+
+        try {
+          const json = JSON.parse(trimmed.slice(6));
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) {
+            onToken(delta);
+          }
+        } catch {
+          // skip malformed JSON chunks
+        }
+      }
+    }
+
+    onDone();
+  } catch (err) {
+    onError(err instanceof Error ? err : new Error(String(err)));
   }
-
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || '';
 }
 
 const suggestedQuestions = [
@@ -107,6 +156,103 @@ interface SAT_AI_WidgetProps {
     questionType?: string;
   };
   onPracticeClick?: () => void;
+}
+
+function parseInlineMarkdown(line: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let remaining = line;
+  let idx = 0;
+
+  while (remaining.length > 0) {
+    const boldMatch = remaining.match(/^(.*?)\*\*(.+?)\*\*(.*)$/);
+    const italicMatch = remaining.match(/^(.*?)\*(?!\*)(.+?)\*(?!\*)(.*)$/);
+    const mathMatch = remaining.match(/^(.*?)\\\((.+?)\\\)(.*)$/);
+    const codeMatch = remaining.match(/^(.*?)`(.+?)`(.*)$/);
+
+    const matches = [
+      { type: 'bold', match: boldMatch, end: boldMatch ? boldMatch[1].length + boldMatch[2].length + 4 : Infinity },
+      { type: 'italic', match: italicMatch, end: italicMatch ? italicMatch[1].length + italicMatch[2].length + 2 : Infinity },
+      { type: 'math', match: mathMatch, end: mathMatch ? mathMatch[1].length + mathMatch[2].length + 4 : Infinity },
+      { type: 'code', match: codeMatch, end: codeMatch ? codeMatch[1].length + codeMatch[2].length + 2 : Infinity },
+    ].filter(m => m.match).sort((a, b) => a.end - b.end);
+
+    if (matches.length === 0) {
+      nodes.push(<span key={idx++}>{remaining}</span>);
+      break;
+    }
+
+    const first = matches[0];
+    const m = first.match!;
+
+    if (m[1]) {
+      nodes.push(<span key={idx++}>{m[1]}</span>);
+    }
+
+    const content = m[2];
+    if (first.type === 'bold') {
+      nodes.push(<strong key={idx++} className="font-bold text-gray-900">{content}</strong>);
+    } else if (first.type === 'italic') {
+      nodes.push(<em key={idx++} className="italic text-gray-700">{content}</em>);
+    } else if (first.type === 'math') {
+      nodes.push(<span key={idx++} className="px-1 py-0.5 bg-blue-50 text-blue-700 rounded font-medium">{content}</span>);
+    } else if (first.type === 'code') {
+      nodes.push(<code key={idx++} className="px-1 py-0.5 bg-gray-100 text-pink-600 rounded text-xs font-mono">{content}</code>);
+    }
+
+    remaining = m[3];
+  }
+
+  return nodes;
+}
+
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split('\n');
+  const result: React.ReactNode[] = [];
+  let key = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (trimmed === '' || trimmed === '---') {
+      result.push(<div key={key++} className="h-2" />);
+      continue;
+    }
+
+    if (/^#\s+/.test(trimmed)) {
+      const content = trimmed.replace(/^#\s+/, '');
+      result.push(<h1 key={key++} className="text-lg font-bold text-indigo-700 mt-3 mb-1">{parseInlineMarkdown(content)}</h1>);
+      continue;
+    }
+
+    if (/^##\s+/.test(trimmed)) {
+      const content = trimmed.replace(/^##\s+/, '');
+      result.push(<h2 key={key++} className="text-base font-bold text-cyan-700 mt-3 mb-1">{parseInlineMarkdown(content)}</h2>);
+      continue;
+    }
+
+    if (/^###\s+/.test(trimmed)) {
+      const content = trimmed.replace(/^###\s+/, '');
+      result.push(<h3 key={key++} className="text-sm font-bold text-teal-600 mt-2 mb-1">{parseInlineMarkdown(content)}</h3>);
+      continue;
+    }
+
+    if (/^-\s+/.test(trimmed)) {
+      const content = trimmed.replace(/^-\s+/, '');
+      result.push(<div key={key++} className="flex items-start gap-2 ml-1 my-0.5"><span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-cyan-500 shrink-0" /><span className="text-gray-700">{parseInlineMarkdown(content)}</span></div>);
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      const content = trimmed.replace(/^\d+\.\s+/, '');
+      result.push(<div key={key++} className="flex items-start gap-2 ml-1 my-0.5"><span className="text-xs font-bold text-cyan-600 shrink-0 mt-0.5">{trimmed.match(/^\d+/)?.[0]}.</span><span className="text-gray-700">{parseInlineMarkdown(content)}</span></div>);
+      continue;
+    }
+
+    result.push(<p key={key++} className="text-gray-800 leading-relaxed my-1">{parseInlineMarkdown(line)}</p>);
+  }
+
+  return result;
 }
 
 export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) {
@@ -162,39 +308,48 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
     const userMessage = chatInput;
     setChatInput('');
 
-    const newHistory: ChatMessage[] = [
-      ...chatMessages,
-      { role: 'user', content: userMessage, timestamp: Date.now() }
-    ];
-    setChatMessages(newHistory);
+    const userMsg: ChatMessage = { role: 'user', content: userMessage, timestamp: Date.now() };
+    const updatedHistory = [...chatMessages, userMsg];
+    setChatMessages(updatedHistory);
     setIsAiLoading(true);
 
-    try {
-      const messages = [
-        { role: 'system', content: buildSystemPrompt() },
-        ...newHistory.map(msg => ({ role: msg.role, content: msg.content }))
-      ];
+    // Add empty assistant message that will be filled by streaming
+    const assistantMsg: ChatMessage = { role: 'assistant', content: '', timestamp: Date.now() };
+    setChatMessages([...updatedHistory, assistantMsg]);
 
-      const reply = await callAIDirect(selectedModel, messages, context);
+    const messages = [
+      { role: 'system', content: buildSystemPrompt() },
+      ...updatedHistory.map(msg => ({ role: msg.role, content: msg.content }))
+    ];
 
-
-      if (reply) {
-        setChatMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: reply, timestamp: Date.now() }
-        ]);
-      } else {
-        throw new Error('Empty response from AI');
+    await callAIStream(
+      selectedModel,
+      messages,
+      (token) => {
+        // Append token to the last assistant message
+        setChatMessages(prev => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg?.role === 'assistant') {
+            return [...prev.slice(0, -1), { ...lastMsg, content: lastMsg.content + token }];
+          }
+          return prev;
+        });
+      },
+      () => {
+        setIsAiLoading(false);
+      },
+      (err) => {
+        console.error('SAT AI stream error:', err);
+        setChatMessages(prev => {
+          const lastMsg = prev[prev.length - 1];
+          if (lastMsg?.role === 'assistant' && !lastMsg.content) {
+            return [...prev.slice(0, -1), { ...lastMsg, content: "죄송해요, 일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요. 😢" }];
+          }
+          return prev;
+        });
+        setIsAiLoading(false);
       }
-    } catch (err) {
-      console.error('SAT AI error:', err);
-      setChatMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: "죄송해요, 일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요. 😢", timestamp: Date.now() }
-      ]);
-    } finally {
-      setIsAiLoading(false);
-    }
+    );
   };
 
   return (
@@ -541,13 +696,8 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
                         </div>
                         <div className={`sat-chat-bubble ${msg.role === 'user' ? 'user' : 'ai'}`}>
                           {msg.role === 'assistant'
-                            ? cleanContent.split('\n').map((line, i) => (
-                                <span key={i}>
-                                  {line}
-                                  {i < cleanContent.split('\n').length - 1 && <br />}
-                                </span>
-                              ))
-                            : cleanContent
+                            ? renderMarkdown(cleanContent)
+                            : <span>{cleanContent}</span>
                           }
                         </div>
                       </div>

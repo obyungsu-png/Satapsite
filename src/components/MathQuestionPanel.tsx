@@ -4,6 +4,7 @@ import { Label } from "./ui/label";
 import { Button } from "./ui/button";
 import { Bookmark } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { SAT_AI_Widget } from "./SAT_AI_Widget";
 
 interface Choice {
   id: string;
@@ -39,6 +40,7 @@ export function MathQuestionPanel({
 }: MathQuestionPanelProps) {
   const [abcMode, setAbcMode] = useState(false);
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set());
+  const [isPracticeReview, setIsPracticeReview] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleEliminateChoice = (choiceId: string) => {
@@ -197,6 +199,16 @@ export function MathQuestionPanel({
           })}
         </div>
       </div>
+
+      {/* SAT AI Widget - FAB + Chat Panel */}
+      <SAT_AI_Widget
+        context={{
+          question,
+          choices: choices?.map((c) => c.text) || [],
+          correctAnswer: '',
+          userAnswer: selectedAnswer,
+        }}
+      />
     </div>
   );
 }

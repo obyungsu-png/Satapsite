@@ -1,0 +1,12 @@
+{
+  "claude-code.env": {
+    "ANTHROPIC_BASE_URL": "https://apiclaude.cc",
+    "ANTHROPIC_API_KEY": "sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a",
+    "ANTHROPIC_MODEL": "claude-sonnet-5"
+  },
+  "claudeCode.environmentVariables": [
+    { "name": "ANTHROPIC_BASE_URL", "value": "https://apiclaude.cc" },
+    { "name": "ANTHROPIC_AUTH_TOKEN", "value": "sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a" },
+    { "name": "ANTHROPIC_MODEL", "value": "claude-sonnet-5" }
+  ]
+}

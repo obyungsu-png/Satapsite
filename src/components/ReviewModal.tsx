@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, Globe, Search, FileText } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, FileText } from "lucide-react";
+import { SAT_AI_Widget } from "./SAT_AI_Widget";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
 import { useEffect } from "react";
@@ -40,7 +41,6 @@ export function ReviewModal({
   difficulty,
 }: ReviewModalProps) {
   const [showExplanation, setShowExplanation] = useState(true);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [fullscreenTab, setFullscreenTab] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [similarProblemIndex, setSimilarProblemIndex] = useState(0);
@@ -53,7 +53,6 @@ export function ReviewModal({
     }
 
     setShowExplanation(true);
-    setActiveTab(null);
     setFullscreenTab(null);
     setIsFullScreen(false);
     setSimilarProblemIndex(0);
@@ -120,7 +119,7 @@ export function ReviewModal({
   // Next 버튼에서 복귀하도록 변경 (자동 복귀 제거)
 
   // Fullscreen Similar Problems View
-  if (isFullScreen && activeTab === 'similarProblems') {
+  if (isFullScreen) {
     const simQ = similarQuestions[similarProblemIndex];
     const hasAnswered = showSimilarResults[similarProblemIndex];
     const userSimilarAnswer = similarProblemAnswers[similarProblemIndex]?.toUpperCase();
@@ -134,7 +133,6 @@ export function ReviewModal({
             <button
               onClick={() => {
                 setIsFullScreen(false);
-                setActiveTab(null); // Close the tab when going back
               }}
               className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
@@ -320,7 +318,6 @@ export function ReviewModal({
                             setSimilarProblemAnswers({});
                             setShowSimilarResults({});
                             setIsFullScreen(false);
-                            setActiveTab(null);
                           }}
                           className="px-8 py-3 bg-purple-600 text-white rounded-lg text-base font-medium hover:bg-purple-700 transition-colors"
                         >
@@ -546,279 +543,28 @@ export function ReviewModal({
               })}
             </div>
 
-            {/* Tab Navigation */}
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setActiveTab(activeTab === 'translation' ? null : 'translation')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'translation'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'translation' ? '600' : '400' }}
-                >
-                  <Globe className="h-4 w-4" />
-                  해석
-                </button>
-                <button
-                  onClick={() => setActiveTab(activeTab === 'analysis' ? null : 'analysis')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'analysis'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'analysis' ? '600' : '400' }}
-                >
-                  <Search className="h-4 w-4" />
-                  해설
-                </button>
-                <button
-                  onClick={() => setActiveTab(activeTab === 'vocabulary' ? null : 'vocabulary')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'vocabulary'
-                      ? 'bg-white text-gray-900 border-2 border-gray-300'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'vocabulary' ? '600' : '400' }}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  단어
-                </button>
-                <button
-                  onClick={() => {
-                    if (activeTab === 'similarProblems') {
-                      setActiveTab(null);
-                    } else {
-                      setActiveTab('similarProblems');
-                      setIsFullScreen(true);
-                    }
-                  }}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 ${
-                    activeTab === 'similarProblems'
-                      ? 'bg-purple-50 text-purple-900 border-2 border-purple-400'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-300'
-                  }`}
-                  style={{ fontWeight: activeTab === 'similarProblems' ? '600' : '400' }}
-                >
-                  <FileText className="h-4 w-4" />
-                  유형문제
-                </button>
-              </div>
+            {/* SAT AI Tutor */}
+            <SAT_AI_Widget
+              context={{
+                question: question.question,
+                passage: question.passage || '',
+                choices: question.choices?.map((c) => c.text || String(c)) || [],
+                correctAnswer: correctAnswer,
+                userAnswer: selectedAnswer || undefined,
+                isCorrect,
+              }}
+            />
 
-              {/* Tab Content */}
-              {activeTab && (
-                <div className="bg-white border border-gray-200 rounded-lg p-5 min-h-[200px] max-h-[500px] overflow-y-auto">
-                  {activeTab === 'translation' ? (
-                    <div className="space-y-3">
-                      <div className="text-sm text-gray-700 leading-relaxed">
-                        <p className="mb-3">
-                          이 문제는 문맥에 맞는 적절한 단어를 선택하는 문제입니다.
-                        </p>
-                        <p className="mb-3">
-                          정답은 <strong>{correctAnswerUpper}</strong>입니다. 
-                          지문의 흐름과 문맥을 고려할 때, 이 선택지가 가장 적절합니다.
-                        </p>
-                        <p>
-                          다른 선택지들은 문맥상 적절하지 않거나 논리적으로 맞지 않습니다.
-                        </p>
-                      </div>
-                    </div>
-                  ) : activeTab === 'analysis' ? (
-                    <div className="space-y-3">
-                      <div className="text-sm text-gray-700 leading-relaxed">
-                        <p className="mb-3">
-                          <strong>문제 해설:</strong>
-                        </p>
-                        <p className="mb-3">
-                          이 문제는 {questionType || 'Central Ideas and Details'} 유형으로,
-                          {difficulty || '보통'} 난이도입니다.
-                        </p>
-                        <p className="mb-3">
-                          정답은 <strong>{correctAnswerUpper}</strong>입니다.
-                        </p>
-                        <p>
-                          이 문제를 풀기 위해서는 전체 문맥을 파악하고, 각 선택지가 
-                          문장의 흐름에 어떻게 부합하는지 분석해야 합니다.
-                        </p>
-                      </div>
-                    </div>
-                  ) : activeTab === 'vocabulary' ? (
-                    <div className="space-y-3">
-                      <div className="text-sm text-gray-700 leading-relaxed">
-                        <p className="mb-3 font-semibold">핵심 어휘:</p>
-                        <ul className="space-y-2 list-disc list-inside">
-                          <li><strong>compelling</strong> - 설득력 있는, 강렬한</li>
-                          <li><strong>acknowledge</strong> - 인정하다, 승인하다</li>
-                          <li><strong>validity</strong> - 타당성, 유효성</li>
-                          <li><strong>ambiguous</strong> - 애매한, 모호한</li>
-                          <li><strong>trivial</strong> - 사소한, 하찮은</li>
-                          <li><strong>controversial</strong> - 논란의 여지가 있는</li>
-                        </ul>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                        <p className="text-sm text-purple-800">
-                          <span className="font-medium">유형:</span> {questionType || 'Central Ideas and Details'} | 
-                          <span className="font-medium ml-2">난이도:</span> {difficulty || '보통'}
-                        </p>
-                        <p className="text-xs text-purple-700 mt-1">
-                          동일한 유형과 난이도의 문제 3개를 제공합니다.
-                        </p>
-                      </div>
-
-                      {/* Similar Problem Navigation */}
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        {similarQuestions.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setSimilarProblemIndex(idx)}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
-                              similarProblemIndex === idx
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                            }`}
-                          >
-                            {idx + 1}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Current Similar Problem */}
-                      {(() => {
-                        const simQ = similarQuestions[similarProblemIndex];
-                        const hasAnswered = showSimilarResults[similarProblemIndex];
-                        const userSimilarAnswer = similarProblemAnswers[similarProblemIndex]?.toUpperCase();
-                        const isCorrectAnswer = userSimilarAnswer === simQ.correctAnswer.toUpperCase();
-
-                        return (
-                          <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                            <div className="mb-3 pb-2 border-b border-gray-300 flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700">문제 {similarProblemIndex + 1} / 3</span>
-                              {hasAnswered && (
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                  isCorrectAnswer
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-red-100 text-red-700'
-                                }`}>
-                                  {isCorrectAnswer ? '정답' : '오답'}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="mb-3">
-                              <p className="text-gray-800 leading-relaxed text-sm mb-3">
-                                {simQ.passage}
-                              </p>
-                            </div>
-
-                            <div className="mb-3">
-                              <div className="flex items-start gap-2">
-                                <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs">
-                                  Q
-                                </div>
-                                <p className="text-gray-900 text-sm leading-relaxed">
-                                  {simQ.question}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 mb-4">
-                              {simQ.choices.map((choice) => {
-                                const choiceUpper = choice.id.toUpperCase();
-                                const isCorrectChoice = simQ.correctAnswer.toUpperCase() === choiceUpper;
-                                const isUserChoice = userSimilarAnswer === choiceUpper;
-
-                                return (
-                                  <button
-                                    key={choice.id}
-                                    onClick={() => {
-                                      if (!hasAnswered) {
-                                        setSimilarProblemAnswers(prev => ({
-                                          ...prev,
-                                          [similarProblemIndex]: choice.id
-                                        }));
-                                      }
-                                    }}
-                                    disabled={hasAnswered}
-                                    className={`w-full p-3 rounded-md border-2 transition-all text-sm text-left ${
-                                      hasAnswered
-                                        ? isCorrectChoice
-                                          ? 'border-green-500 bg-green-50'
-                                          : isUserChoice
-                                          ? 'border-red-500 bg-red-50'
-                                          : 'border-gray-200 bg-white'
-                                        : isUserChoice
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-                                    } ${hasAnswered ? 'cursor-default' : 'cursor-pointer'}`}
-                                  >
-                                    <div className="flex items-start gap-2">
-                                      <span className="text-xs text-gray-700 font-medium">
-                                        {choiceUpper}.
-                                      </span>
-                                      <span className="text-xs text-gray-900 flex-1">
-                                        {choice.text}
-                                      </span>
-                                      {hasAnswered && isCorrectChoice && (
-                                        <span className="text-xs text-green-700 font-medium">
-                                          ✓ 정답
-                                        </span>
-                                      )}
-                                      {hasAnswered && isUserChoice && !isCorrectChoice && (
-                                        <span className="text-xs text-red-700 font-medium">
-                                          ✗ 선택
-                                        </span>
-                                      )}
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-
-                            {/* Result Message */}
-                            {hasAnswered && (
-                              <div className={`p-3 rounded-lg text-sm ${
-                                isCorrectAnswer
-                                  ? 'bg-green-50 border border-green-200 text-green-800'
-                                  : 'bg-red-50 border border-red-200 text-red-800'
-                              }`}>
-                                {isCorrectAnswer
-                                  ? '정답입니다! 훌륭합니다.'
-                                  : `오답입니다. 정답은 ${simQ.correctAnswer.toUpperCase()}입니다.`}
-                              </div>
-                            )}
-
-                            {/* Check Answer Button */}
-                            {!hasAnswered && userSimilarAnswer && (
-                              <div className="flex justify-center mt-4">
-                                <button
-                                  onClick={() => {
-                                    setShowSimilarResults(prev => ({
-                                      ...prev,
-                                      [similarProblemIndex]: true
-                                    }));
-                                  }}
-                                  className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-                                >
-                                  다음
-                                </button>
-                              </div>
-                            )}
-
-                            {/* Progress Indicator */}
-                            <div className="mt-4 text-center text-xs text-gray-500">
-                              {Object.keys(showSimilarResults).filter(k => showSimilarResults[parseInt(k)]).length} / 3 완료
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Similar Problems Button */}
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <button
+                onClick={() => setIsFullScreen(true)}
+                className="w-full px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center justify-center gap-2 bg-white text-gray-600 border border-gray-200 hover:border-gray-300"
+                style={{ fontWeight: 400 }}
+              >
+                <FileText className="h-4 w-4" />
+                유형문제
+              </button>
             </div>
           </div>
         </div>

@@ -87,9 +87,15 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
       const selectedText = selection.toString().trim();
       
       const container = contentRef.current;
-      if (selectedText.length > 0 && container?.contains(range.startContainer)) {
-        const rect = range.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
+      if (selectedText.length > 0 && container && container.contains(range.startContainer)) {
+        let rect: DOMRect;
+        let containerRect: DOMRect;
+        try {
+          rect = range.getBoundingClientRect();
+          containerRect = container.getBoundingClientRect();
+        } catch {
+          return;
+        }
         
         setToolbarPosition({
           x: rect.left + rect.width / 2 - containerRect.left,
