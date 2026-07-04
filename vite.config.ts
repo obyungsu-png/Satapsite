@@ -22,6 +22,22 @@ export default defineConfig({
     outDir: 'build',
   },
 
+  // Proxy AI API calls the same way server.js does
+  server: {
+    proxy: {
+      '/api/claude': {
+        target: 'https://apiclaude.cc',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/claude/, '/v1'),
+      },
+      '/api/deepseek': {
+        target: 'https://api.deepseek.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/deepseek/, '/v1'),
+      },
+    },
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

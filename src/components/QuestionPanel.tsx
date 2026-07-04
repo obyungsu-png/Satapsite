@@ -57,7 +57,13 @@ export function QuestionPanel({
   const [eliminatedChoices, setEliminatedChoices] = useState<Set<string>>(new Set()); // B is eliminated by default
   const [fontSize, setFontSize] = useState(20); // Visually match Mark for Review size
   const [activeReviewTab, setActiveReviewTab] = useState<string | null>(null);
+  const [showAnswer, setShowAnswer] = useState(false); // Training mode answer check
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset answer feedback when question changes
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [questionNumber]);
 
   const handleEliminateChoice = (choiceId: string) => {
     setEliminatedChoices(prev => {
@@ -178,25 +184,36 @@ export function QuestionPanel({
             {choices.map((choice) => {
               const isSelected = selectedAnswer === choice.id;
               const isEliminated = eliminatedChoices.has(choice.id);
+              const isCorrectChoice = showAnswer && correctAnswer?.toUpperCase() === choice.id.toUpperCase();
+              const isWrongChoice = showAnswer && isSelected && correctAnswer?.toUpperCase() !== choice.id.toUpperCase();
               return (
                 <div key={choice.id} className="flex items-center space-x-3 mb-2">
                   <Label 
                     htmlFor={choice.id} 
                     className={`flex-1 cursor-pointer p-3 border transition-all duration-150 relative flex items-center gap-4 rounded-lg ${
-                      isSelected 
-                        ? "border-blue-500 border-2 bg-blue-50" 
-                        : "border-[#888] hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]"
-                    } ${isEliminated ? "bg-gray-50 hover:bg-gray-100" : "bg-white"}`}
-                    onClick={() => onAnswerChange(choice.id)}
+                      isCorrectChoice
+                        ? "border-emerald-400 bg-emerald-50"
+                        : isWrongChoice
+                          ? "border-red-400 bg-red-50"
+                          : isSelected 
+                            ? "border-blue-500 border-2 bg-blue-50" 
+                            : "border-[#888] hover:border-[#333] hover:border-t-[#000] hover:border-t-[2.5px] hover:bg-[#f0f0f0]"
+                    } ${isEliminated && !showAnswer ? "bg-gray-50 hover:bg-gray-100" : ""}`}
+                    onClick={() => !showAnswer && onAnswerChange(choice.id)}
+                    style={showAnswer ? { cursor: 'default' } : {}}
                   >
                     <div className={`w-7 h-7 min-w-7 min-h-7 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors ${
-                      isSelected 
-                        ? "border-blue-500 bg-blue-500 text-white" 
-                        : "border-[#666] text-[#666] hover:border-blue-400"
+                      isCorrectChoice
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : isWrongChoice
+                          ? "border-red-500 bg-red-500 text-white"
+                          : isSelected 
+                            ? "border-blue-500 bg-blue-500 text-white" 
+                            : "border-[#666] text-[#666] hover:border-blue-400"
                     }`} style={{ fontSize: '14px', fontWeight: '700' }}>
                       {choice.id.toUpperCase()}
                     </div>
-                    <span className={`relative flex-1 ${isSelected ? "text-blue-600" : "text-[#000]"} ${isEliminated ? "opacity-40" : ""}`} style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.6' }}>
+                    <span className={`relative flex-1 ${isCorrectChoice ? "text-emerald-700" : isWrongChoice ? "text-red-700" : isSelected ? "text-blue-600" : "text-[#000]"} ${isEliminated && !showAnswer ? "opacity-40" : ""}`} style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400, lineHeight: '1.6' }}>
                       {choice.text}
                     </span>
                     {/* Strike-through line across entire box */}
@@ -236,6 +253,30 @@ export function QuestionPanel({
           </RadioGroup>
         </div>
         
+        {/* 정답 확인 버튼 & 피드백 (Training mode) */}
+        {isPracticeReview && selectedAnswer && !showAnswer && (
+          <div className="flex justify-center mb-4">
+            <button
+              onClick={() => setShowAnswer(true)}
+              className="px-6 py-2.5 rounded-full text-white text-sm font-semibold transition-all hover:opacity-90"
+              style={{ backgroundColor: '#0F766E' }}
+            >
+              정답 확인
+            </button>
+          </div>
+        )}
+
+        {/* 정답/오답 피드백 */}
+        {showAnswer && (
+          <div className={`p-4 rounded-lg text-sm mb-4 ${selectedAnswer?.toUpperCase() === correctAnswer?.toUpperCase() ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800'}`}>
+            {selectedAnswer?.toUpperCase() === correctAnswer?.toUpperCase() 
+              ? '정답입니다! 👏' 
+              : `오답입니다. 정답은 ${correctAnswer?.toUpperCase()}입니다.`}
+            {explanation && (
+              <p className="mt-2 text-gray-700 leading-relaxed">{explanation}</p>
+            )}
+          </div>
+        )}
 
         {/* Video Lecture Button - Only show for past exam questions */}
         {testInfo?.source === "기출문제" && !isPracticeReview && (

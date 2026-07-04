@@ -364,9 +364,9 @@ export default function App() {
     return () => clearInterval(timer);
   }, [gameState, isTimed]);
 
-  // Auto transition from module-over after 3 seconds
+  // Auto transition from module-over after 3 seconds (only for SAT exam, not practice/training)
   useEffect(() => {
-    if (gameState !== 'module-over') return;
+    if (gameState !== 'module-over' || isPracticeReview) return;
     
     const timer = setTimeout(() => {
       if (currentModule === 1) {
@@ -574,13 +574,63 @@ export default function App() {
       setQuestions(defaultQuestions);
     }
     
+    // Training mode: skip landing pages, limit questions to selected count, show AI tutor
+    if (testInfo?.trainingType) {
+      setIsPracticeReview(true); // Show AI tutor in answer/explanation
+      const countMap: Record<string, number> = { '5문제': 5, '10문제': 10, '20문제': 20 };
+      const qCount = countMap[testInfo.questionCount] || 5;
+      
+      // Re-set questions with proper count limit
+      if (testInfo?.uploadedData && Array.isArray(testInfo.uploadedData) && testInfo.uploadedData.length > 0) {
+        setQuestions(testInfo.uploadedData.slice(0, qCount));
+      } else if (testInfo?.type === 'Math' || testInfo?.title?.includes('수학')) {
+        setQuestions(mathQuestions.slice(0, qCount));
+      } else {
+        setQuestions(defaultQuestions.slice(0, qCount));
+      }
+      
+      setGameState('exam'); // Skip Preparing/Practice-Info/Time-Mode screens
+      toast.success(`${qCount}문제의 전문훈련을 시작합니다.`);
+      return;
+    }
+    
     setGameState('preparing'); // Start with preparing screen
+  };
+
+  // Complete practice/review mode and save results
+  const handlePracticeComplete = () => {
+    const correctCount = questions.reduce((count, question) => {
+      const userAnswer = selectedAnswers[question.id]?.toLowerCase();
+      const correctAns = (question.correctAnswer || 'a').toLowerCase();
+      return userAnswer === correctAns ? count + 1 : count;
+    }, 0);
+    const accuracy = Math.round((correctCount / totalQuestions) * 100);
+    const newRecord = {
+      id: Date.now().toString(),
+      date: new Date().toISOString().split('T')[0],
+      testTitle: currentTestInfo?.title || '전문훈련',
+      type: currentTestInfo?.type || 'Training',
+      source: currentTestInfo?.source || '전문훈련',
+      score: 200 + (correctCount * 10),
+      correctCount,
+      totalQuestions,
+      accuracy,
+      questions: questions,
+      answers: { ...selectedAnswers },
+    };
+    const updatedRecords = [newRecord, ...practiceRecords];
+    setPracticeRecords(updatedRecords);
+    savePracticeRecords(updatedRecords, currentUser);
+    setGameState('score-report');
   };
 
   // Save test results when exam is completed
   const handleExamComplete = () => {
-    // Show "Check Your Work" screen when time runs out
-    setGameState('check-work');
+    if (isPracticeReview) {
+      handlePracticeComplete();
+    } else {
+      setGameState('check-work');
+    }
   };
 
   // Auto-extract vocabulary when user interacts with a question
@@ -673,6 +723,9 @@ export default function App() {
     
     if (currentQuestionIndex < currentModuleTotalQuestions - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else if (isPracticeReview) {
+      // Training/Practice mode: save record and go to score-report directly
+      handlePracticeComplete();
     } else {
       // Last question of the module - show Check Your Work screen first
       setGameState('check-work');
@@ -1805,6 +1858,63 @@ export default function App() {
                         correctAnswer: simQ.correctAnswer,
                         userAnswer: similarProblemAnswers[similarProblemIndex],
                         isCorrect: hasAnswered ? isCorrectAnswer : undefined,
+                      }}
+                      onPracticeClick={() => {
+                        setSimilarLoading(true);
+                        fetch('/api/claude/chat/completions', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a`,
+                          },
+                          body: JSON.stringify({
+                            model: 'claude-sonnet-5',
+                            messages: [
+                              { role: 'system', content: '당신은 SAT 시험 전문 출제자입니다. 주어진 문제 유형을 기반으로, 똑같은 유형의 연습 문제 3개를 만들어주세요. 각 문제는 passage, question, choices(a/b/c/d), correctAnswer를 포함해야 합니다. 반드시 JSON 배열 형태로만 응답하세요.' },
+                              { role: 'user', content: `다음은 SAT 연습 문제입니다:\n\n${simQ.question}\n\n위 문제와 같은 유형의 새로운 SAT 연습 문제 3개를 만들어주세요. JSON 배열로만 응답하세요.` }
+                            ],
+                            max_tokens: 2000,
+                            temperature: 0.8,
+                          })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                          try {
+                            const content = data.choices?.[0]?.message?.content || '';
+                            const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                            const parsed = JSON.parse(cleaned);
+                            const valid = Array.isArray(parsed)
+                              ? parsed.slice(0, 3).map((q: any, i: number) => ({
+                                  id: i + 1,
+                                  passage: q.passage || '',
+                                  question: q.question || '',
+                                  choices: Array.isArray(q.choices) ? q.choices.map((c: any, ci: number) => ({
+                                    id: String.fromCharCode(97 + ci),
+                                    text: typeof c === 'string' ? c : c.text || ''
+                                  })) : [],
+                                  correctAnswer: (q.correctAnswer || 'a').toLowerCase(),
+                                }))
+                              : [];
+                            if (valid.length > 0) {
+                              setSimilarQuestions(valid);
+                              setSimilarProblemIndex(0);
+                              setSimilarProblemAnswers({});
+                              setShowSimilarResults({});
+                              setSimilarFullscreenTab(null);
+                              toast.success('새로운 연습 문제 3개가 생성되었습니다!');
+                            } else {
+                              toast.error('문제 생성에 실패했습니다. 다시 시도해주세요.');
+                            }
+                          } catch (e) {
+                            console.error('Parse error:', e);
+                            toast.error('문제 생성 중 오류가 발생했습니다.');
+                          }
+                        })
+                        .catch(err => {
+                          console.error('Fetch error:', err);
+                          toast.error('AI 서버 연결에 실패했습니다.');
+                        })
+                        .finally(() => setSimilarLoading(false));
                       }}
                     />
                   </div>
