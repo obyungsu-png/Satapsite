@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Upload, Check, AlertCircle, FileText, Copy, Download } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface BulkUploadProps {
   onUploadSuccess: (files: any[]) => void;

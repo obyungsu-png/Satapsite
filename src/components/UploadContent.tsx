@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Upload, FileText, BookOpen, Target, BarChart3, Settings, FileDown, PlusCircle, Edit3, Tags, Trash2, BookmarkPlus, Megaphone, FileUp, Zap, Check } from 'lucide-react';
 import { AdBanner } from './AdBanner';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { SATVocaManagement } from './SATVocaManagement';
 import { SubscriptionManager } from './SubscriptionManager';
 import { AdManagement } from './AdManagement';

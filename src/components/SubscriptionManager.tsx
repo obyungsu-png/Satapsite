@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Calendar, CreditCard, QrCode, CheckCircle, XCircle, Download, Trash2, Edit2, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface Subscription {
   id: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 export function LoginPage({ onNavigateToSignUp, onLoginSuccess, onLogin }: { onNavigateToSignUp?: () => void; onLoginSuccess?: () => void; onLogin?: (email: string, name: string) => void }) {
   const [captchaCode, setCaptchaCode] = useState('');

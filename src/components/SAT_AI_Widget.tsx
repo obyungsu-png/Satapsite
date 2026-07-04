@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Send, Bot, User } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface ChatMessage {
   role: 'user' | 'assistant';

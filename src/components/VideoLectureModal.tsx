@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "./ui/button";
 import { X, Zap, BookOpen, Target, Languages, CheckCircle, Sparkles, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const AI_MODEL_OPTIONS = [

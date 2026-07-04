@@ -20,7 +20,7 @@ import { ReferenceModal } from "./components/ReferenceModal";
 import { CalculatorPanel } from "./components/CalculatorPanel";
 import { Button } from "./components/ui/button";
 import { AdBanner } from "./components/AdBanner";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { Toaster } from "./components/ui/sonner";
 import { X, Bookmark, ArrowLeft, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Download } from "lucide-react";
@@ -30,10 +30,10 @@ import { MobileExamTabs } from "./components/MobileExamTabs";
 import { SAT_AI_Widget } from "./components/SAT_AI_Widget";
 import { mathQuestions } from "./mathQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
-import expandIconsSprite from "figma:asset/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
-import dragHandleImg from "figma:asset/af403f2609b757e96b427cbfdd300891837f3bc7.png";
-import expandRightIcon from "figma:asset/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
-import expandLeftIcon from "figma:asset/15377038ef3bc5534b33d4763b177c0dedf4adef.png";
+import expandIconsSprite from "./assets/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
+import dragHandleImg from "./assets/af403f2609b757e96b427cbfdd300891837f3bc7.png";
+import expandRightIcon from "./assets/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
+import expandLeftIcon from "./assets/15377038ef3bc5534b33d4763b177c0dedf4adef.png";
 
 // TOEFL/SAT level vocabulary extraction
 const extractVocabularyFromText = (text: string, questionId: number) => {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Plus, Edit3, Trash2, Save, X, Download, Upload, Search, Settings, FolderPlus } from 'lucide-react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { generateSATWordsForDay } from './vocaWordSets';
 import { kvGet, kvSet } from '../utils/supabase/client';
 

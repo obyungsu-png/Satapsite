@@ -2,7 +2,7 @@ import { Button } from "./ui/button";
 import { ChevronLeft, X, MessageCircle, Send, RotateCcw, Eye, FileText, Play, RefreshCw, ChevronDown, ChevronRight, CheckCircle, BookOpen, Brain, Lightbulb, Sparkles, Monitor, Database, GraduationCap } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
-import historyEmptyImage from "figma:asset/5fda86ab59ab70ac4b90ec46b644ce1cd9e29092.png";
+import historyEmptyImage from "../assets/5fda86ab59ab70ac4b90ec46b644ce1cd9e29092.png";
 import { AdBannerDisplay, Advertisement } from './AdManagement';
 import { ScoreDetailModal } from './ScoreDetailModal';
 import { ReviewModal } from './ReviewModal';

@@ -1,6 +1,6 @@
 import { Trash2, Wand2, Sparkles, X, FileText, Video, Image as ImageIcon, Tag, Target, DollarSign, Calendar, Eye, EyeOff, Edit2 } from 'lucide-react';
 import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 
 const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 10000): Promise<Response> => {
