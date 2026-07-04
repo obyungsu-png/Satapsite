@@ -17,6 +17,11 @@ export default defineConfig({
     },
   },
 
+  // Output to build/ for server.js compatibility
+  build: {
+    outDir: 'build',
+  },
+
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

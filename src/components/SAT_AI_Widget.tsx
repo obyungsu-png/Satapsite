@@ -76,14 +76,21 @@ async function callAIStream(
   onError: (err: Error) => void,
 ): Promise<void> {
   const { apiKey, endpoint, modelName } = getAIConfig(model);
-  console.log('[SAT AI] stream request model:', model, '-> endpoint:', endpoint, 'modelName:', modelName);
 
-  try {
-    const response = await fetch(endpoint, {
+  const isProxy = endpoint.startsWith('/api/');
+  // Build direct endpoint for fallback (only for Claude proxy paths)
+  let directEndpoint = '';
+  if (isProxy && endpoint.includes('claude')) {
+    directEndpoint = 'https://apiclaude.cc/v1/chat/completions';
+  }
+
+  const doStreamFetch = async (url: string, label: string): Promise<void> => {
+    console.log('[SAT AI] stream request model:', model, '->', label, ':', url);
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: modelName,
@@ -91,11 +98,11 @@ async function callAIStream(
         max_tokens: 800,
         temperature: 0.7,
         stream: true,
-      })
+      }),
     });
 
     if (!response.ok) {
-      const errText = await response.text();
+      const errText = await response.text().catch(() => '');
       throw new Error(`API error (${response.status}): ${errText}`);
     }
 
@@ -133,8 +140,32 @@ async function callAIStream(
     }
 
     onDone();
-  } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)));
+  };
+
+  try {
+    await doStreamFetch(endpoint, 'proxy');
+  } catch (firstErr) {
+    const err = firstErr instanceof Error ? firstErr : new Error(String(firstErr));
+    // If proxy returns 404 and we have a direct fallback, try direct
+    if (directEndpoint && (err.message.includes('404') || err.message.includes('Not Found') || err.message.includes('NOT_FOUND'))) {
+      console.log('[SAT AI] Proxy not available (404), trying direct…');
+      try {
+        await doStreamFetch(directEndpoint, 'direct');
+      } catch (directErr) {
+        const dErr = directErr instanceof Error ? directErr : new Error(String(directErr));
+        if (dErr.message.includes('Failed to fetch') || dErr.message.includes('NetworkError')) {
+          onError(new Error('AI 서버 연결 실패: 프록시도 직접 호출도 불가능합니다. 운영 서버에 server.js 프록시를 배포해야 합니다.'));
+        } else {
+          onError(new Error(`AI 호출 실패 (직접): ${dErr.message}`));
+        }
+      }
+    } else {
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        onError(new Error('AI 서버 연결 실패: 네트워크 오류입니다. 서버가 실행 중인지 확인해주세요.'));
+      } else {
+        onError(err);
+      }
+    }
   }
 }
 
