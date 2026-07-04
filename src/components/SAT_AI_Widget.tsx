@@ -555,26 +555,28 @@ export function SAT_AI_Widget({ context, onPracticeClick }: SAT_AI_WidgetProps) 
         }
       `}</style>
 
-      {/* Action buttons — Practice and AI Tutor (가로 정렬) */}
+      {/* Action buttons — AI Tutor */}
       <div className="sat-ai-action-row">
-        <div className="sat-ai-action-col">
-          <button
-            onClick={() => onPracticeClick?.()}
-            className="sat-ai-action-btn practice"
-            aria-label="Practice"
-            title="Practice"
-          >
-            <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
-              <rect x="12" y="8.5" width="20" height="27" rx="5" fill="rgba(255,255,255,0.92)" stroke="rgba(255,255,255,0.95)" strokeWidth="2" />
-              <path d="M17 16.5L19 18.5L23 14.5" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M25.5 17H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
-              <path d="M17 25L19 27L23 23" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M25.5 25.5H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
-              <circle cx="22" cy="10" r="2.2" fill="#7dd3fc" />
-            </svg>
-          </button>
-          <span className="sat-ai-action-label">Practice</span>
-        </div>
+        {onPracticeClick && (
+          <div className="sat-ai-action-col">
+            <button
+              onClick={() => onPracticeClick()}
+              className="sat-ai-action-btn practice"
+              aria-label="Practice"
+              title="Practice"
+            >
+              <svg width="34" height="34" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+                <rect x="12" y="8.5" width="20" height="27" rx="5" fill="rgba(255,255,255,0.92)" stroke="rgba(255,255,255,0.95)" strokeWidth="2" />
+                <path d="M17 16.5L19 18.5L23 14.5" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M25.5 17H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
+                <path d="M17 25L19 27L23 23" stroke="#21b7aa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M25.5 25.5H29" stroke="#8aa0c0" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx="22" cy="10" r="2.2" fill="#7dd3fc" />
+              </svg>
+            </button>
+            <span className="sat-ai-action-label">Practice</span>
+          </div>
+        )}
         <div className="sat-ai-action-col">
           <button
             onClick={() => setIsOpen(true)}
