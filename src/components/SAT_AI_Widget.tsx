@@ -15,7 +15,8 @@ const AI_MODEL_OPTIONS = [
   { value: 'deepseek-chat', label: 'DeepSeek' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' },
-  { value: 'rerank', label: 'Rerank' }
+  { value: 'rerank', label: 'Rerank' },
+  { value: 'rerank-qwen', label: 'Rerank Qwen' }
 ] as const;
 
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
@@ -54,6 +55,10 @@ async function callAIDirect(
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
+  } else if (m.includes('rerank-qwen')) {
+    apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
+    endpoint = '/api/aihubmix/rerank';
+    modelName = 'qwen3-reranker-0.6b';
   } else if (m.includes('rerank')) {
     apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
     endpoint = '/api/aihubmix/rerank';
