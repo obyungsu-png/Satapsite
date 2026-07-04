@@ -56,9 +56,9 @@ async function callAIDirect(
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
   } else if (m.includes('rerank-qwen')) {
-    apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
-    endpoint = '/api/aihubmix/rerank';
-    modelName = 'qwen3-reranker-0.6b';
+    apiKey = 'sk-alW5YWRBMZzvCEteE31aF39b336d4bEcAd5dBe070078D4Ef';
+    endpoint = '/api/inferera/rerank';
+    modelName = 'qwen3-reranker-8b';
   } else if (m.includes('rerank')) {
     apiKey = 'sk-vbSkMjUPeOWpgFQM481331B82dCd4bC48a59E89b6aF1627a';
     endpoint = '/api/aihubmix/rerank';

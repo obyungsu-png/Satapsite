@@ -36,6 +36,15 @@ app.use('/api/aihubmix', createProxyMiddleware({
   }
 }));
 
+app.use('/api/inferera', createProxyMiddleware({
+  target: 'https://api.inferera.com',
+  changeOrigin: true,
+  pathRewrite: { '^/api/inferera': '/v1' },
+  onProxyReq: (proxyReq, req) => {
+    console.log('[Proxy] Inferera ->', req.method, req.url);
+  }
+}));
+
 app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('*', (req, res) => {
