@@ -175,7 +175,7 @@ export function TrainingContent({
               const IconComponent = type.icon;
               const isHovered = hoveredCard === type.id;
               const isSelected = selectedCard === type.id;
-              const isLocked = !isUnlocked && index >= 3; // Lock from 4th card onwards if not unlocked
+              const isLocked = false; // Training cards always accessible
               
               return (
                 <motion.div
