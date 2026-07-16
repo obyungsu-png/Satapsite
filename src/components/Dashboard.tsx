@@ -1346,6 +1346,26 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     };
   };
   
+  // CMS(Supabase)에서 업로드된 파일 중 타입 매칭 — TPO quick-start 버튼용
+  const findUploadedDataByType = (testType: string): any[] | undefined => {
+    const subcategoryMap: Record<string, string> = {
+      'Reading & Writing': 'reading-grammar',
+      'Math': 'math',
+      'Listening': 'listening',
+      'Writing': 'writing',
+    };
+    const targetSub = subcategoryMap[testType];
+    if (!targetSub) return undefined;
+
+    // uploadedFiles에서 매칭되는 서브카테고리의 첫 번째 파일 사용
+    const matchingFile = uploadedFiles.find(f => f.subcategory === targetSub);
+    if (!matchingFile) return undefined;
+
+    // createPracticeTestFromFile을 통해 변환된 uploadedData 가져오기
+    const testInfo = createPracticeTestFromFile(matchingFile);
+    return testInfo.uploadedData;
+  };
+
   // Extract words from actual test questions
   const allWordsFromTests = extractWordsFromTests();
   
@@ -1890,11 +1910,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   <span className="font-medium text-gray-800">Reading</span>
                   <Button 
                     className="px-4 py-1.5 text-sm rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    onClick={() => onStartTest({ 
-                      title: `SAT Practice Test ${num} - Reading`, 
-                      type: "Reading & Writing", 
+                    onClick={() => onStartTest({
+                      title: `SAT Practice Test ${num} - Reading`,
+                      type: "Reading & Writing",
                       source: "Homepage",
-                      date: new Date().toISOString().split('T')[0] 
+                      date: new Date().toISOString().split('T')[0],
+                      uploadedData: findUploadedDataByType("Reading & Writing"),
                     })}
                   >
                     Start Test
@@ -1905,11 +1926,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   <span className="font-medium text-gray-800">Listening</span>
                   <Button 
                     className="px-4 py-1.5 text-sm rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    onClick={() => onStartTest({ 
-                      title: `SAT Practice Test ${num} - Listening`, 
-                      type: "Listening", 
+                    onClick={() => onStartTest({
+                      title: `SAT Practice Test ${num} - Listening`,
+                      type: "Listening",
                       source: "Homepage",
-                      date: new Date().toISOString().split('T')[0] 
+                      date: new Date().toISOString().split('T')[0],
+                      uploadedData: findUploadedDataByType("Listening"),
                     })}
                   >
                     Start Test
@@ -1920,11 +1942,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   <span className="font-medium text-gray-800">Writing</span>
                   <Button 
                     className="px-4 py-1.5 text-sm rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    onClick={() => onStartTest({ 
-                      title: `SAT Practice Test ${num} - Writing`, 
-                      type: "Writing", 
+                    onClick={() => onStartTest({
+                      title: `SAT Practice Test ${num} - Writing`,
+                      type: "Writing",
                       source: "Homepage",
-                      date: new Date().toISOString().split('T')[0] 
+                      date: new Date().toISOString().split('T')[0],
+                      uploadedData: findUploadedDataByType("Writing"),
                     })}
                   >
                     Start Test

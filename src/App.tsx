@@ -122,6 +122,27 @@ const loadPracticeRecords = () => {
   }
 };
 
+// Load practice records from Supabase for a specific user
+const loadPracticeRecordsFromSupabase = async (userId: string): Promise<any[]> => {
+  try {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-records/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${publicAnonKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.records || [];
+    }
+    return [];
+  } catch (error) {
+    console.log('⚠️ Failed to load practice records from Supabase:', error);
+    return [];
+  }
+};
+
 // Save practice records to localStorage and Supabase
 const savePracticeRecords = async (records: any[], currentUser?: any) => {
   try {
@@ -392,6 +413,30 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // 로그인 시 Supabase에서 사용자별 practice records 로드
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    let cancelled = false;
+    (async () => {
+      const supabaseRecords = await loadPracticeRecordsFromSupabase(currentUser.id);
+      if (cancelled || supabaseRecords.length === 0) return;
+
+      // localStorage 기록과 Supabase 기록을 병합 (id 기준 중복 제거)
+      const localRecords = loadPracticeRecords();
+      const localIds = new Set(localRecords.map((r: any) => r.id));
+      const newFromSupabase = supabaseRecords.filter((r: any) => !localIds.has(r.id));
+      const merged = [...localRecords, ...newFromSupabase].sort((a: any, b: any) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      setPracticeRecords(merged);
+      localStorage.setItem('practiceRecords', JSON.stringify(merged));
+      console.log(`✅ Supabase에서 ${supabaseRecords.length}개 기록 로드 (병합 후 ${merged.length}개)`);
+    })();
+
+    return () => { cancelled = true; };
+  }, [currentUser]);
 
   // Timer effect - only start when exam begins and if timed mode is enabled
   useEffect(() => {
