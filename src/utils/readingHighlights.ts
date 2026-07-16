@@ -16,7 +16,7 @@ export interface Highlight {
 function getSubscriptionExpiryDate(): Date | null {
   try {
     const subscriptions = JSON.parse(localStorage.getItem('toefl_subscriptions') || '[]');
-    const currentUser = JSON.parse(localStorage.getItem('toefl_current_user') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
     if (!currentUser.email) return null;
     const userSubscription = subscriptions.find((sub: any) =>
       sub.email === currentUser.email && sub.status === 'Active'
@@ -33,7 +33,7 @@ function getSubscriptionExpiryDate(): Date | null {
  */
 function getCurrentUserId(): string | null {
   try {
-    const currentUser = JSON.parse(localStorage.getItem('toefl_current_user') || '{}');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
     return currentUser.id || null;
   } catch {
     return null;

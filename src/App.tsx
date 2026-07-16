@@ -32,6 +32,7 @@ import { ToeflAiWidget } from "./components/ToeflAiWidget";
 import { mathQuestions } from "./mathQuestions";
 import { getTrainingQuestions } from "./trainingQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
+import { supabase } from "./utils/supabase/client";
 import expandIconsSprite from "./assets/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
 import dragHandleImg from "./assets/af403f2609b757e96b427cbfdd300891837f3bc7.png";
 import expandRightIcon from "./assets/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
@@ -348,6 +349,49 @@ export default function App() {
       console.error('Error saving currentUser to localStorage:', error);
     }
   }, [currentUser]);
+
+  // Supabase Auth 상태 변화 감지 — LoginForm 등에서 로그인/로그아웃 시 자동 동기화
+  useEffect(() => {
+    // 페이지 로드 시 기존 세션 확인
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const supabaseUser = session.user;
+        const email = supabaseUser.email || '';
+        // username 추출: members.allmyexam.com 도메인이면 @ 앞부분이 아이디
+        const username = email.includes('@members.') ? email.split('@')[0] : (supabaseUser.user_metadata?.name || email);
+        setCurrentUser({
+          id: supabaseUser.id,
+          email,
+          name: username,
+          username,
+          createdAt: supabaseUser.created_at,
+        });
+      }
+    });
+
+    // 인증 상태 변화 리스너
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const supabaseUser = session.user;
+        const email = supabaseUser.email || '';
+        const username = email.includes('@members.') ? email.split('@')[0] : (supabaseUser.user_metadata?.name || email);
+        setCurrentUser({
+          id: supabaseUser.id,
+          email,
+          name: username,
+          username,
+          createdAt: supabaseUser.created_at,
+        });
+      } else {
+        // 로그아웃 시 currentUser 초기화
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Timer effect - only start when exam begins and if timed mode is enabled
   useEffect(() => {

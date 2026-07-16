@@ -16,9 +16,11 @@ import { TrainingContent } from './TrainingContent';
 import { SignUpPage } from './SignUpPage';
 import { LoginPage } from './LoginPage';
 import { LoginPopup } from './LoginPopup';
+import { LoginForm } from './LoginForm';
 import { SubscriptionManager } from './SubscriptionManager';
 import { generateTableRows } from './utils/generateTableRows';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../utils/supabase/client';
 import { AdManagement, Advertisement, AdBannerDisplay } from './AdManagement';
 import { LandingPage } from './LandingPage';
 import { BulkUpload } from './BulkUpload';
@@ -4636,16 +4638,19 @@ ${studentMessage || '(메시지가 없습니다)'}`;
   };
 
   const renderContent = () => {
-    // Show login page if active
+    // Show login page if active — LoginForm 사용 (Supabase Auth)
     if (showLoginPage) {
-      return <LoginPage 
-        onNavigateToSignUp={() => {
-          setShowLoginPage(false);
-          setShowSignUpPage(true);
-        }}
-        onLoginSuccess={handleLoginSuccess}
-        onLogin={handleLogin}
-      />;
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+          <LoginForm
+            onClose={() => setShowLoginPage(false)}
+            onLoginSuccess={(username) => {
+              handleLoginSuccess();
+              toast.success(`환영합니다, ${username}님!`);
+            }}
+          />
+        </div>
+      );
     }
     
     // Show signup page if active
@@ -4827,8 +4832,9 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   <div className="text-sm sm:text-base font-semibold text-gray-700">
                     Hi, <span style={{ color: '#0891B2' }}>{currentUser.name || currentUser.username || currentUser.email}</span>
                   </div>
-                  <button 
-                    onClick={() => {
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
                       if (setCurrentUser) {
                         setCurrentUser(null);
                       }

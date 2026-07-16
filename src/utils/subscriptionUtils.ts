@@ -1,7 +1,7 @@
 // Check if user has an active subscription
 export function hasActiveSubscription(): boolean {
   const subscriptions = JSON.parse(localStorage.getItem('toefl_subscriptions') || '[]');
-  const currentUser = JSON.parse(localStorage.getItem('toefl_current_user') || '{}');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   
   if (!currentUser.email) {
     return false;
