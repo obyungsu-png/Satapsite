@@ -1,85 +1,94 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const CLAUDE_API_URL = 'https://apiclaude.cc/v1/chat/completions';
+const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY || 'sk-3bd59126ffdfa8ed1fcca872704a87bd00f8a81e00edb4b0126551f2dd8cb070';
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Only allow POST
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200, CORS_HEADERS);
+    res.end();
+    return;
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.writeHead(405, CORS_HEADERS);
+    res.end('Method Not Allowed');
+    return;
   }
 
   try {
-    const targetUrl = 'https://apiclaude.cc/v1/chat/completions';
+    const { model, messages, max_tokens, temperature, stream } = req.body;
 
-    // Forward the request body and headers
-    const authHeader = req.headers['authorization'] || '';
-    const contentType = req.headers['content-type'] || 'application/json';
-
-    const response = await fetch(targetUrl, {
+    const response = await fetch(CLAUDE_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': contentType,
-        'Authorization': authHeader as string,
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${CLAUDE_API_KEY}`,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify({
+        model: model || 'claude-sonnet-5',
+        messages,
+        max_tokens: max_tokens || 1200,
+        temperature: temperature || 0.6,
+        stream: stream || false,
+      }),
     });
 
-    // Check if the response is a streaming response
-    const isStreaming = req.body?.stream === true;
+    // 스트리밍 응답 — 청크 단위 실시간 파이핑
+    if (stream) {
+      res.writeHead(200, {
+        ...CORS_HEADERS,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      });
 
-    if (isStreaming) {
-      // For streaming responses, forward as SSE
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
+      // HTTP status 에러는 SSE 내에 error 이벤트로 전송
       if (!response.ok) {
-        const errorText = await response.text();
-        res.status(response.status).json({ error: `API error (${response.status}): ${errorText}` });
+        const errText = await response.text();
+        res.write(`data: {"error":{"message":"${errText.slice(0, 200)}","type":"api_error","code":"${response.status}"}}\n\n`);
+        res.write('data: [DONE]\n\n');
+        res.end();
         return;
       }
 
-      if (response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            res.write(chunk);
-          }
-        } catch (streamErr) {
-          console.error('[Claude Proxy] Stream error:', streamErr);
-        }
+      const reader = response.body?.getReader();
+      if (!reader) {
         res.end();
-      } else {
-        // No body, just forward the text
-        const text = await response.text();
-        res.write(text);
-        res.end();
+        return;
       }
-    } else {
-      // Non-streaming: forward JSON response
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-      const data = await response.json();
-      res.status(response.status).json(data);
+      // 실시간 청크 파이핑 — 전체 대기 없이 즉시 전송
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) res.write(value);
+      }
+      res.end();
+      return;
     }
+
+    // 비스트리밍 응답
+    const data = await response.json();
+
+    if (!response.ok) {
+      res.writeHead(response.status, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data));
+      return;
+    }
+
+    res.writeHead(200, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(data));
   } catch (error: any) {
-    console.error('[Claude Proxy] Error:', error);
-    res.status(500).json({ error: `Proxy error: ${error.message}` });
+    console.error('Claude proxy error:', error);
+    res.writeHead(500, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: error.message || 'Internal Server Error' }));
   }
 }
-
-// Handle CORS preflight
-export const OPTIONS = async (req: VercelRequest, res: VercelResponse) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.status(200).end();
-};

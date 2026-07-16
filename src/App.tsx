@@ -28,6 +28,7 @@ import { BluebookExpandButton } from "./components/BluebookExpandButton";
 import { BluebookExpandIcon } from "./components/BluebookExpandIcon";
 import { MobileExamTabs } from "./components/MobileExamTabs";
 import { SAT_AI_Widget } from "./components/SAT_AI_Widget";
+import { ToeflAiWidget } from "./components/ToeflAiWidget";
 import { mathQuestions } from "./mathQuestions";
 import { getTrainingQuestions } from "./trainingQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
@@ -304,6 +305,7 @@ export default function App() {
   const [showVideoModal, setShowVideoModal] = useState(false); // Video modal state
   const [selectedVideoQuestion, setSelectedVideoQuestion] = useState<number | null>(null); // Current video question
   const [showReviewModal, setShowReviewModal] = useState(false); // Review modal state
+  const [isAiTutorOpen, setIsAiTutorOpen] = useState(false); // AI 튜터 패널 상태
   const [showScoreDetail, setShowScoreDetail] = useState(false); // Score detail modal state
   const [showAnalysis, setShowAnalysis] = useState(false); // Analysis view state
   const [isTimed, setIsTimed] = useState(true); // Time mode state (Timed or Untimed)
@@ -1177,6 +1179,18 @@ export default function App() {
           questionType="Central Ideas and Details"
           difficulty="보통"
         />
+
+        {/* AI 튜터 — Review Modal 열려 있을 때 문제 컨텍스트 전달 */}
+        {showReviewModal && (
+          <ToeflAiWidget
+            position="right"
+            zIndex={86}
+            open={isAiTutorOpen}
+            onOpenChange={setIsAiTutorOpen}
+            contextLabel={`SAT Reading · ${currentQuestion.id}`}
+            questionData={currentQuestion}
+          />
+        )}
       </>
     );
   }
@@ -1253,6 +1267,16 @@ export default function App() {
             />
           </div>
         </div>
+
+        {/* AI 튜터 — 복습 모드에서 현재 문제 컨텍스트 전달 */}
+        <ToeflAiWidget
+          position="right"
+          zIndex={86}
+          open={isAiTutorOpen}
+          onOpenChange={setIsAiTutorOpen}
+          contextLabel={`SAT Reading · Question ${currentQuestion.id}`}
+          questionData={currentQuestion}
+        />
       </div>
     );
   }
