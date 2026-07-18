@@ -4,7 +4,18 @@ import { SERVER_BASE_URL, getServerHeaders } from '../utils/apiConfig';
 import { supabase } from '../utils/supabase/client';
 import { usernameToEmail, isValidUsername } from '../utils/authMapping';
 
-// ── WeChat SVG icon ──
+// ... icons stay the same ...
+
+interface LoginFormProps {
+  onClose: () => void;
+  onLoginSuccess?: (username: string) => void;
+  /** 외부에서 강제로 'login' | 'signup' 모드를 지정할 때 사용 (기본값: 'login') */
+  initialMode?: 'login' | 'signup';
+}
+
+type AuthMethod = 'email' | 'username';
+
+// ... CAPTCHA and constants stay the same ...
 function WeChatIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -30,7 +41,6 @@ interface LoginFormProps {
   onLoginSuccess?: (username: string) => void;
 }
 
-type Mode = 'login' | 'signup';
 type AuthMethod = 'email' | 'username';
 
 // ── 4자리 보안코드(사람/봇 구분용 캡차) 생성 ──
@@ -44,9 +54,9 @@ function generateCaptcha(): string {
   return out;
 }
 
-export function LoginForm({ onClose, onLoginSuccess }: LoginFormProps) {
+export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: LoginFormProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod>('username');
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [showWechatQR, setShowWechatQR] = useState(false);
 
   // Form fields — username mode

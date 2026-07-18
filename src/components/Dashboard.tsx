@@ -17,6 +17,7 @@ import { SignUpPage } from './SignUpPage';
 import { LoginPage } from './LoginPage';
 import { LoginPopup } from './LoginPopup';
 import { LoginForm } from './LoginForm';
+import { hasActiveSubscription } from '../utils/subscriptionUtils';
 import { SubscriptionManager } from './SubscriptionManager';
 import { generateTableRows } from './utils/generateTableRows';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -533,6 +534,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   const [activeTab, setActiveTab] = useState('Home');
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
+  const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login'); // 회원가입 모달 구분용
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -542,23 +544,34 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     return localStorage.getItem('adminMode') === 'true';
   });
   
-  // 관리자 모드 변경 감지
+  // 관리자 모드 변경 감지 + 구독 상태 확인 (async)
   useEffect(() => {
-    const checkAdminMode = () => {
+    const checkAccess = async () => {
       const adminMode = localStorage.getItem('adminMode') === 'true';
-      setIsContentUnlocked(adminMode);
+      if (adminMode) {
+        setIsContentUnlocked(true);
+        return;
+      }
+      // 구독 확인 (Supabase)
+      const subscribed = await hasActiveSubscription();
+      setIsContentUnlocked(subscribed);
     };
     
     // 초기 체크
-    checkAdminMode();
+    checkAccess();
     
     // storage 이벤트 리스너 추가 (다른 탭에서 변경 시 감지)
-    window.addEventListener('storage', checkAdminMode);
+    window.addEventListener('storage', checkAccess);
+    
+    // 로그인 상태 변경 시 재확인
+    if (currentUser) {
+      checkAccess();
+    }
     
     return () => {
-      window.removeEventListener('storage', checkAdminMode);
+      window.removeEventListener('storage', checkAccess);
     };
-  }, []);
+  }, [currentUser]);
 
   // Helper function to save student to Supabase
   const saveStudentToSupabase = async (student: any) => {
@@ -4666,19 +4679,34 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
           <LoginForm
-            onClose={() => setShowLoginPage(false)}
+            onClose={() => {
+              setShowLoginPage(false);
+              setLoginMode('login');
+            }}
             onLoginSuccess={(username) => {
               handleLoginSuccess();
               toast.success(`환영합니다, ${username}님!`);
             }}
+            initialMode={loginMode}
           />
         </div>
       );
     }
-    
-    // Show signup page if active
+
+    // Show signup page if active (fallback — LoginForm의 signup 모드가 기본)
     if (showSignUpPage) {
-      return <SignUpPage onSignUpSuccess={handleLoginSuccess} onSignUp={handleLogin} />;
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+          <LoginForm
+            onClose={() => setShowSignUpPage(false)}
+            onLoginSuccess={(username) => {
+              handleLoginSuccess();
+              toast.success(`환영합니다, ${username}님!`);
+            }}
+            initialMode="signup"
+          />
+        </div>
+      );
     }
     
     // Show regular tab content
@@ -4882,46 +4910,48 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </div>
               ) : (
                 <>
-                  <button 
+                  <button
                     onClick={() => {
                       setShowLoginPage(true);
+                      setLoginMode('login');
                       setShowSignUpPage(false);
                     }}
                     className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-md text-xs sm:text-base transition-colors font-semibold whitespace-nowrap"
-                    style={{ 
-                      backgroundColor: showLoginPage && !showSignUpPage ? '#0891B2' : 'white',
-                      color: showLoginPage && !showSignUpPage ? 'white' : '#374151',
+                    style={{
+                      backgroundColor: showLoginPage && loginMode === 'login' ? '#0891B2' : 'white',
+                      color: showLoginPage && loginMode === 'login' ? 'white' : '#374151',
                       border: '1px solid #D1D5DB'
                     }}
                     onMouseEnter={(e) => {
-                      if (!showLoginPage || showSignUpPage) {
+                      if (!showLoginPage || loginMode !== 'login') {
                         e.currentTarget.style.backgroundColor = '#F3F4F6';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = showLoginPage && !showSignUpPage ? '#0891B2' : 'white';
+                      e.currentTarget.style.backgroundColor = showLoginPage && loginMode === 'login' ? '#0891B2' : 'white';
                     }}
                   >
                     로그인
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
-                      setShowSignUpPage(true);
-                      setShowLoginPage(false);
+                      setShowLoginPage(true);
+                      setLoginMode('signup');
+                      setShowSignUpPage(false);
                     }}
                     className="px-3 sm:px-6 py-1.5 sm:py-2.5 rounded-md text-xs sm:text-base transition-colors font-semibold whitespace-nowrap"
-                    style={{ 
-                      backgroundColor: showSignUpPage && !showLoginPage ? '#0891B2' : 'white',
-                      color: showSignUpPage && !showLoginPage ? 'white' : '#374151',
+                    style={{
+                      backgroundColor: showLoginPage && loginMode === 'signup' ? '#0891B2' : 'white',
+                      color: showLoginPage && loginMode === 'signup' ? 'white' : '#374151',
                       border: '1px solid #D1D5DB'
                     }}
                     onMouseEnter={(e) => {
-                      if (!showSignUpPage || showLoginPage) {
+                      if (!showLoginPage || loginMode !== 'signup') {
                         e.currentTarget.style.backgroundColor = '#F3F4F6';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = showSignUpPage && !showLoginPage ? '#0891B2' : 'white';
+                      e.currentTarget.style.backgroundColor = showLoginPage && loginMode === 'signup' ? '#0891B2' : 'white';
                     }}
                   >
                     회원가입

@@ -15,7 +15,7 @@ const SERVER_ORIGIN: string =
 
 export const SERVER_BASE_PATH: string =
   (import.meta.env.VITE_SERVER_BASE_PATH as string | undefined) ??
-  '/make-server-e46cd33a';
+  '/make-server-46fa08c1';
 
 /**
  * Full base URL for the edge function, e.g.

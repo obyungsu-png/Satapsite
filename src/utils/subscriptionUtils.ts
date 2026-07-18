@@ -1,25 +1,34 @@
-// Check if user has an active subscription
-export function hasActiveSubscription(): boolean {
-  const subscriptions = JSON.parse(localStorage.getItem('toefl_subscriptions') || '[]');
+import { SERVER_BASE_URL, getServerHeaders } from './apiConfig';
+
+// Check if user has an active subscription (Supabase 기반)
+export async function hasActiveSubscription(): Promise<boolean> {
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   
   if (!currentUser.email) {
     return false;
   }
 
-  const userSubscription = subscriptions.find((sub: any) => 
-    sub.email === currentUser.email && sub.status === 'Active'
-  );
+  try {
+    const response = await fetch(`${SERVER_BASE_URL}/subscriptions`, {
+      headers: getServerHeaders()
+    });
+    if (!response.ok) return false;
+    
+    const subscriptions = await response.json();
+    const userSubscription = subscriptions.find((sub: any) => 
+      sub.email === currentUser.email && sub.status === 'Active'
+    );
 
-  if (!userSubscription) {
+    if (!userSubscription) return false;
+
+    // Check if subscription is still valid
+    const expiryDate = new Date(userSubscription.expiryDate);
+    const today = new Date();
+    return expiryDate >= today;
+  } catch (error) {
+    console.error('Error checking subscription:', error);
     return false;
   }
-
-  // Check if subscription is still valid
-  const expiryDate = new Date(userSubscription.expiryDate);
-  const today = new Date();
-  
-  return expiryDate >= today;
 }
 
 // Check if specific content should be locked
