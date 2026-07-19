@@ -100,13 +100,12 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
     setShowWechatQR(true);
   };
 
-  // OAuth/OTP 리다이렉트 URL — 프로덕션은 sat.allmyexam.com으로 고정
+  // OAuth/OTP 리다이렉트 URL — 현재 접속한 하위 도메인을 그대로 유지
+  // 하나의 Supabase 프로젝트에 여러 하위 도메인(allmyexam.com, sat.allmyexam.com,
+  // toefl.allmyexam.com 등)이 연결되어 있으므로, window.location.origin을 사용해
+  // 사용자가 로그인을 시작한 하위 도메인으로 돌아오도록 한다.
+  // 주의: Supabase Dashboard의 Redirect URLs에 모든 하위 도메인을 등록해야 함.
   const getRedirectURL = (): string => {
-    // 배포 환경 (allmyexam.com 도메인)에서는 sat.allmyexam.com으로 고정
-    if (window.location.hostname.includes('allmyexam.com')) {
-      return 'https://sat.allmyexam.com/#/auth/callback';
-    }
-    // 개발 환경 (localhost 등)은 현재 origin 사용
     return `${window.location.origin}/#/auth/callback`;
   };
 
