@@ -100,11 +100,21 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
     setShowWechatQR(true);
   };
 
+  // OAuth/OTP 리다이렉트 URL — 프로덕션은 sat.allmyexam.com으로 고정
+  const getRedirectURL = (): string => {
+    // 배포 환경 (allmyexam.com 도메인)에서는 sat.allmyexam.com으로 고정
+    if (window.location.hostname.includes('allmyexam.com')) {
+      return 'https://sat.allmyexam.com/#/auth/callback';
+    }
+    // 개발 환경 (localhost 등)은 현재 origin 사용
+    return `${window.location.origin}/#/auth/callback`;
+  };
+
   const handleGoogleLogin = async () => {
     setShowWechatQR(false);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/#/auth/callback` },
+      options: { redirectTo: getRedirectURL() },
     });
     if (error) alert('Google 로그인 실패: ' + error.message);
   };
@@ -120,7 +130,7 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
-        options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/#/auth/callback` },
+        options: { shouldCreateUser: true, emailRedirectTo: getRedirectURL() },
       });
       if (error) {
         alert('인증번호 발송 실패: ' + error.message);
