@@ -199,7 +199,7 @@ function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateT
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = category === 'basic' ? BookOpen : category === 'pastExams' ? BookOpen : Target;
-  const isLocked = false; // 모든 잠금 해제
+  const isLocked = !isUnlocked; // 수강권 기반 잠금
   
   return (
     <motion.div
@@ -281,14 +281,17 @@ function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateT
 }
 
 // TrainingCard Component with hover effect for Training
-function TrainingCard({ type, index, uploadedCount, onStartTraining }: { 
+function TrainingCard({ type, index, uploadedCount, onStartTraining, isUnlocked, onNavigateToPricing }: { 
   type: any; 
   index: number; 
   uploadedCount: number;
   onStartTraining: () => void;
+  isUnlocked?: boolean;
+  onNavigateToPricing?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = type.icon;
+  const isLocked = !isUnlocked; // 수강권 기반 잠금
   
   return (
     <motion.div
@@ -297,22 +300,27 @@ function TrainingCard({ type, index, uploadedCount, onStartTraining }: {
       transition={{ delay: index * 0.05 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="rounded-xl transition-all duration-300"
+      className="rounded-xl transition-all duration-300 relative"
       style={{
-        backgroundColor: isHovered ? '#D1C4E9' : '#F5F5F5',
-        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.08)'
+        backgroundColor: isLocked ? '#f5f5f5' : (isHovered ? '#D1C4E9' : '#F5F5F5'),
+        boxShadow: isHovered ? '0 4px 16px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.08)',
+        opacity: isLocked ? 0.6 : 1
       }}
-      whileHover={{ scale: 1.02, y: -3 }}
+      whileHover={{ scale: isLocked ? 1 : 1.02, y: isLocked ? 0 : -3 }}
     >
       <div className="p-4 text-center">
         <motion.div 
           className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2"
-          style={{ backgroundColor: 'white' }}
+          style={{ backgroundColor: isLocked ? '#d1d5db' : 'white' }}
         >
-          <Icon className="w-5 h-5" style={{ color: '#5E35B1' }} />
+          {isLocked ? (
+            <Lock className="w-5 h-5 text-gray-500" />
+          ) : (
+            <Icon className="w-5 h-5" style={{ color: '#5E35B1' }} />
+          )}
         </motion.div>
         
-        <h3 className="mb-1 text-sm" style={{ color: '#000', fontWeight: 700 }}>
+        <h3 className="mb-1 text-sm" style={{ color: isLocked ? '#6b7280' : '#000', fontWeight: 700 }}>
           {type.name}
         </h3>
         
@@ -336,18 +344,32 @@ function TrainingCard({ type, index, uploadedCount, onStartTraining }: {
         </p>
 
         <div className="space-y-1.5">
-          <Button
-            onClick={onStartTraining}
-            className="w-full py-1.5 rounded transition-colors text-white text-xs"
-            size="sm"
-            style={{ backgroundColor: '#2B478B' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3666'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
-          >
-            훈련 시작
-          </Button>
+          {!isLocked ? (
+            <Button
+              onClick={onStartTraining}
+              className="w-full py-1.5 rounded transition-colors text-white text-xs"
+              size="sm"
+              style={{ backgroundColor: '#2B478B' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3666'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2B478B'}
+            >
+              훈련 시작
+            </Button>
+          ) : (
+            <Button
+              onClick={() => onNavigateToPricing?.()}
+              className="w-full py-1.5 rounded transition-colors text-white text-xs"
+              size="sm"
+              style={{ backgroundColor: '#9CA3AF' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#9CA3AF'}
+            >
+              <Lock className="w-3 h-3 inline mr-1" />
+              잠금 해제
+            </Button>
+          )}
           
-          {uploadedCount > 0 && (
+          {uploadedCount > 0 && !isLocked && (
             <Button
               className="w-full bg-gray-100 text-gray-700 py-1.5 rounded hover:bg-gray-200 text-xs"
               size="sm"
@@ -357,6 +379,26 @@ function TrainingCard({ type, index, uploadedCount, onStartTraining }: {
           )}
         </div>
       </div>
+      
+      {/* Unlock Button Overlay */}
+      {isLocked && (
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onNavigateToPricing) {
+              onNavigateToPricing();
+            }
+          }}
+          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
+            <Lock size={14} className="md:w-4 md:h-4" />
+            <span className="whitespace-nowrap">Unlock Now</span>
+          </div>
+        </motion.button>
+      )}
     </motion.div>
   );
 }
@@ -4818,6 +4860,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       setShowLoginPopup(true);
                       return;
                     }
+                    if (!isContentUnlocked) {
+                      setActiveTab('가격');
+                      return;
+                    }
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('강의 및 특강');
@@ -4840,6 +4886,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       setShowLoginPopup(true);
                       return;
                     }
+                    if (!isContentUnlocked) {
+                      setActiveTab('가격');
+                      return;
+                    }
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('전문 훈련');
@@ -4860,6 +4910,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       setShowSignUpPage(false);
                       setActiveTab('연습 기록');
                       setShowLoginPopup(true);
+                      return;
+                    }
+                    if (!isContentUnlocked) {
+                      setActiveTab('가격');
                       return;
                     }
                     setShowLoginPage(false);
