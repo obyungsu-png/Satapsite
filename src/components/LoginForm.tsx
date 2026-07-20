@@ -100,13 +100,12 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
     setShowWechatQR(true);
   };
 
-  // OAuth/OTP 리다이렉트 URL — 현재 접속한 하위 도메인을 그대로 유지
-  // 하나의 Supabase 프로젝트에 여러 하위 도메인(allmyexam.com, sat.allmyexam.com,
-  // toefl.allmyexam.com 등)이 연결되어 있으므로, window.location.origin을 사용해
-  // 사용자가 로그인을 시작한 하위 도메인으로 돌아오도록 한다.
-  // 주의: Supabase Dashboard의 Redirect URLs에 모든 하위 도메인을 등록해야 함.
+  // OAuth/OTP 리다이렉트 URL — 현재 접속한 하위 도메인(origin만) 사용
+  // 주의: # 해시나 path를 포함하면 Supabase가 Redirect URL 매칭에 실패하여
+  // Site URL로 폴백함. origin만 전달해야 정확히 매칭됨.
+  // detectSessionInUrl: true가 ?code=... 파라미터를 자동 감지하여 세션 생성.
   const getRedirectURL = (): string => {
-    return `${window.location.origin}/#/auth/callback`;
+    return window.location.origin;
   };
 
   const handleGoogleLogin = async () => {
