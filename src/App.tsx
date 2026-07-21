@@ -1639,12 +1639,13 @@ export default function App() {
                 }}
                 className=""
               >
-                <PassagePanel 
+                <PassagePanel
                   content={currentQuestion.passage}
                   highlightsMode={highlightsMode}
                   onExpandRight={handleExpandLeft}
                   isExpanded={isExpanded}
                   expandDirection={expandDirection}
+                  isPracticeReview={isPracticeReview}
                 />
               </Resizable>
               
