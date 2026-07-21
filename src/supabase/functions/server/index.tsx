@@ -797,4 +797,54 @@ app.post('/make-server-46fa08c1/days', async (c) => {
   }
 });
 
+// ==============================================
+// Auth Routes — 아이디+비밀번호 회원가입 (관리자 API로 직접 생성)
+// ==============================================
+// 클라이언트에서 supabase.auth.signUp()을 직접 호출하면 Supabase가 매 가입마다
+// "가입 확인" 이메일을 발송하려 시도한다. 이 앱은 실제 받은편지함이 없는
+// 합성 이메일(아이디@members.allmyexam.com)을 쓰기 때문에 그 이메일은 어차피
+// 아무도 못 받는데도 Supabase 프로젝트의 기본 이메일 발송 한도(시간당 매우 적음)를
+// 소모해 "email rate limit exceeded" 오류로 회원가입이 막히는 문제가 발생한다.
+// 서버(서비스 롤 키)에서 admin.createUser + email_confirm:true로 계정을 만들면
+// 확인 이메일 자체가 발송되지 않아 이 한도에 영향을 받지 않는다.
+const MEMBER_EMAIL_DOMAIN = 'members.allmyexam.com';
+const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
+
+app.post('/make-server-46fa08c1/auth/register', async (c) => {
+  if (!supabase) {
+    return c.json({ error: 'Server not configured' }, 500);
+  }
+  try {
+    const { username, password } = await c.req.json();
+
+    if (!username || typeof username !== 'string' || !USERNAME_REGEX.test(username.trim())) {
+      return c.json({ error: '아이디는 영문/숫자/밑줄 3~20자로 입력해주세요.' }, 400);
+    }
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return c.json({ error: '비밀번호는 6자 이상으로 입력해주세요.' }, 400);
+    }
+
+    const email = `${username.trim().toLowerCase()}@${MEMBER_EMAIL_DOMAIN}`;
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // 확인 이메일 발송 안 함 (rate limit 영향 없음)
+    });
+
+    if (error) {
+      if (/already|registered|exists/i.test(error.message)) {
+        return c.json({ error: '이미 가입된 아이디예요.', code: 'already_registered' }, 409);
+      }
+      console.error('admin.createUser error:', error.message);
+      return c.json({ error: '회원가입에 실패했어요: ' + error.message }, 400);
+    }
+
+    return c.json({ success: true, user: { id: data.user?.id, email } });
+  } catch (error) {
+    console.error('Register error:', error);
+    return c.json({ error: 'Registration failed' }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

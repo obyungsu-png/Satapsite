@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Lock, User, Mail, RefreshCw, QrCode, Send } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
 import { usernameToEmail, isValidUsername } from '../utils/authMapping';
+import { SERVER_BASE_URL, getServerHeaders } from '../utils/apiConfig';
 
 // ... icons stay the same ...
 
@@ -191,35 +192,40 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
   };
 
   // ── 아이디 + 비밀번호 + 보안코드 회원가입 ──
+  // 서버(edge function)에서 admin.createUser로 계정을 생성한다.
+  // 클라이언트에서 supabase.auth.signUp()을 직접 호출하면 Supabase가 매번
+  // "가입 확인" 이메일 발송을 시도하는데, 이 앱은 실제 받은편지함이 없는
+  // 합성 이메일(아이디@members.allmyexam.com)을 쓰기 때문에 그 이메일은
+  // 아무도 못 받으면서도 프로젝트의 이메일 발송 한도만 소모해 "email rate
+  // limit exceeded" 오류로 가입이 막히는 문제가 있었다. 서버에서 만들면
+  // 확인 이메일이 아예 발송되지 않아 이 문제가 생기지 않는다.
   const doSignup = async () => {
-    // edge function 없이 Supabase Auth로 직접 가입
-    // (중복 아이디 검사도 Supabase Auth가 처리)
-    const email = usernameToEmail(username);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    try {
+      const res = await fetch(`${SERVER_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { ...getServerHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+      const result = await res.json().catch(() => ({}));
 
-    if (error) {
-      alert(/already|registered|exists/i.test(error.message)
-        ? '이미 가입된 아이디예요. 로그인 탭에서 로그인해 주세요.'
-        : '회원가입에 실패했어요: ' + error.message);
+      if (!res.ok) {
+        if (result.code === 'already_registered') {
+          alert('이미 가입된 아이디예요. 로그인 탭에서 로그인해 주세요.');
+          setMode('login');
+          return;
+        }
+        alert(result.error || '회원가입에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+    } catch (err) {
+      console.error('Register request error:', err);
+      alert('서버 연결에 실패했습니다. 다시 시도해 주세요.');
       return;
     }
 
-    // 이메일 확인이 켜진 프로젝트에서는 기존 이메일 가입 시 빈 identities가 반환됨
-    if (data.user && data.user.identities && data.user.identities.length === 0) {
-      alert('이미 가입된 아이디예요. 로그인 탭에서 로그인해 주세요.');
-      setMode('login');
-      return;
-    }
-
-    // 가입 성공 → 세션이 있으면 즉시 로그인 완료
-    // (onAuthStateChange가 currentUser 동기화 + CRM 학생 등록을 처리)
-    if (data.session) {
-      if (onLoginSuccess) onLoginSuccess(username.trim().toLowerCase());
-      onClose();
-      return;
-    }
-
-    // 세션이 없는 설정(이메일 확인 필요)이면 바로 로그인 시도
+    // 가입 성공 → 클라이언트에서 로그인해 세션 발급
+    // (onAuthStateChange가 currentUser 동기화 + CRM 학생 등록을 처리,
+    // doLogin이 성공 시 onLoginSuccess/onClose까지 함께 처리한다)
     await doLogin();
   };
 
