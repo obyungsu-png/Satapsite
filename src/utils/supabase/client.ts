@@ -26,8 +26,25 @@ export const supabase = createClient(supabaseUrl, publicAnonKey, {
 // KV store helpers for sat_voca data
 const TABLE = 'kv_store_46fa08c1';
 
+/**
+ * KV 전용 anon 클라이언트.
+ * 메인 `supabase` 클라이언트는 로그인 후 사용자 JWT를 Authorization에 자동 첨부하는데,
+ * KV 테이블의 RLS 정책은 anon 역할 기준이라 인증된 요청이 거부된다.
+ * (로그인 상태에서 수강권 등록/구독 확인/학생 등록이 실패하던 원인)
+ * 세션을 저장·첨부하지 않는 별도 클라이언트로 항상 anon 키만 사용한다.
+ */
+const kvClient = createClient(supabaseUrl, publicAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storageKey: `sb-${projectId}-kv-anon`,
+    flowType: 'implicit',
+  },
+});
+
 export async function kvGet(key: string): Promise<any | null> {
-  const { data, error } = await supabase
+  const { data, error } = await kvClient
     .from(TABLE)
     .select('value')
     .eq('key', key)
@@ -40,11 +57,36 @@ export async function kvGet(key: string): Promise<any | null> {
 }
 
 export async function kvSet(key: string, value: any): Promise<boolean> {
-  const { error } = await supabase
+  const { error } = await kvClient
     .from(TABLE)
     .upsert({ key, value }, { onConflict: 'key' });
   if (error) {
     console.log(`kvSet(${key}) error:`, error.message);
+    return false;
+  }
+  return true;
+}
+
+// key prefix로 여러 행 조회 (예: 'advertisement:' 접두사의 모든 광고)
+export async function kvGetByPrefix(prefix: string): Promise<Array<{ key: string; value: any }>> {
+  const { data, error } = await kvClient
+    .from(TABLE)
+    .select('key, value')
+    .like('key', `${prefix}%`);
+  if (error) {
+    console.log(`kvGetByPrefix(${prefix}) error:`, error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function kvDel(key: string): Promise<boolean> {
+  const { error } = await kvClient
+    .from(TABLE)
+    .delete()
+    .eq('key', key);
+  if (error) {
+    console.log(`kvDel(${key}) error:`, error.message);
     return false;
   }
   return true;

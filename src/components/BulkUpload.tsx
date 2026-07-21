@@ -24,6 +24,13 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
   const [uploadLocation, setUploadLocation] = useState(propUploadLocation || '스마트 연습');
   const [uploadSubcategory, setUploadSubcategory] = useState(propUploadSubcategory || '');
 
+  // 과목 구분 (스마트 연습 전용): 리딩·문법은 한 세트(모듈1+2 통합), 수학은 모듈별 별도 시험
+  const [subjectType, setSubjectType] = useState<'reading' | 'math'>('reading');
+  const [moduleInfo, setModuleInfo] = useState<'module1' | 'module2'>('module1');
+
+  // 과목별 최대 문제 수 (리딩: 모듈1+2 = 27+27, 수학: 모듈당 22)
+  const maxQuestions = subjectType === 'math' ? 22 : 54;
+
   // Category options
   const categoryOptions: Record<string, Array<{value: string, label: string}>> = {
     '스마트 연습': [
@@ -118,12 +125,14 @@ ANSWER: B`;
   // ── CSV 업로드 지원 ──
   // CSV 템플릿 (기출문제/공식문제 대량 업로드용)
   // passage/question/choices에 쉼표·줄바꿈이 포함될 수 있으므로 항상 큰따옴표로 감싼다.
+  // module 열: 리딩 한 세트 업로드 시 모듈 구분 표기용(1 또는 2). 비워두면 문제 순서로 자동 구분(앞 27문제=모듈1).
+  // vocabulary/analysis 열: 단어·분석 메모. AI 튜터/복습 화면에서 활용된다.
   const getCsvTemplate = () => {
     return [
-      'passage,question,choiceA,choiceB,choiceC,choiceD,answer,explanation,imageUrl',
-      '"도시 집적 경제는 도시 지역에 산업과 인구가 집중될 때 발생하는 경제적 이익을 말한다.","이 지문의 주요 주제는 무엇인가?","도시의 인구 증가","도시 집적 경제의 정의","산업의 발전","경제적 손실","B","도시 집적 경제의 정의를 묻는 문제입니다.",""',
-      '"Two-line passage can be written like this.","Which choice best states the main idea?","Choice A","Choice B","Choice C","Choice D","A","",""',
-      '"","지문 없이 질문만 있는 문제도 가능합니다.","선택지 1","선택지 2","선택지 3","선택지 4","C","","https://example.com/image.png"',
+      'passage,question,choiceA,choiceB,choiceC,choiceD,answer,explanation,vocabulary,analysis,imageUrl,module',
+      '"도시 집적 경제는 도시 지역에 산업과 인구가 집중될 때 발생하는 경제적 이익을 말한다.","이 지문의 주요 주제는 무엇인가?","도시의 인구 증가","도시 집적 경제의 정의","산업의 발전","경제적 손실","B","도시 집적 경제의 정의를 묻는 문제입니다.","agglomeration:집적; economy:경제","주제문은 첫 문장에 있다","",""',
+      '"Two-line passage can be written like this.","Which choice best states the main idea?","Choice A","Choice B","Choice C","Choice D","A","","","","","1"',
+      '"","지문 없이 질문만 있는 문제도 가능합니다.","선택지 1","선택지 2","선택지 3","선택지 4","C","","","","https://example.com/image.png","2"',
     ].join('\n');
   };
 
@@ -196,7 +205,10 @@ ANSWER: B`;
       choiceD: col('choiced'),
       answer: col('answer'),
       explanation: col('explanation'),
+      vocabulary: col('vocabulary'),
+      analysis: col('analysis'),
       imageUrl: col('imageurl'),
+      module: col('module'),
     };
     if (idx.question === -1 || idx.choiceA === -1 || idx.choiceB === -1 ||
         idx.choiceC === -1 || idx.choiceD === -1 || idx.answer === -1) {
@@ -214,6 +226,7 @@ ANSWER: B`;
       if (!['a', 'b', 'c', 'd'].includes(answer)) {
         throw new Error(`${line}행: answer는 A, B, C, D 중 하나여야 합니다. (현재: "${get(row, idx.answer)}")`);
       }
+      const moduleRaw = get(row, idx.module);
       questions.push({
         title: `문제 ${questions.length + 1}`,
         passage: get(row, idx.passage),
@@ -221,13 +234,20 @@ ANSWER: B`;
         choices: [get(row, idx.choiceA), get(row, idx.choiceB), get(row, idx.choiceC), get(row, idx.choiceD)],
         correctAnswer: answer,
         explanation: get(row, idx.explanation),
+        vocabulary: get(row, idx.vocabulary),
+        analysis: get(row, idx.analysis),
         imageUrl: get(row, idx.imageUrl),
+        module: moduleRaw === '1' || moduleRaw === '2' ? Number(moduleRaw) : null,
       });
     });
 
     if (questions.length === 0) throw new Error('유효한 문제가 없습니다.');
-    if (questions.length > 54) {
-      throw new Error(`총 ${questions.length}개 문제가 있습니다. 최대 54문제까지만 가능합니다.`);
+    if (questions.length > maxQuestions) {
+      throw new Error(
+        subjectType === 'math'
+          ? `총 ${questions.length}개 문제가 있습니다. 수학 모듈별 시험은 최대 22문제까지 가능합니다.`
+          : `총 ${questions.length}개 문제가 있습니다. 최대 54문제(모듈1: 27 + 모듈2: 27)까지 가능합니다.`
+      );
     }
     return questions;
   };
@@ -317,8 +337,12 @@ ANSWER: B`;
         throw new Error('문제를 찾을 수 없습니다. 형식을 확인해주세요.');
       }
 
-      if (allQuestions.length > 54) {
-        throw new Error(`총 ${allQuestions.length}개 문제가 있습니다. 최대 54문제까지만 가능합니다.`);
+      if (allQuestions.length > maxQuestions) {
+        throw new Error(
+          subjectType === 'math'
+            ? `총 ${allQuestions.length}개 문제가 있습니다. 수학 모듈별 시험은 최대 22문제까지 가능합니다.`
+            : `총 ${allQuestions.length}개 문제가 있습니다. 최대 54문제까지 가능합니다.`
+        );
       }
 
       // Convert to proper format with auto-incrementing numbers
@@ -363,14 +387,23 @@ ANSWER: B`;
     try {
       const parsedData = inputMode === 'csv' ? csvQuestions : parseTextUpload(textInput);
       const newFiles = [];
+      const isSmartPractice = uploadLocation === '스마트 연습';
+
+      // 수학 모듈별 시험은 카드 제목에 모듈 표기를 자동 추가 (예: "2025년 6월 수학 [모듈1]")
+      const finalTitle =
+        isSmartPractice && subjectType === 'math'
+          ? `${cardTitle.trim()} [${moduleInfo === 'module1' ? '모듈1' : '모듈2'}]`
+          : cardTitle.trim();
 
       // Create single card with all questions
       const combinedFile = {
         id: `bulk_${Date.now()}`,
-        name: cardTitle.trim(),
+        name: finalTitle,
         type: 'bulk-upload',
         location: uploadLocation,
         subcategory: uploadSubcategory,
+        subjectType: isSmartPractice ? subjectType : undefined, // 실전 시험 과목 구분 (Reading/Math 판별용)
+        moduleInfo: isSmartPractice && subjectType === 'math' ? moduleInfo : null, // 수학: 모듈별 별도 시험
         uploadDate: new Date().toISOString().split('T')[0],
         status: 'completed' as const,
         questionCount: parsedData.length,
@@ -526,6 +559,73 @@ ANSWER: B`;
             </select>
           </div>
         )}
+
+        {/* 과목 구분 (스마트 연습 전용): 리딩·문법 / 수학 */}
+        {uploadLocation === '스마트 연습' && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <label className="block text-sm text-gray-600 mb-2">과목 구분 *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSubjectType('reading')}
+                className={`px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                  subjectType === 'reading'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                📖 리딩·문법
+                <span className="block text-xs font-normal mt-1 text-gray-400">한 세트 = 모듈1 + 모듈2 (최대 54문제)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSubjectType('math')}
+                className={`px-4 py-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                  subjectType === 'math'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                🧮 수학
+                <span className="block text-xs font-normal mt-1 text-gray-400">모듈별 별도 시험 (모듈당 최대 22문제)</span>
+              </button>
+            </div>
+
+            {/* 모듈 구분 (수학 전용) */}
+            {subjectType === 'math' && (
+              <div className="mt-3">
+                <label className="block text-sm text-gray-600 mb-2">모듈 선택 (수학) *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setModuleInfo('module1')}
+                    className={`px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      moduleInfo === 'module1'
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    모듈 1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModuleInfo('module2')}
+                    className={`px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+                      moduleInfo === 'module2'
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    모듈 2
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  💡 수학은 모듈1·모듈2를 각각 따로 업로드하면 별도의 시험 카드로 생성됩니다.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Text/CSV Input Area */}
@@ -566,7 +666,8 @@ ANSWER: B`;
               <p className="font-semibold">📋 CSV 형식 안내:</p>
               <ul className="list-disc list-inside space-y-0.5 ml-2">
                 <li>필수 열: <code className="bg-white px-1 rounded">question, choiceA, choiceB, choiceC, choiceD, answer</code> (answer는 A~D)</li>
-                <li>선택 열: <code className="bg-white px-1 rounded">passage, explanation, imageUrl</code></li>
+                <li>선택 열: <code className="bg-white px-1 rounded">passage, explanation, vocabulary, analysis, imageUrl, module</code></li>
+                <li><code className="bg-white px-1 rounded">module</code> 열은 1 또는 2 (비워두면 문제 순서로 자동 구분)</li>
                 <li>쉼표·줄바꿈이 포함된 내용은 반드시 큰따옴표("...")로 감싸주세요</li>
                 <li>위의 <strong>CSV 템플릿 다운로드</strong> 버튼으로 예시 파일을 받아 Excel에서 편집하면 가장 쉽습니다</li>
               </ul>
@@ -578,7 +679,7 @@ ANSWER: B`;
                 <p className="text-sm text-gray-700 font-medium">
                   {csvFileName ? csvFileName : 'CSV 파일을 선택하세요'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">.csv 파일 (최대 54문제)</p>
+                <p className="text-xs text-gray-500 mt-1">.csv 파일 (최대 {maxQuestions}문제{subjectType === 'math' ? ' · 수학 모듈별' : ''})</p>
               </div>
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFile} />
             </label>

@@ -474,13 +474,15 @@ export default function App() {
     if (gameState !== 'module-over' || isPracticeReview) return;
     
     const timer = setTimeout(() => {
-      if (currentModule === 1) {
+      // 수학 모듈별 시험 등 모듈2 문제가 없으면 모듈1 종료 시 바로 완료 처리
+      const hasModule2 = module2Questions.length > 0;
+      if (currentModule === 1 && hasModule2) {
         // Move to Module 2
         setCurrentModule(2);
         setCurrentQuestionIndex(0);
         setTimeRemaining(currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 35 * 60 : 32 * 60); // Reset timer for Module 2
         setGameState('exam');
-      } else if (currentModule === 2) {
+      } else if (currentModule === 2 || !hasModule2) {
         // All modules completed - go to finished screen
         setGameState('finished');
         
@@ -1221,8 +1223,9 @@ export default function App() {
   // Show Score Report screen
   if (gameState === 'score-report') {
     const correctAnswers = questions.reduce((count, question) => {
-      const userAnswer = selectedAnswers[question.id];
-      const correctAnswer = question.id === 3 ? 'c' : question.id === 4 ? 'b' : question.id === 5 ? 'b' : 'a';
+      const userAnswer = (selectedAnswers[question.id] || '').toLowerCase();
+      // 업로드/CMS 문제 포함 모든 문제는 correctAnswer 필드 기준으로 채점
+      const correctAnswer = (question.correctAnswer || 'a').toLowerCase();
       return userAnswer === correctAnswer ? count + 1 : count;
     }, 0);
     

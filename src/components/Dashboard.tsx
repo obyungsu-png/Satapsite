@@ -21,11 +21,14 @@ import { getAccessState } from '../utils/subscriptionUtils';
 import { SubscriptionManager } from './SubscriptionManager';
 import { generateTableRows } from './utils/generateTableRows';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { supabase } from '../utils/supabase/client';
+import { supabase, kvGet, kvSet, kvGetByPrefix, registerStudent } from '../utils/supabase/client';
 import { AdManagement, Advertisement, AdBannerDisplay } from './AdManagement';
 import { LandingPage } from './LandingPage';
 import { BulkUpload } from './BulkUpload';
 import { RedeemVoucherForm } from './RedeemVoucherForm';
+
+// uploadedFiles 전용 localStorage 키 (practiceTests의 'sat_practice_tests'와 충돌 방지)
+const UPLOADED_FILES_KEY = 'sat_uploaded_files';
 
 interface DashboardProps {
   onStartTest: (testInfo?: any) => void;
@@ -72,60 +75,16 @@ const saveTestsToStorage = (tests: any[]) => {
   }
 };
 
-// Supabase에서 데이터 로드
+// Supabase KV에서 데이터 로드 (edge function 404/타임아웃 제거)
 const loadTestsFromSupabase = async (): Promise<any[] | null> => {
-  try {
-    console.log('📡 Supabase 서버에 연결 중...');
-    const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('⚠️ Supabase 응답 에러, localStorage 사용:', errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    console.log('✅ Supabase에서 데이터 로드 완료');
-    return data.tests || null;
-  } catch (error) {
-    const msg = error instanceof DOMException && error.name === 'AbortError'
-      ? 'Request timed out'
-      : (error instanceof Error ? error.message : String(error));
-    console.log('⚠️ Supabase 로드 실패 (localStorage 사용):', msg);
-    return null;
-  }
+  const data = await kvGet('sat_practice_tests_list');
+  return Array.isArray(data) && data.length > 0 ? data : null;
 };
 
-// Supabase에 데이터 저장
+// Supabase KV에 데이터 저장
 const saveTestsToSupabase = async (tests: any[]) => {
-  try {
-    const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/practice-tests`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${publicAnonKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ tests }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('⚠️ Supabase 저장 실패:', errorText);
-    } else {
-      console.log('✅ Supabase에 저장 완료');
-    }
-  } catch (error) {
-    const msg = error instanceof DOMException && error.name === 'AbortError'
-      ? 'Request timed out'
-      : (error instanceof Error ? error.message : String(error));
-    console.log('⚠️ Supabase 저장 실패 (로컬 저장은 완료):', msg);
-  }
+  const ok = await kvSet('sat_practice_tests_list', tests);
+  if (!ok) console.log('⚠️ KV store 저장 실패 (로컬 저장은 완료)');
 };
 
 // 통합 저장 함수 - localStorage와 Supabase 둘 다 저장
@@ -775,26 +734,11 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     return true;
   };
 
-  // Helper function to save student to Supabase
+  // Helper function to save student to Supabase KV (CRM 학생 목록 — edge function 제거)
   const saveStudentToSupabase = async (student: any) => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/students`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(student),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Student saved to Supabase:', data);
-        return data.student;
-      } else {
-        console.error('Failed to save student to Supabase');
-        return null;
-      }
+      await registerStudent(student);
+      return student;
     } catch (error) {
       console.error('Error saving student to Supabase:', error);
       return null;
@@ -894,151 +838,84 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     trainingType?: string;
     trainingDifficulty?: string;
     trainingSource?: string;
+    subjectType?: 'reading' | 'math'; // 대량업로드 과목 구분 (리딩·문법 / 수학)
+    moduleInfo?: 'module1' | 'module2' | null; // 수학 모듈별 시험 구분 (리딩은 null = 모듈1+2 통합)
   }>>([]);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Load uploaded files from Supabase or localStorage on mount
+  // Load uploaded files from Supabase KV or localStorage on mount
   useEffect(() => {
     const loadUploadedFiles = async () => {
-      console.log('🔍 uploadedFiles를 Supabase에서 로드 시도...');
-      
-      try {
-        const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      console.log('🔍 uploadedFiles를 KV store에서 로드 시도...');
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.files && Array.isArray(data.files) && data.files.length > 0) {
-            console.log('✅ Supabase에서 uploadedFiles 로드 성공:', data.files.length, '개');
-            setUploadedFiles(data.files);
-            localStorage.setItem('sat_practice_tests', JSON.stringify(data.files));
-            return;
-          }
-        }
-      } catch (error) {
-        console.log('Supabase uploadedFiles 로드 실패, localStorage 사용:', error);
+      // 1. Supabase KV store (edge function 404/타임아웃 제거를 위해 직접 접근)
+      const kvFiles = await kvGet('sat_uploaded_files');
+      if (Array.isArray(kvFiles) && kvFiles.length > 0) {
+        console.log('✅ KV store에서 uploadedFiles 로드 성공:', kvFiles.length, '개');
+        setUploadedFiles(kvFiles);
+        localStorage.setItem(UPLOADED_FILES_KEY, JSON.stringify(kvFiles));
+        return;
       }
 
-      // Supabase 실패 시 localStorage에서 로드
-      const stored = localStorage.getItem('sat_practice_tests');
+      // 2. KV에 없으면 localStorage에서 로드 (오프라인 캐시)
+      const stored = localStorage.getItem(UPLOADED_FILES_KEY) || localStorage.getItem('sat_practice_tests');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            console.log('📂 localStorage에서 uploadedFiles 로드:', parsed.length, '개');
-            setUploadedFiles(parsed);
-            
-            // localStorage 데이터를 Supabase에 백업 (setUploadedFiles의 save useEffect에서 자동 처리)
+          // 구형 키('sat_practice_tests')에는 practiceTests가 섞여 있을 수 있어 파일 형식만 필터링
+          // (실제 업로드 파일은 항상 location과 문자열 id를 가짐)
+          const filesOnly = Array.isArray(parsed)
+            ? parsed.filter((f: any) => f && typeof f === 'object' && typeof f.id === 'string' && typeof f.location === 'string')
+            : [];
+          if (filesOnly.length > 0) {
+            console.log('📂 localStorage에서 uploadedFiles 로드:', filesOnly.length, '개');
+            setUploadedFiles(filesOnly);
+            kvSet('sat_uploaded_files', filesOnly); // KV에 백업
           }
         } catch (error) {
           console.error('Error loading practice tests from localStorage:', error);
         }
       }
     };
-    
+
     loadUploadedFiles();
   }, []);
-  
-  // Save uploaded files to localStorage AND Supabase whenever they change
+
+  // Save uploaded files to localStorage AND Supabase KV whenever they change
   useEffect(() => {
     if (uploadedFiles.length === 0) return;
 
     // 1. localStorage에 즉시 저장
-    localStorage.setItem('sat_practice_tests', JSON.stringify(uploadedFiles));
-    console.log('✅ uploadedFiles를 localStorage에 저장');
+    localStorage.setItem(UPLOADED_FILES_KEY, JSON.stringify(uploadedFiles));
 
-    // 2. Supabase 저장은 debounce + AbortController로 관리
-    const abortController = new AbortController();
-    const debounceTimer = setTimeout(async () => {
-      if (abortController.signal.aborted) return; // cleanup 후에는 실행하지 않음
-      try {
-        console.log('📡 uploadedFiles를 Supabase에 저장 시도...');
-        const response = await fetchWithTimeout(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/uploaded-files`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ files: uploadedFiles }),
-        });
+    // 2. Supabase KV store에 저장 (CRM ↔ 실전문제 연동)
+    const timer = setTimeout(async () => {
+      const ok = await kvSet('sat_uploaded_files', uploadedFiles);
+      if (!ok) console.warn('⚠️ KV store 저장 실패 (로컬 데이터는 정상 저장됨)');
+    }, 300);
 
-        if (response.ok) {
-          console.log('✅ uploadedFiles를 Supabase에 저장 완료');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Supabase uploadedFiles 저장 실패:', errorText);
-        }
-      } catch (error) {
-        if (abortController.signal.aborted) return; // cleanup abort는 무시
-        console.warn('⚠️ Supabase uploadedFiles 저장 에러 (로컬 데이터는 정상 저장됨):', error instanceof Error ? error.message : String(error));
-      }
-    }, 500);
-
-    return () => {
-      clearTimeout(debounceTimer);
-      abortController.abort();
-    };
+    return () => clearTimeout(timer);
   }, [uploadedFiles]);
 
-  // Load students from Supabase on mount
+  // Load students from Supabase KV on mount (CRM 학생 목록 — edge function 404 제거)
   useEffect(() => {
     const loadStudents = async () => {
-      try {
-        const response = await fetchWithTimeout(
-          `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/students`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Students loaded from Supabase:', data.students);
-          setStudents(data.students || []);
-        }
-      } catch (error) {
-        console.error('Error loading students from Supabase:', error);
+      const data = await kvGet('students');
+      if (Array.isArray(data)) {
+        setStudents(data);
       }
     };
 
     loadStudents();
   }, []);
 
-  // Load advertisements from Supabase on mount
+  // Load advertisements from Supabase KV on mount (edge function 타임아웃 제거)
   useEffect(() => {
     const loadAdvertisements = async () => {
-      try {
-        const response = await fetchWithTimeout(
-          `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setAdvertisements(data);
-            console.log('✅ 광고 로드 완료:', data.length, '개');
-          }
-        } else {
-          console.log('광고 로드 실패, 빈 배열 사용');
-          setAdvertisements([]);
-        }
-      } catch (error) {
-        console.log('광고 로드 에러, 빈 배열 사용:', error);
-        setAdvertisements([]);
-      }
+      // 광고는 'advertisement:{id}' 개별 키로 저장됨
+      const rows = await kvGetByPrefix('advertisement:');
+      const ads = rows.map((r) => r.value).filter((a) => a && typeof a === 'object');
+      setAdvertisements(ads);
     };
 
     loadAdvertisements();
@@ -1536,18 +1413,28 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               text: choice
             }))
           : [],
-        answer: item.correctAnswer || item.answer || 'a',
+        // App.tsx 채점/복습은 모두 correctAnswer 필드를 사용한다 (answer 사용 시 전부 'a'로 채점되는 버그)
+        correctAnswer: (item.correctAnswer || item.answer || 'a').toLowerCase(),
         explanation: item.explanation || '',
+        analysis: item.analysis || '',
+        vocabulary: item.vocabulary || '',
+        imageUrl: item.imageUrl || '',
+        module: item.module || null,
         category: file.questionType || 'general',
         difficulty: file.difficulty || 'medium'
       }));
     };
     
+    // 과목 판별: 대량업로드에서 저장한 subjectType 우선, 구형 데이터는 subcategory/이름으로 추정
+    const isMathFile =
+      file.subjectType === 'math' ||
+      file.subcategory === 'math' ||
+      (!file.subjectType && /수학|math/i.test(file.name || ''));
+    
     return {
       id: `uploaded-${file.id}-${file.name}-${Date.now()}`, // Use unique string ID to avoid duplicates
       title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-      type: file.subcategory === 'reading-grammar' ? 'Reading' : 
-            file.subcategory === 'math' ? 'Math' : '업로드된 자료',
+      type: isMathFile ? 'Math' : 'Reading',
       status: 'available',
       isUploaded: true,
       uploadDate: file.uploadDate,
@@ -1555,7 +1442,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       uploadedData: convertToQuestionFormat(file.data), // Convert to proper format
       subcategory: file.subcategory,
       questionType: file.questionType,
-      difficulty: file.difficulty
+      difficulty: file.difficulty,
+      moduleInfo: file.moduleInfo || null, // 'module1' | 'module2' | null(모듈1+2 통합)
     };
   };
   
@@ -1795,40 +1683,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     const updated = getDefaultPracticeTests();
     setPracticeTests(updated);
   }, [uploadedFiles]);
-
-  // Load advertisements from Supabase
-  useEffect(() => {
-    const loadAdvertisements = async () => {
-      try {
-        console.log('📡 광고 데이터 로드 시도...');
-        const response = await fetchWithTimeout(
-          `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/advertisements`,
-          {
-            headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
-          }
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ 광고 데이터 로드 완료:', data.length, '개');
-          if (Array.isArray(data)) {
-            setAdvertisements(data);
-          }
-        } else {
-          const errorText = await response.text();
-          console.log('⚠️ 광고 로드 실패 (빈 배열 사용):', response.status);
-          setAdvertisements([]);
-        }
-      } catch (error) {
-        console.log('⚠️ 광고 로드 에러 (빈 배열 사용):', error instanceof Error ? error.message : String(error));
-        setAdvertisements([]);
-      }
-    };
-    
-    loadAdvertisements();
-  }, []);
 
   // Sample practice record data with question history
   const practiceRecordData = [
