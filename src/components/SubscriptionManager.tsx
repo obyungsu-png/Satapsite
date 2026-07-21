@@ -16,6 +16,8 @@ export interface Subscription {
   amount: number;
   status: 'Active' | 'Expired' | 'Cancelled';
   autoRenew: boolean;
+  /** 기기당 1개 등록 제한 — 최초 접속 기기의 device_id에 자동 바인딩됨(subscriptionUtils.getAccessState 참고) */
+  deviceId?: string;
 }
 
 interface SubscriptionManagerProps {

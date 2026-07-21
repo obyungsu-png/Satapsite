@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Ticket, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { redeemVoucherCode } from '../utils/voucherCodes';
+import { getDeviceId } from '../utils/deviceId';
 
 interface RedeemVoucherFormProps {
   email: string | undefined | null;
@@ -29,7 +30,7 @@ export function RedeemVoucherForm({ email, onSuccess, compact = false }: RedeemV
 
     setSubmitting(true);
     try {
-      const result = await redeemVoucherCode(trimmed, email);
+      const result = await redeemVoucherCode(trimmed, email, getDeviceId());
       if (!result.ok) {
         const messages: Record<string, string> = {
           not_found: '존재하지 않는 수강권 코드예요. 다시 확인해주세요.',
@@ -74,6 +75,7 @@ export function RedeemVoucherForm({ email, onSuccess, compact = false }: RedeemV
       </div>
       <p className="text-xs text-gray-400 mt-2">
         관리자(학원/담당자)에게 받은 수강권 코드를 입력하면 로그인한 계정({email || '로그인 필요'})에 바로 적용됩니다.
+        수강권은 최초 등록한 기기 1대에서만 이용할 수 있습니다.
       </p>
     </form>
   );
