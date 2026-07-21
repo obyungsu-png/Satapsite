@@ -17,7 +17,7 @@ import { SignUpPage } from './SignUpPage';
 import { LoginPage } from './LoginPage';
 import { LoginPopup } from './LoginPopup';
 import { LoginForm } from './LoginForm';
-import { hasActiveSubscription } from '../utils/subscriptionUtils';
+import { getAccessState } from '../utils/subscriptionUtils';
 import { SubscriptionManager } from './SubscriptionManager';
 import { generateTableRows } from './utils/generateTableRows';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -714,18 +714,23 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     return () => window.removeEventListener('popstate', handlePopState);
   }, [showLoginPage, showSignUpPage, showLoginPopup]);
   
+  // 다른 기기에 등록된 수강권으로 잠긴 상태인지 (기기당 1개 제한)
+  const [isDeviceLocked, setIsDeviceLocked] = useState(false);
+
   // 관리자 모드 변경 감지 + 구독 상태 확인 (async)
   // 수강권 코드를 직접 등록한 직후에도 재사용할 수 있도록 컴포넌트 스코프 함수로 분리.
   const checkAccess = async () => {
     const adminMode = localStorage.getItem('adminMode') === 'true';
     if (adminMode) {
       setIsContentUnlocked(true);
+      setIsDeviceLocked(false);
       setAccessChecked(true);
       return;
     }
-    // 구독 확인 (Supabase)
-    const subscribed = await hasActiveSubscription();
-    setIsContentUnlocked(subscribed);
+    // 구독 + 기기 바인딩 확인 (Supabase)
+    const state = await getAccessState();
+    setIsContentUnlocked(state.status === 'active');
+    setIsDeviceLocked(state.status === 'device_mismatch');
     setAccessChecked(true);
   };
 
@@ -4930,6 +4935,17 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           </div>
         );
       }
+      if (isDeviceLocked) {
+        return (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
+            <Lock className="w-12 h-12 text-gray-300" />
+            <h2 className="text-xl font-bold text-gray-700">다른 기기에 등록된 수강권입니다</h2>
+            <p className="text-sm text-gray-500 max-w-sm">
+              수강권은 계정당 1개 기기에서만 이용할 수 있습니다. 기기를 변경하려면 관리자에게 문의해주세요.
+            </p>
+          </div>
+        );
+      }
       return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
           <Lock className="w-12 h-12 text-gray-300" />
@@ -5289,7 +5305,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               <Lock className="w-7 h-7 text-[#3D5AA1]" />
             </div>
             <h3 className="text-lg font-extrabold text-gray-900 mb-2">
-              {unlockModal.needLogin ? '로그인이 필요합니다' : '수강권이 필요합니다'}
+              {unlockModal.needLogin
+                ? '로그인이 필요합니다'
+                : isDeviceLocked
+                ? '다른 기기에 등록된 수강권입니다'
+                : '수강권이 필요합니다'}
             </h3>
             <p className="text-sm text-gray-600 leading-relaxed mb-1">
               <span className="font-bold text-gray-800">{unlockModal.featureName}</span>
@@ -5300,9 +5320,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <p className="text-xs text-gray-400 leading-relaxed mb-5">
               {unlockModal.needLogin
                 ? '로그인하면 오픈된 콘텐츠를 바로 이용할 수 있습니다.'
+                : isDeviceLocked
+                ? '수강권은 계정당 1개 기기에서만 이용할 수 있습니다. 기기를 변경하려면 관리자에게 문의해주세요.'
                 : '관리자(학원/담당자)에게 받은 수강권 코드를 아래에 입력하면 로그인한 이메일 기준으로 바로 등록됩니다.'}
             </p>
-            {!unlockModal.needLogin && (
+            {!unlockModal.needLogin && !isDeviceLocked && (
               <div className="mb-4 text-left">
                 <RedeemVoucherForm
                   email={currentUser?.email}

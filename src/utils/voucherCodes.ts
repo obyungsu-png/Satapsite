@@ -135,7 +135,12 @@ export type RedeemResult =
 
 // 수강권 코드 등록 — 로그인한 학생이 직접 코드를 입력해 수강권을 활성화한다.
 // 이미 활성 수강권이 있으면 만료일부터 이어서 연장(갱신)하고, 없으면 오늘부터 시작한다.
-export async function redeemVoucherCode(rawCode: string, email: string | undefined | null): Promise<RedeemResult> {
+// deviceId를 넘기면 새 수강권이 그 기기에 바로 바인딩된다(기기당 1개 제한).
+export async function redeemVoucherCode(
+  rawCode: string,
+  email: string | undefined | null,
+  deviceId?: string
+): Promise<RedeemResult> {
   const emailLower = (email || '').trim().toLowerCase();
   if (!emailLower) return { ok: false, reason: 'no_email' };
 
@@ -166,6 +171,7 @@ export async function redeemVoucherCode(rawCode: string, email: string | undefin
     amount: target.price,
     status: 'Active',
     autoRenew: false,
+    deviceId: deviceId || undefined,
   };
 
   const filteredSubs = subs.filter((s) => !(s.email === emailLower && s.status === 'Active'));

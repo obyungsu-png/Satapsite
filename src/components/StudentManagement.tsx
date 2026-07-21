@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GraduationCap, RefreshCw, CheckCircle, XCircle, AlertCircle, KeyRound, Trash2, ExternalLink } from 'lucide-react';
+import { GraduationCap, RefreshCw, CheckCircle, XCircle, AlertCircle, KeyRound, Trash2, ExternalLink, Smartphone } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 import { kvGet, kvSet } from '../utils/supabase/client';
@@ -70,6 +70,17 @@ export function StudentManagement({ onOpenVoucherTab }: StudentManagementProps =
       subscriptions.map((s) => (s.email === email && s.status === 'Active' ? { ...s, status: 'Cancelled' as const } : s))
     );
     toast.success(`${student.name} 학생의 수강권이 해제되었습니다`);
+  };
+
+  // 기기 등록 초기화: 학생이 기기를 바꿔서(휴대폰 교체 등) 접속이 막혔을 때,
+  // 다음 접속 기기에 새로 바인딩되도록 기존 바인딩만 해제한다. (수강권 자체는 유지)
+  const resetDevice = (student: Student) => {
+    const email = (student.email || '').trim().toLowerCase();
+    if (!confirm(`${student.name} 학생의 기기 등록을 초기화하시겠습니까? 다음 접속 기기에 새로 등록됩니다.`)) return;
+    saveSubscriptions(
+      subscriptions.map((s) => (s.email === email && s.status === 'Active' ? { ...s, deviceId: undefined } : s))
+    );
+    toast.success(`${student.name} 학생의 기기 등록이 초기화되었습니다`);
   };
 
   // 학생 삭제: CRM 목록에서만 제거 (수강권/구독 이력은 이메일 기준으로 별도 보관되어 영향 없음)
@@ -188,6 +199,7 @@ export function StudentManagement({ onOpenVoucherTab }: StudentManagementProps =
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
         💡 아이디로 가입한 회원의 이메일은 <code className="bg-white px-1 rounded border border-blue-200">아이디@members.allmyexam.com</code> 형식입니다.
         "갱신용 코드 발급"은 코드만 만들어 복사해줄 뿐, 학생이 직접 입력해야 수강권이 실제로 등록됩니다.
+        수강권은 계정당 1개 기기에서만 이용할 수 있고, 학생이 기기를 바꾸면 "기기 초기화"로 접속을 풀어줄 수 있습니다.
       </div>
 
       <input
@@ -271,6 +283,16 @@ export function StudentManagement({ onOpenVoucherTab }: StudentManagementProps =
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
+                        {hasActive && sub?.deviceId && (
+                          <button
+                            onClick={() => resetDevice(student)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 border border-blue-200 hover:bg-blue-50 transition-colors"
+                            title="기기 변경 등으로 접속이 막혔을 때 등록된 기기를 초기화합니다."
+                          >
+                            <Smartphone size={13} />
+                            기기 초기화
+                          </button>
+                        )}
                         {hasActive && (
                           <button
                             onClick={() => revokeSubscription(student)}
