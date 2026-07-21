@@ -414,6 +414,17 @@ export default function App() {
     };
   }, []);
 
+  // 실전문제 풀이 중 뒤로가기 → 대시보드로 복귀 (history entry 추가 없음)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (gameState !== 'dashboard') {
+        setGameState('dashboard');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [gameState]);
+
   // 로그인 시 Supabase에서 사용자별 practice records 로드
   useEffect(() => {
     if (!currentUser?.id) return;

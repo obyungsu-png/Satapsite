@@ -1,6 +1,6 @@
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Button } from "./ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -574,6 +574,7 @@ const extractWordsFromTests = () => {
 
 export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
   const [activeTab, setActiveTab] = useState('Home');
+  const [smartPracticeTab, setSmartPracticeTab] = useState('기출문제'); // 기출문제 or 공식문제 or 단어관리
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login'); // 회원가입 모달 구분용
@@ -585,6 +586,57 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     // 관리자 모드가 활성화되어 있으면 자동으로 unlock
     return localStorage.getItem('adminMode') === 'true';
   });
+
+  // ── 브라우저 History 관리 ──
+  // 탭 변경 및 서브탭 변경 시 history.pushState로 하위 history 생성
+  // 뒤로가기(popstate) 시 이전 상태로 복원
+  // 실전문제 풀이(gameState 변경)는 history에 영향 없음
+  const isInitialMount = useRef(true);
+  const isPopstateRef = useRef(false);
+
+  // 탭/서브탭 변경 → history push
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      window.history.replaceState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '');
+      return;
+    }
+    if (isPopstateRef.current) {
+      isPopstateRef.current = false;
+      return;
+    }
+    window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '');
+  }, [activeTab, smartPracticeTab]);
+
+  // 로그인/회원가입 모달 열림 → history push (뒤로가기로 모달 닫기)
+  useEffect(() => {
+    if (isInitialMount.current) return;
+    if (isPopstateRef.current) {
+      isPopstateRef.current = false;
+      return;
+    }
+    if (showLoginPage || showSignUpPage || showLoginPopup) {
+      window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'modal' }, '');
+    }
+  }, [showLoginPage, showSignUpPage, showLoginPopup]);
+
+  // popstate (뒤로가기/앞으로가기) 처리
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state?.tab) {
+        isPopstateRef.current = true;
+        setActiveTab(state.tab);
+        if (state.subTab) setSmartPracticeTab(state.subTab);
+      }
+      // 모달이 열려 있으면 닫기
+      if (showLoginPage) setShowLoginPage(false);
+      if (showSignUpPage) setShowSignUpPage(false);
+      if (showLoginPopup) setShowLoginPopup(false);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showLoginPage, showSignUpPage, showLoginPopup]);
   
   // 관리자 모드 변경 감지 + 구독 상태 확인 (async)
   useEffect(() => {
@@ -664,7 +716,6 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   };
   
   // Practice content state
-  const [smartPracticeTab, setSmartPracticeTab] = useState('기출문제'); // 기출문제 or 공식문제 or 단어관리
   const [practiceOrder, setPracticeOrder] = useState('시간순 정렬'); // 시간순 정렬, 모의고사 연습 적합, 보충 연습 적합
   const [smartPracticeSubject, setSmartPracticeSubject] = useState('전체'); // 전체, Reading, Math
   
