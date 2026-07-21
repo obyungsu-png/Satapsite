@@ -49,3 +49,24 @@ export async function kvSet(key: string, value: any): Promise<boolean> {
   }
   return true;
 }
+
+// 로그인/가입된 사용자를 CRM 학생 목록(KV 'students')에 등록 (이미 있으면 스킵)
+// edge function 없이 모든 인증 경로(아이디/이메일OTP/OAuth)에서 공통으로 사용
+export async function registerStudent(user: { id?: string; email?: string; name?: string }): Promise<void> {
+  const email = (user.email || '').trim().toLowerCase();
+  if (!email) return;
+  try {
+    const existing = await kvGet('students');
+    const students = Array.isArray(existing) ? existing : [];
+    if (students.some((s: any) => (s.email || '').trim().toLowerCase() === email)) return;
+    students.push({
+      id: user.id || `user_${Date.now()}`,
+      name: user.name || email.split('@')[0],
+      email,
+      createdAt: new Date().toISOString(),
+    });
+    await kvSet('students', students);
+  } catch (e) {
+    console.log('registerStudent error:', e);
+  }
+}

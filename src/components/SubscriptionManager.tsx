@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Calendar, CreditCard, QrCode, CheckCircle, XCircle, Download, Trash2, Edit2, ShieldCheck } from 'lucide-react';
+import { Calendar, CreditCard, QrCode, CheckCircle, XCircle, Download, Trash2, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { kvGet, kvSet } from '../utils/supabase/client';
 
-interface Subscription {
+// status는 hasActiveSubscription(subscriptionUtils.ts)과 동일한 대문자 규칙 사용
+export interface Subscription {
   id: string;
   email: string;
   plan: string;
@@ -12,7 +14,7 @@ interface Subscription {
   expiryDate: string;
   paymentMethod: string;
   amount: number;
-  status: 'active' | 'expired' | 'cancelled';
+  status: 'Active' | 'Expired' | 'Cancelled';
   autoRenew: boolean;
 }
 
@@ -20,20 +22,17 @@ interface SubscriptionManagerProps {
   onUnlockSuccess?: () => void;
 }
 
+// 만료일이 지난 Active 구독은 화면에 '만료'로 표시 (hasActiveSubscription도 만료일로 판정)
+export function isSubscriptionExpired(expiryDate: string): boolean {
+  const expiry = new Date(expiryDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return expiry < today;
+}
+
 export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProps) {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([
-    {
-      id: 'sub-001',
-      email: 'user@example.com',
-      plan: 'Digital SAT - 6 Months',
-      startDate: '2024-01-01',
-      expiryDate: '2024-07-01',
-      paymentMethod: 'PayPal',
-      amount: 114,
-      status: 'active',
-      autoRenew: true
-    }
-  ]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newSubscription, setNewSubscription] = useState({
@@ -42,11 +41,24 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
     paymentMethod: 'PayPal',
     months: 6
   });
-  
+
   // 관리자 모드 상태
   const [adminMode, setAdminMode] = useState(() => {
     return localStorage.getItem('adminMode') === 'true';
   });
+
+  // Supabase KV store에서 구독 목록 로드
+  useEffect(() => {
+    const load = async () => {
+      const data = await kvGet('subscriptions');
+      if (Array.isArray(data)) {
+        setSubscriptions(data);
+        console.log('✅ Loaded subscriptions from Supabase:', data.length);
+      }
+      setLoaded(true);
+    };
+    load();
+  }, []);
 
   // 관리자 모드 변경 시 localStorage와 unlock 상태 업데이트
   useEffect(() => {
@@ -56,8 +68,20 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
     }
   }, [adminMode, onUnlockSuccess]);
 
+  // 상태 업데이트 + Supabase KV store 저장 (항상 함께 수행)
+  const saveSubscriptions = async (subs: Subscription[]) => {
+    setSubscriptions(subs);
+    const ok = await kvSet('subscriptions', subs);
+    if (ok) {
+      console.log('💾 Saved subscriptions to Supabase:', subs.length);
+    } else {
+      toast.error('Supabase 저장에 실패했습니다. 네트워크를 확인해주세요.');
+    }
+  };
+
   const handleAddSubscription = () => {
-    if (!newSubscription.email) {
+    const email = newSubscription.email.trim().toLowerCase();
+    if (!email) {
       toast.error('이메일을 입력해주세요');
       return;
     }
@@ -68,17 +92,21 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
 
     const subscription: Subscription = {
       id: `sub-${Date.now()}`,
-      email: newSubscription.email,
+      email,
       plan: newSubscription.plan,
       startDate: startDate.toISOString().split('T')[0],
       expiryDate: expiryDate.toISOString().split('T')[0],
       paymentMethod: newSubscription.paymentMethod,
       amount: newSubscription.months === 1 ? 29 : newSubscription.months === 3 ? 54 : newSubscription.months === 6 ? 114 : 228,
-      status: 'active',
+      status: 'Active',
       autoRenew: false
     };
 
-    setSubscriptions(prev => [subscription, ...prev]);
+    // 같은 이메일의 기존 Active 구독이 있으면 교체 (중복 방지)
+    const filtered = subscriptions.filter(
+      sub => !(sub.email === email && sub.status === 'Active')
+    );
+    saveSubscriptions([subscription, ...filtered]);
     setNewSubscription({
       email: '',
       plan: 'Digital SAT - 6 Months',
@@ -86,8 +114,8 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
       months: 6
     });
     setShowAddForm(false);
-    toast.success('구독이 추가되었습니다!');
-    
+    toast.success(`구독이 추가되었습니다! (${email})`);
+
     // Call unlock callback if provided
     if (onUnlockSuccess) {
       onUnlockSuccess();
@@ -96,16 +124,16 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
 
   const handleDeleteSubscription = (id: string) => {
     if (confirm('이 구독을 삭제하시겠습니까?')) {
-      setSubscriptions(prev => prev.filter(sub => sub.id !== id));
+      saveSubscriptions(subscriptions.filter(sub => sub.id !== id));
       toast.success('구독이 삭제되었습니다');
     }
   };
 
   const handleToggleStatus = (id: string) => {
-    setSubscriptions(prev =>
-      prev.map(sub =>
+    saveSubscriptions(
+      subscriptions.map(sub =>
         sub.id === id
-          ? { ...sub, status: sub.status === 'active' ? 'cancelled' : 'active' }
+          ? { ...sub, status: sub.status === 'Active' ? 'Cancelled' as const : 'Active' as const }
           : sub
       )
     );
@@ -142,13 +170,19 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
     toast.success('데이터가 다운로드되었습니다');
   };
 
+  // 표시용 상태: Active라도 만료일이 지났으면 'Expired'로 표시
+  const getDisplayStatus = (sub: Subscription): string => {
+    if (sub.status === 'Active' && isSubscriptionExpired(sub.expiryDate)) return 'Expired';
+    return sub.status;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'Active':
         return { bg: '#10b981', text: 'white' };
-      case 'expired':
+      case 'Expired':
         return { bg: '#ef4444', text: 'white' };
-      case 'cancelled':
+      case 'Cancelled':
         return { bg: '#6b7280', text: 'white' };
       default:
         return { bg: '#d1d5db', text: '#374151' };
@@ -157,11 +191,11 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'Active':
         return '활성';
-      case 'expired':
+      case 'Expired':
         return '만료';
-      case 'cancelled':
+      case 'Cancelled':
         return '취소';
       default:
         return '알 수 없음';
@@ -174,6 +208,8 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
     const daysUntilExpiry = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return daysUntilExpiry <= 7 && daysUntilExpiry >= 0;
   };
+
+  const activeCount = subscriptions.filter(s => getDisplayStatus(s) === 'Active').length;
 
   return (
     <div className="min-h-screen py-6 md:py-12 px-3 md:px-6" style={{ backgroundColor: '#f8f9fa' }}>
@@ -191,7 +227,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                 구독 관리
               </h1>
               <p className="text-sm md:text-base text-gray-600">
-                사용자 구독 정보를 관리하고 결제 상태를 확인하세요.
+                사용자 구독 정보를 관리하고 결제 상태를 확인하세요. (Supabase에 자동 저장됩니다)
               </p>
             </div>
             <div className="flex flex-wrap gap-2 md:gap-3">
@@ -218,13 +254,13 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                   관리자 {adminMode ? 'ON' : 'OFF'}
                 </span>
               </motion.button>
-              
+
               <Button
                 onClick={handleExportData}
                 className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
               >
                 <Download size={16} className="md:w-[18px] md:h-[18px]" />
-                <span className="hidden sm:inline">내보내기</span>
+                <span className="hidden sm:inline">Export CSV</span>
               </Button>
               <Button
                 onClick={() => setShowAddForm(!showAddForm)}
@@ -257,7 +293,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                 <div>
                   <p className="text-sm text-gray-600 mb-1">활성 구독</p>
                   <p className="text-2xl" style={{ fontWeight: 700, color: '#10b981' }}>
-                    {subscriptions.filter(s => s.status === 'active').length}
+                    {activeCount}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-green-100">
@@ -271,7 +307,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                 <div>
                   <p className="text-sm text-gray-600 mb-1">만료 임박</p>
                   <p className="text-2xl" style={{ fontWeight: 700, color: '#f59e0b' }}>
-                    {subscriptions.filter(s => isExpiringSoon(s.expiryDate)).length}
+                    {subscriptions.filter(s => getDisplayStatus(s) === 'Active' && isExpiringSoon(s.expiryDate)).length}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center bg-yellow-100">
@@ -285,7 +321,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                 <div>
                   <p className="text-sm text-gray-600 mb-1">월 수익</p>
                   <p className="text-2xl" style={{ fontWeight: 700, color: '#3D5AA1' }}>
-                    ${subscriptions.filter(s => s.status === 'active').reduce((sum, s) => sum + s.amount, 0)}
+                    ${subscriptions.filter(s => getDisplayStatus(s) === 'Active').reduce((sum, s) => sum + s.amount, 0)}
                   </p>
                 </div>
                 <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8edf5' }}>
@@ -307,6 +343,9 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
             <h2 className="text-xl mb-4" style={{ fontWeight: 700 }}>
               새 구독 추가
             </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              💡 아이디로 가입한 회원의 이메일은 <code className="bg-gray-100 px-1 rounded">아이디@members.allmyexam.com</code> 형식입니다.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm mb-2" style={{ fontWeight: 600, color: '#374151' }}>
@@ -351,6 +390,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                   <option value="QR Code">QR Code</option>
                   <option value="Credit Card">Credit Card</option>
                   <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="None">Free / Admin Grant</option>
                 </select>
               </div>
 
@@ -428,8 +468,9 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
               </thead>
               <tbody>
                 {subscriptions.map((sub, index) => {
-                  const statusColor = getStatusColor(sub.status);
-                  const expiringSoon = isExpiringSoon(sub.expiryDate);
+                  const displayStatus = getDisplayStatus(sub);
+                  const statusColor = getStatusColor(displayStatus);
+                  const expiringSoon = displayStatus === 'Active' && isExpiringSoon(sub.expiryDate);
 
                   return (
                     <motion.tr
@@ -473,7 +514,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                             fontWeight: 600
                           }}
                         >
-                          {getStatusText(sub.status)}
+                          {getStatusText(displayStatus)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -481,9 +522,9 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
                           <button
                             onClick={() => handleToggleStatus(sub.id)}
                             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                            title={sub.status === 'active' ? '취소' : '활성화'}
+                            title={sub.status === 'Active' ? '취소' : '활성화'}
                           >
-                            {sub.status === 'active' ? (
+                            {sub.status === 'Active' ? (
                               <XCircle size={18} className="text-red-600" />
                             ) : (
                               <CheckCircle size={18} className="text-green-600" />
@@ -505,7 +546,7 @@ export function SubscriptionManager({ onUnlockSuccess }: SubscriptionManagerProp
             </table>
           </div>
 
-          {subscriptions.length === 0 && (
+          {loaded && subscriptions.length === 0 && (
             <div className="text-center py-12">
               <CreditCard className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">구독 정보가 없습니다</p>

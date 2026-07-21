@@ -13,6 +13,12 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
   const [cardTitle, setCardTitle] = useState('');
   const [textInput, setTextInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
+  // 입력 방식: 텍스트 직접 입력 vs CSV 파일 업로드
+  const [inputMode, setInputMode] = useState<'text' | 'csv'>('text');
+  const [csvFileName, setCsvFileName] = useState('');
+  const [csvQuestions, setCsvQuestions] = useState<any[]>([]);
+  const [csvError, setCsvError] = useState('');
   
   // Add category selection state
   const [uploadLocation, setUploadLocation] = useState(propUploadLocation || '스마트 연습');
@@ -109,6 +115,144 @@ ANSWER: B`;
     toast.success('템플릿이 클립보드에 복사되었습니다!');
   };
 
+  // ── CSV 업로드 지원 ──
+  // CSV 템플릿 (기출문제/공식문제 대량 업로드용)
+  // passage/question/choices에 쉼표·줄바꿈이 포함될 수 있으므로 항상 큰따옴표로 감싼다.
+  const getCsvTemplate = () => {
+    return [
+      'passage,question,choiceA,choiceB,choiceC,choiceD,answer,explanation,imageUrl',
+      '"도시 집적 경제는 도시 지역에 산업과 인구가 집중될 때 발생하는 경제적 이익을 말한다.","이 지문의 주요 주제는 무엇인가?","도시의 인구 증가","도시 집적 경제의 정의","산업의 발전","경제적 손실","B","도시 집적 경제의 정의를 묻는 문제입니다.",""',
+      '"Two-line passage can be written like this.","Which choice best states the main idea?","Choice A","Choice B","Choice C","Choice D","A","",""',
+      '"","지문 없이 질문만 있는 문제도 가능합니다.","선택지 1","선택지 2","선택지 3","선택지 4","C","","https://example.com/image.png"',
+    ].join('\n');
+  };
+
+  const downloadCsvTemplate = () => {
+    // Excel에서 한글 깨짐 방지용 BOM 추가
+    const blob = new Blob(['\uFEFF' + getCsvTemplate()], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'SAT_기출공식_대량업로드_템플릿.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('CSV 템플릿이 다운로드되었습니다!');
+  };
+
+  // 큰따옴표("...") 안의 쉼표/줄바꿈/이스케이프("")를 처리하는 CSV 파서
+  const parseCSVText = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let row: string[] = [];
+    let field = '';
+    let inQuotes = false;
+    // BOM 제거
+    const src = text.replace(/^\uFEFF/, '');
+    for (let i = 0; i < src.length; i++) {
+      const c = src[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (src[i + 1] === '"') { field += '"'; i++; }
+          else inQuotes = false;
+        } else {
+          field += c;
+        }
+      } else {
+        if (c === '"') {
+          inQuotes = true;
+        } else if (c === ',') {
+          row.push(field); field = '';
+        } else if (c === '\n' || c === '\r') {
+          if (c === '\r' && src[i + 1] === '\n') i++;
+          row.push(field); field = '';
+          if (row.length > 1 || row[0].trim() !== '') rows.push(row);
+          row = [];
+        } else {
+          field += c;
+        }
+      }
+    }
+    if (field !== '' || row.length > 0) {
+      row.push(field);
+      if (row.length > 1 || row[0].trim() !== '') rows.push(row);
+    }
+    return rows;
+  };
+
+  // CSV rows → 문제 배열 변환 (헤더 이름 기준 매핑)
+  const convertCsvToQuestions = (rows: string[][]) => {
+    if (rows.length < 2) {
+      throw new Error('CSV에 문제 데이터가 없습니다. 헤더 다음에 문제 행을 추가해주세요.');
+    }
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const col = (name: string) => header.indexOf(name);
+    const idx = {
+      passage: col('passage'),
+      question: col('question'),
+      choiceA: col('choicea'),
+      choiceB: col('choiceb'),
+      choiceC: col('choicec'),
+      choiceD: col('choiced'),
+      answer: col('answer'),
+      explanation: col('explanation'),
+      imageUrl: col('imageurl'),
+    };
+    if (idx.question === -1 || idx.choiceA === -1 || idx.choiceB === -1 ||
+        idx.choiceC === -1 || idx.choiceD === -1 || idx.answer === -1) {
+      throw new Error('CSV 헤더가 올바르지 않습니다. question, choiceA, choiceB, choiceC, choiceD, answer 열이 필요합니다.');
+    }
+
+    const get = (row: string[], i: number) => (i >= 0 && i < row.length ? row[i].trim() : '');
+    const questions: any[] = [];
+    rows.slice(1).forEach((row, n) => {
+      const line = n + 2; // 헤더 포함 실제 행 번호
+      const question = get(row, idx.question);
+      const answer = get(row, idx.answer).toLowerCase();
+      if (!question && !get(row, idx.passage)) return; // 완전 빈 행 스킵
+      if (!question) throw new Error(`${line}행: question이 비어 있습니다.`);
+      if (!['a', 'b', 'c', 'd'].includes(answer)) {
+        throw new Error(`${line}행: answer는 A, B, C, D 중 하나여야 합니다. (현재: "${get(row, idx.answer)}")`);
+      }
+      questions.push({
+        title: `문제 ${questions.length + 1}`,
+        passage: get(row, idx.passage),
+        question,
+        choices: [get(row, idx.choiceA), get(row, idx.choiceB), get(row, idx.choiceC), get(row, idx.choiceD)],
+        correctAnswer: answer,
+        explanation: get(row, idx.explanation),
+        imageUrl: get(row, idx.imageUrl),
+      });
+    });
+
+    if (questions.length === 0) throw new Error('유효한 문제가 없습니다.');
+    if (questions.length > 54) {
+      throw new Error(`총 ${questions.length}개 문제가 있습니다. 최대 54문제까지만 가능합니다.`);
+    }
+    return questions;
+  };
+
+  const handleCsvFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvError('');
+    setCsvQuestions([]);
+    setCsvFileName(file.name);
+    try {
+      const text = await file.text();
+      const rows = parseCSVText(text);
+      const questions = convertCsvToQuestions(rows);
+      setCsvQuestions(questions);
+      toast.success(`CSV 파싱 완료: ${questions.length}개 문제 인식`);
+    } catch (err: any) {
+      console.error('CSV parse error:', err);
+      setCsvError(err.message || 'CSV 파싱에 실패했습니다.');
+      setCsvFileName('');
+    }
+    // 같은 파일 재선택 가능하도록 초기화
+    e.target.value = '';
+  };
+
   const parseTextUpload = (text: string) => {
     try {
       // Check if there's a module separator
@@ -199,8 +343,13 @@ ANSWER: B`;
       return;
     }
 
-    if (!textInput.trim()) {
+    if (inputMode === 'text' && !textInput.trim()) {
       toast.error('문제 데이터를 입력해주세요.');
+      return;
+    }
+
+    if (inputMode === 'csv' && csvQuestions.length === 0) {
+      toast.error('CSV 파일을 선택해주세요.');
       return;
     }
 
@@ -212,7 +361,7 @@ ANSWER: B`;
     setIsUploading(true);
 
     try {
-      const parsedData = parseTextUpload(textInput);
+      const parsedData = inputMode === 'csv' ? csvQuestions : parseTextUpload(textInput);
       const newFiles = [];
 
       // Create single card with all questions
@@ -231,12 +380,15 @@ ANSWER: B`;
 
       // Call parent callback
       onUploadSuccess(newFiles);
-      
+
       toast.success(`✅ 업로드 완료! 총 ${parsedData.length}문제`);
-      
+
       // Reset form
       setCardTitle('');
       setTextInput('');
+      setCsvFileName('');
+      setCsvQuestions([]);
+      setCsvError('');
     } catch (error: any) {
       console.error('Bulk upload error:', error);
       toast.error(`업로드 실패: ${error.message}`);
@@ -281,20 +433,20 @@ ANSWER: B`;
         <div className="flex items-start gap-3 mb-3">
           <FileText className="w-5 h-5 text-yellow-700 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-sm font-bold text-yellow-900 mb-1">✨ 초간단 업로드 양식</h3>
+            <h3 className="text-sm font-bold text-yellow-900 mb-1">✨ 업로드 양식 다운로드</h3>
             <p className="text-xs text-yellow-800 mb-2">
-              아래 템플릿을 복사/다운로드하여 사용하세요. 문제 구분은 빈 줄 1칸, 필수 필드만 입력!
+              텍스트 양식을 복사/다운로드하거나, Excel에서 편집 가능한 CSV 템플릿을 다운로드하세요.
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={copyTemplate}
             size="sm"
             className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2"
           >
             <Copy className="w-4 h-4" />
-            템플릿 복사
+            텍스트 템플릿 복사
           </Button>
           <Button
             onClick={downloadTemplate}
@@ -302,7 +454,15 @@ ANSWER: B`;
             className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2"
           >
             <Download className="w-4 h-4" />
-            템플릿 다운로드
+            텍스트 템플릿 다운로드
+          </Button>
+          <Button
+            onClick={downloadCsvTemplate}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            CSV 템플릿 다운로드
           </Button>
         </div>
       </div>
@@ -368,14 +528,96 @@ ANSWER: B`;
         )}
       </div>
 
-      {/* Text Input Area */}
+      {/* Text/CSV Input Area */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
           <FileText className="w-4 h-4 text-purple-600" /> 문제 데이터 입력 *
         </label>
-        <div className="mb-3 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
-          <p className="font-semibold text-gray-700 mb-2">📋 양식 예시:</p>
-          <pre className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed">
+
+        {/* 입력 방식 토글 */}
+        <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-4 w-fit">
+          <button
+            type="button"
+            onClick={() => setInputMode('text')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              inputMode === 'text'
+                ? 'bg-white text-purple-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            텍스트 직접 입력
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('csv')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              inputMode === 'csv'
+                ? 'bg-white text-green-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            CSV 파일 업로드
+          </button>
+        </div>
+
+        {inputMode === 'csv' ? (
+          <div>
+            <div className="mb-3 p-3 bg-green-50 rounded-lg text-xs text-green-800 space-y-1">
+              <p className="font-semibold">📋 CSV 형식 안내:</p>
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>필수 열: <code className="bg-white px-1 rounded">question, choiceA, choiceB, choiceC, choiceD, answer</code> (answer는 A~D)</li>
+                <li>선택 열: <code className="bg-white px-1 rounded">passage, explanation, imageUrl</code></li>
+                <li>쉼표·줄바꿈이 포함된 내용은 반드시 큰따옴표("...")로 감싸주세요</li>
+                <li>위의 <strong>CSV 템플릿 다운로드</strong> 버튼으로 예시 파일을 받아 Excel에서 편집하면 가장 쉽습니다</li>
+              </ul>
+            </div>
+
+            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-green-300 rounded-lg cursor-pointer bg-green-50/50 hover:bg-green-50 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <Upload className="w-8 h-8 text-green-600 mb-2" />
+                <p className="text-sm text-gray-700 font-medium">
+                  {csvFileName ? csvFileName : 'CSV 파일을 선택하세요'}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">.csv 파일 (최대 54문제)</p>
+              </div>
+              <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFile} />
+            </label>
+
+            {csvError && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{csvError}</span>
+              </div>
+            )}
+
+            {csvQuestions.length > 0 && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm font-semibold text-green-800 flex items-center gap-2 mb-2">
+                  <Check className="w-4 h-4" />
+                  {csvQuestions.length}개 문제 인식 완료 — 아래에서 확인 후 업로드하세요
+                </p>
+                <div className="max-h-48 overflow-y-auto space-y-1.5">
+                  {csvQuestions.slice(0, 5).map((q, i) => (
+                    <div key={i} className="text-xs text-gray-700 bg-white rounded px-3 py-2 border border-green-100">
+                      <span className="font-semibold text-green-700">{q.title}.</span>{' '}
+                      {q.question.length > 60 ? q.question.substring(0, 60) + '…' : q.question}
+                      <span className="ml-2 text-gray-400">정답: {q.correctAnswer.toUpperCase()}</span>
+                    </div>
+                  ))}
+                  {csvQuestions.length > 5 && (
+                    <p className="text-xs text-gray-500 text-center py-1">
+                      … 외 {csvQuestions.length - 5}개 문제
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="mb-3 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-1">
+              <p className="font-semibold text-gray-700 mb-2">📋 양식 예시:</p>
+              <pre className="whitespace-pre-wrap font-mono text-[10px] leading-relaxed">
 {`PASSAGE: 지문 내용
 QUESTION: 질문
 A: 선택지 A
@@ -391,24 +633,26 @@ B: 선택지 B
 C: 선택지 C
 D: 선택지 D
 ANSWER: A`}
-          </pre>
-        </div>
-        <textarea
-          value={textInput}
-          onChange={(e) => setTextInput(e.target.value)}
-          placeholder="위 양식대로 문제를 입력하세요..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[500px] resize-y"
-        />
-        <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 space-y-1">
-          <p className="font-semibold">ℹ️ 입력 팁:</p>
-          <ul className="list-disc list-inside space-y-0.5 ml-2">
-            <li>각 필드는 대문자로 시작: PASSAGE:, QUESTION:, A:, B:, C:, D:, ANSWER:</li>
-            <li>문제 구분은 빈 줄 1칸 띄우기</li>
-            <li><strong>Module 구분:</strong> _____ (밑줄 5개)로 Module 1과 Module 2 구분 가능</li>
-            <li>문제 번호는 자동 생성됨 (===문제=== 불필요)</li>
-            <li>최대 54문제까지 업로드 가능 (리딩 27+27, 수학 22+22)</li>
-          </ul>
-        </div>
+              </pre>
+            </div>
+            <textarea
+              value={textInput}
+              onChange={(e) => setTextInput(e.target.value)}
+              placeholder="위 양식대로 문제를 입력하세요..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[500px] resize-y"
+            />
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 space-y-1">
+              <p className="font-semibold">ℹ️ 입력 팁:</p>
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>각 필드는 대문자로 시작: PASSAGE:, QUESTION:, A:, B:, C:, D:, ANSWER:</li>
+                <li>문제 구분은 빈 줄 1칸 띄우기</li>
+                <li><strong>Module 구분:</strong> _____ (밑줄 5개)로 Module 1과 Module 2 구분 가능</li>
+                <li>문제 번호는 자동 생성됨 (===문제=== 불필요)</li>
+                <li>최대 54문제까지 업로드 가능 (리딩 27+27, 수학 22+22)</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Upload Button */}
@@ -417,6 +661,9 @@ ANSWER: A`}
           onClick={() => {
             setCardTitle('');
             setTextInput('');
+            setCsvFileName('');
+            setCsvQuestions([]);
+            setCsvError('');
           }}
           className="px-6 py-3 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
           disabled={isUploading}
@@ -425,7 +672,11 @@ ANSWER: A`}
         </Button>
         <Button
           onClick={handleBulkUpload}
-          disabled={isUploading || !cardTitle.trim() || !textInput.trim()}
+          disabled={
+            isUploading ||
+            !cardTitle.trim() ||
+            (inputMode === 'text' ? !textInput.trim() : csvQuestions.length === 0)
+          }
           className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isUploading ? (

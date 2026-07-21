@@ -32,7 +32,7 @@ import { ToeflAiWidget } from "./components/ToeflAiWidget";
 import { mathQuestions } from "./mathQuestions";
 import { getTrainingQuestions } from "./trainingQuestions";
 import { projectId, publicAnonKey } from "./utils/supabase/info";
-import { supabase } from "./utils/supabase/client";
+import { supabase, registerStudent } from "./utils/supabase/client";
 import expandIconsSprite from "./assets/9b76972e6fd8aef3281c489a5cd74a7e1c455a46.png";
 import dragHandleImg from "./assets/af403f2609b757e96b427cbfdd300891837f3bc7.png";
 import expandRightIcon from "./assets/7824ae1cb1627c494e407eac40af4f6c3f73b05b.png";
@@ -387,6 +387,7 @@ export default function App() {
           username,
           createdAt: supabaseUser.created_at,
         });
+        registerStudent({ id: supabaseUser.id, email, name: username });
       }
     });
 
@@ -403,6 +404,7 @@ export default function App() {
           username,
           createdAt: supabaseUser.created_at,
         });
+        registerStudent({ id: supabaseUser.id, email, name: username });
       } else {
         // 로그아웃 시 currentUser 초기화
         setCurrentUser(null);

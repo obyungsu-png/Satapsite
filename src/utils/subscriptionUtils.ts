@@ -13,15 +13,18 @@ export async function hasActiveSubscription(): Promise<boolean> {
     const subscriptions = await kvGet('subscriptions');
     if (!Array.isArray(subscriptions)) return false;
 
+    // CRM(학생관리/수강권관리)에서 이메일을 소문자로 저장하므로 대소문자 무시 비교
+    const userEmail = currentUser.email.trim().toLowerCase();
     const userSubscription = subscriptions.find((sub: any) =>
-      sub.email === currentUser.email && sub.status === 'Active'
+      (sub.email || '').trim().toLowerCase() === userEmail && sub.status === 'Active'
     );
 
     if (!userSubscription) return false;
 
-    // Check if subscription is still valid
+    // 날짜 단위 비교 (만료일 당일 자정까지 유효)
     const expiryDate = new Date(userSubscription.expiryDate);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     return expiryDate >= today;
   } catch {
     return false;

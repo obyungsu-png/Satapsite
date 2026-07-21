@@ -215,18 +215,15 @@ function TestCard({ test, index, onStartTest, onStartReview, isUnlocked, onLocke
 }
 
 // CourseCard Component with hover effect for Lectures
-// index 0, 1번째 카드는 묣료, 3번째(인덱스 2)부터 수강권 필요
-function CourseCard({ course, index, category, onAction, isUnlocked, onLockedClick }: { 
+// Pattern Drill is always open — no lock, direct access
+function CourseCard({ course, index, category, onAction }: { 
   course: any; 
   index: number; 
   category: string;
   onAction: () => void;
-  isUnlocked?: boolean;
-  onLockedClick?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = category === 'basic' ? BookOpen : category === 'pastExams' ? BookOpen : Target;
-  const isLocked = index >= 2 && !isUnlocked; // 3번째 카드부터 잠금 (로그인 + 수강권 필요)
   
   return (
     <motion.div
@@ -237,72 +234,45 @@ function CourseCard({ course, index, category, onAction, isUnlocked, onLockedCli
       onMouseLeave={() => setIsHovered(false)}
       className="rounded-lg transition-all duration-300 relative"
       style={{
-        backgroundColor: isLocked ? '#f5f5f5' : (isHovered ? '#FFE0B2' : '#F5F5F5'),
+        backgroundColor: isHovered ? '#FFE0B2' : '#F5F5F5',
         boxShadow: isHovered ? '0 3px 12px rgba(0,0,0,0.1)' : '0 2px 6px rgba(0,0,0,0.06)',
-        opacity: isLocked ? 0.6 : 1
       }}
-      whileHover={{ scale: isLocked ? 1 : 1.015, y: isLocked ? 0 : -2 }}
+      whileHover={{ scale: 1.015, y: -2 }}
     >
       <div className="p-4 text-center">
         <motion.div 
           className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2.5"
-          style={{ backgroundColor: isLocked ? '#d1d5db' : 'white' }}
+          style={{ backgroundColor: 'white' }}
         >
-          {isLocked ? (
-            <Lock className="w-5 h-5 text-gray-500" />
-          ) : (
-            <Icon className="w-5 h-5" style={{ color: '#FF9800' }} />
-          )}
+          <Icon className="w-5 h-5" style={{ color: '#FF9800' }} />
         </motion.div>
         
-        <h3 className="mb-1 text-sm" style={{ color: isLocked ? '#6b7280' : '#000', fontWeight: 700 }}>
+        <h3 className="mb-1 text-sm" style={{ color: '#000', fontWeight: 700 }}>
           {course.title || course.testTitle}
         </h3>
         
-        <p className="text-[10px] mb-3" style={{ color: isLocked ? '#9ca3af' : '#666', fontWeight: 600 }}>
+        <p className="text-[10px] mb-3" style={{ color: '#666', fontWeight: 600 }}>
           {course.category || course.type}
         </p>
 
-        {!isLocked && (
-          <Button
-            onClick={onAction}
-            className="w-full py-1.5 rounded transition-colors text-xs"
-            style={{ 
-              backgroundColor: '#3D5AA1',
-              color: '#FFFFFF'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#2F4A85';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#3D5AA1';
-            }}
-            size="sm"
-          >
-            {category === 'pastExams' ? '시작하기' : '동영상 강의'}
-          </Button>
-        )}
-      </div>
-      
-      {/* Unlock Button Overlay */}
-      {isLocked && (
-        <motion.button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (onLockedClick) {
-              onLockedClick();
-            }
+        <Button
+          onClick={onAction}
+          className="w-full py-1.5 rounded transition-colors text-xs"
+          style={{ 
+            backgroundColor: '#3D5AA1',
+            color: '#FFFFFF'
           }}
-          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#2F4A85';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#3D5AA1';
+          }}
+          size="sm"
         >
-          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
-            <Lock size={14} className="md:w-4 md:h-4" />
-            <span className="whitespace-nowrap">Unlock Now</span>
-          </div>
-        </motion.button>
-      )}
+          {category === 'pastExams' ? '시작하기' : '동영상 강의'}
+        </Button>
+      </div>
     </motion.div>
   );
 }
@@ -760,19 +730,43 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     
     // 초기 체크
     checkAccess();
-    
+
     // storage 이벤트 리스너 추가 (다른 탭에서 변경 시 감지)
     window.addEventListener('storage', checkAccess);
-    
+
+    // 창이 다시 포커스될 때 재확인 (관리자가 수강권 부여한 직후 반영)
+    window.addEventListener('focus', checkAccess);
+
     // 로그인 상태 변경 시 재확인
     if (currentUser) {
       checkAccess();
     }
-    
+
     return () => {
       window.removeEventListener('storage', checkAccess);
+      window.removeEventListener('focus', checkAccess);
     };
   }, [currentUser]);
+
+  // ── 잠금 안내 모달 (로그인/수강권 필요 사유 + 해제 방법 안내) ──
+  const [unlockModal, setUnlockModal] = useState<{
+    needLogin: boolean;
+    featureName: string;
+  } | null>(null);
+
+  // 로그인 + 수강권 필요 메뉴(Training/History) 클릭 시 호출.
+  // 접근 가능하면 true, 아니면 사유를 모달로 안내하고 false 반환.
+  const requireAccess = (featureName: string): boolean => {
+    if (!isLoggedIn) {
+      setUnlockModal({ needLogin: true, featureName });
+      return false;
+    }
+    if (!isContentUnlocked) {
+      setUnlockModal({ needLogin: false, featureName });
+      return false;
+    }
+    return true;
+  };
 
   // Helper function to save student to Supabase
   const saveStudentToSupabase = async (student: any) => {
@@ -2187,14 +2181,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#B3E5FC"
             iconColor="#3b5998"
             index={0}
-            onClick={() => {
-              if (!isLoggedIn) {
-                setActiveTab('스마트 연습');
-                setShowLoginPopup(true);
-                return;
-              }
-              setActiveTab('스마트 연습');
-            }}
+            onClick={() => setActiveTab('스마트 연습')}
           />
 
           <FeatureCard
@@ -2205,18 +2192,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#FFE0B2"
             iconColor="#3b5998"
             index={1}
-            onClick={() => {
-              if (!isLoggedIn) {
-                setActiveTab('강의 및 특강');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
-              setActiveTab('강의 및 특강');
-            }}
+            onClick={() => setActiveTab('강의 및 특강')}
           />
           
           <FeatureCard
@@ -2228,15 +2204,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             iconColor="#3b5998"
             index={2}
             onClick={() => {
-              if (!isLoggedIn) {
-                setActiveTab('전문 훈련');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
+              if (!requireAccess('Training')) return;
               setActiveTab('전문 훈련');
             }}
           />
@@ -2250,15 +2218,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             iconColor="#3b5998"
             index={3}
             onClick={() => {
-              if (!isLoggedIn) {
-                setActiveTab('연습 기록');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
+              if (!requireAccess('History')) return;
               setActiveTab('연습 기록');
             }}
           />
@@ -3681,7 +3641,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   }}
                   isUnlocked={isContentUnlocked}
                   onLockedClick={() => {
-                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                    requireAccess('3번째 이후 문제');
                   }}
                 />
               ))}
@@ -3834,7 +3794,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         advertisements={advertisements}
         uploadedFiles={uploadedFiles}
         onLockedClick={() => {
-          toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+          requireAccess('Training');
         }}
       />
     );
@@ -4161,10 +4121,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   } else {
                     setSelectedCourse(course);
                   }
-                }}
-                isUnlocked={isContentUnlocked}
-                onLockedClick={() => {
-                  toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                 }}
               />
             ))}
@@ -4944,8 +4900,9 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     
     // Show regular tab content
     // ── 렌더 레벨 게이팅: URL 직접 접근(#/history 등) 우회 차단 ──
-    const needsLoginTabs = ['스마트 연습', '강의 및 특강', '전문 훈련', '연습 기록'];
-    const needsSubscriptionTabs = ['강의 및 특강', '전문 훈련', '연습 기록'];
+    // Practice / Pattern Drill: free open. Training / History: login + subscription required.
+    const needsLoginTabs = ['전문 훈련', '연습 기록'];
+    const needsSubscriptionTabs = ['전문 훈련', '연습 기록'];
     if (needsLoginTabs.includes(activeTab) && !isLoggedIn) {
       return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
@@ -5058,13 +5015,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </button>
                 <button
                   onClick={() => {
-                    if (!isLoggedIn) {
-                      setShowLoginPage(false);
-                      setShowSignUpPage(false);
-                      setActiveTab('스마트 연습');
-                      setShowLoginPopup(true);
-                      return;
-                    }
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('스마트 연습');
@@ -5080,17 +5030,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </button>
                 <button
                   onClick={() => {
-                    if (!isLoggedIn) {
-                      setShowLoginPage(false);
-                      setShowSignUpPage(false);
-                      setActiveTab('강의 및 특강');
-                      setShowLoginPopup(true);
-                      return;
-                    }
-                    if (!isContentUnlocked) {
-                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                      return;
-                    }
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('강의 및 특강');
@@ -5106,17 +5045,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </button>
                 <button
                   onClick={() => {
-                    if (!isLoggedIn) {
-                      setShowLoginPage(false);
-                      setShowSignUpPage(false);
-                      setActiveTab('전문 훈련');
-                      setShowLoginPopup(true);
-                      return;
-                    }
-                    if (!isContentUnlocked) {
-                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                      return;
-                    }
+                    if (!requireAccess('Training')) return;
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('전문 훈련');
@@ -5129,20 +5058,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   style={activeTab === '전문 훈련' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
                 >
                   Training
+                  {!isContentUnlocked && <Lock size={12} className="ml-1 text-gray-400" />}
                 </button>
                 <button
                   onClick={() => {
-                    if (!isLoggedIn) {
-                      setShowLoginPage(false);
-                      setShowSignUpPage(false);
-                      setActiveTab('연습 기록');
-                      setShowLoginPopup(true);
-                      return;
-                    }
-                    if (!isContentUnlocked) {
-                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                      return;
-                    }
+                    if (!requireAccess('History')) return;
                     setShowLoginPage(false);
                     setShowSignUpPage(false);
                     setActiveTab('연습 기록');
@@ -5155,6 +5075,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   style={activeTab === '연습 기록' && !showLoginPage && !showSignUpPage ? { borderBottomColor: '#2B478B' } : {}}
                 >
                   History
+                  {!isContentUnlocked && <Lock size={12} className="ml-1 text-gray-400" />}
                 </button>
               </div>
             </div>
@@ -5264,14 +5185,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </button>
               <button
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('스마트 연습');
-                    setShowLoginPopup(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('스마트 연습');
@@ -5287,19 +5200,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </button>
               <button
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('강의 및 특강');
-                    setShowLoginPopup(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
-                  if (!isContentUnlocked) {
-                    setShowMobileMenu(false);
-                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                    return;
-                  }
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('강의 및 특강');
@@ -5315,59 +5215,37 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </button>
               <button
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('전문 훈련');
-                    setShowLoginPopup(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
-                  if (!isContentUnlocked) {
-                    setShowMobileMenu(false);
-                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                    return;
-                  }
+                  setShowMobileMenu(false);
+                  if (!requireAccess('Training')) return;
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('전문 훈련');
-                  setShowMobileMenu(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
                   activeTab === '전문 훈련' && !showLoginPage && !showSignUpPage
                     ? 'bg-blue-50 text-blue-700 font-bold'
                     : 'text-gray-600 hover:bg-gray-50 font-medium'
                 }`}
               >
                 Training
+                {!isContentUnlocked && <Lock size={13} className="text-gray-400" />}
               </button>
               <button
                 onClick={() => {
-                  if (!isLoggedIn) {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('연습 기록');
-                    setShowLoginPopup(true);
-                    setShowMobileMenu(false);
-                    return;
-                  }
-                  if (!isContentUnlocked) {
-                    setShowMobileMenu(false);
-                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                    return;
-                  }
+                  setShowMobileMenu(false);
+                  if (!requireAccess('History')) return;
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('연습 기록');
-                  setShowMobileMenu(false);
                 }}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
                   activeTab === '연습 기록' && !showLoginPage && !showSignUpPage
                     ? 'bg-blue-50 text-blue-700 font-bold'
                     : 'text-gray-600 hover:bg-gray-50 font-medium'
                 }`}
               >
                 History
+                {!isContentUnlocked && <Lock size={13} className="text-gray-400" />}
               </button>
             </div>
           </div>
@@ -5391,6 +5269,58 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           setShowSignUpPage(false);
         }}
       />
+
+      {/* Unlock Info Modal — 잠금 콘텐츠 클릭 시 해제 방법 안내 */}
+      {unlockModal && (
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[70] px-4"
+          onClick={() => setUnlockModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-7 h-7 text-[#3D5AA1]" />
+            </div>
+            <h3 className="text-lg font-extrabold text-gray-900 mb-2">
+              {unlockModal.needLogin ? '로그인이 필요합니다' : '수강권이 필요합니다'}
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed mb-1">
+              <span className="font-bold text-gray-800">{unlockModal.featureName}</span>
+              {unlockModal.needLogin
+                ? '은(는) 로그인 후 이용할 수 있습니다.'
+                : '은(는) 수강권 등록 후 이용할 수 있습니다.'}
+            </p>
+            <p className="text-xs text-gray-400 leading-relaxed mb-5">
+              {unlockModal.needLogin
+                ? '로그인하면 오픈된 콘텐츠를 바로 이용할 수 있습니다.'
+                : '관리자에게 수강권 등록을 요청하세요. 로그인한 이메일 기준으로 등록됩니다.'}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setUnlockModal(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                닫기
+              </button>
+              {unlockModal.needLogin && (
+                <button
+                  onClick={() => {
+                    setUnlockModal(null);
+                    setShowLoginPage(true);
+                    setShowSignUpPage(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+                  style={{ backgroundColor: '#3D5AA1' }}
+                >
+                  로그인하기
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Study Hub Password Modal */}
       {showStudyHubPassword && (
@@ -5481,13 +5411,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Practice */}
           <button
             onClick={() => {
-              if (!isLoggedIn) {
-                setShowLoginPage(false);
-                setShowSignUpPage(false);
-                setActiveTab('스마트 연습');
-                setShowLoginPopup(true);
-                return;
-              }
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('스마트 연습');
@@ -5504,17 +5427,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Lectures */}
           <button
             onClick={() => {
-              if (!isLoggedIn) {
-                setShowLoginPage(false);
-                setShowSignUpPage(false);
-                setActiveTab('강의 및 특강');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('강의 및 특강');
@@ -5531,55 +5443,41 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           {/* Training */}
           <button
             onClick={() => {
-              if (!isLoggedIn) {
-                setShowLoginPage(false);
-                setShowSignUpPage(false);
-                setActiveTab('전문 훈련');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
+              if (!requireAccess('Training')) return;
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('전문 훈련');
             }}
-            className="flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-lg transition-colors"
+            className="relative flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-lg transition-colors"
             style={{
               color: activeTab === '전문 훈련' && !showLoginPage && !showSignUpPage ? '#10B981' : '#6B7280'
             }}
           >
             <Target size={22} strokeWidth={activeTab === '전문 훈련' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
-            <span className="text-xs mt-0.5 font-medium">Training</span>
+            <span className="text-xs mt-0.5 font-medium flex items-center gap-0.5">
+              Training
+              {!isContentUnlocked && <Lock size={10} className="text-gray-400" />}
+            </span>
           </button>
 
           {/* History */}
           <button
             onClick={() => {
-              if (!isLoggedIn) {
-                setShowLoginPage(false);
-                setShowSignUpPage(false);
-                setActiveTab('연습 기록');
-                setShowLoginPopup(true);
-                return;
-              }
-              if (!isContentUnlocked) {
-                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
-                return;
-              }
+              if (!requireAccess('History')) return;
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('연습 기록');
             }}
-            className="flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-lg transition-colors"
+            className="relative flex flex-col items-center justify-center flex-1 py-1.5 px-2 rounded-lg transition-colors"
             style={{
               color: activeTab === '연습 기록' && !showLoginPage && !showSignUpPage ? '#10B981' : '#6B7280'
             }}
           >
             <BarChart3 size={22} strokeWidth={activeTab === '연습 기록' && !showLoginPage && !showSignUpPage ? 2.5 : 2} />
-            <span className="text-xs mt-0.5 font-medium">History</span>
+            <span className="text-xs mt-0.5 font-medium flex items-center gap-0.5">
+              History
+              {!isContentUnlocked && <Lock size={10} className="text-gray-400" />}
+            </span>
           </button>
         </div>
       </div>

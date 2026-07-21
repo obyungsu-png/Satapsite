@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Lock, User, Mail, RefreshCw, QrCode, Send } from 'lucide-react';
-import { SERVER_BASE_URL, getServerHeaders } from '../utils/apiConfig';
 import { supabase } from '../utils/supabase/client';
 import { usernameToEmail, isValidUsername } from '../utils/authMapping';
 
@@ -35,13 +34,6 @@ function GoogleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-
-interface LoginFormProps {
-  onClose: () => void;
-  onLoginSuccess?: (username: string) => void;
-}
-
-type AuthMethod = 'email' | 'username';
 
 // ── 4자리 보안코드(사람/봇 구분용 캡차) 생성 ──
 // 헷갈리는 글자(0/O, 1/I/l)는 제외한 영문 대문자 + 숫자.
@@ -200,38 +192,35 @@ export function LoginForm({ onClose, onLoginSuccess, initialMode = 'login' }: Lo
 
   // ── 아이디 + 비밀번호 + 보안코드 회원가입 ──
   const doSignup = async () => {
-    // 서버에서 아이디 중복 확인 + Supabase Auth 유저 생성
-    const res = await fetch(`${SERVER_BASE_URL}/users/register`, {
-      method: 'POST',
-      headers: { ...getServerHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: username.trim().toLowerCase(),
-        password,
-        email: usernameToEmail(username),
-      }),
-    });
+    // edge function 없이 Supabase Auth로 직접 가입
+    // (중복 아이디 검사도 Supabase Auth가 처리)
+    const email = usernameToEmail(username);
+    const { data, error } = await supabase.auth.signUp({ email, password });
 
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || !data.success) {
-      alert(data.error || '회원가입에 실패했어요. 다시 시도해 주세요.');
+    if (error) {
+      alert(/already|registered|exists/i.test(error.message)
+        ? '이미 가입된 아이디예요. 로그인 탭에서 로그인해 주세요.'
+        : '회원가입에 실패했어요: ' + error.message);
       return;
     }
 
-    // 가입 성공 → 바로 로그인
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email: usernameToEmail(username),
-      password,
-    });
-
-    if (error) {
-      alert('가입은 완료됐지만 자동 로그인에 실패했어요. 로그인 탭에서 다시 시도해 주세요.');
+    // 이메일 확인이 켜진 프로젝트에서는 기존 이메일 가입 시 빈 identities가 반환됨
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      alert('이미 가입된 아이디예요. 로그인 탭에서 로그인해 주세요.');
       setMode('login');
       return;
     }
 
-    if (onLoginSuccess) onLoginSuccess(username.trim().toLowerCase());
-    if (signInData.session) onClose();
+    // 가입 성공 → 세션이 있으면 즉시 로그인 완료
+    // (onAuthStateChange가 currentUser 동기화 + CRM 학생 등록을 처리)
+    if (data.session) {
+      if (onLoginSuccess) onLoginSuccess(username.trim().toLowerCase());
+      onClose();
+      return;
+    }
+
+    // 세션이 없는 설정(이메일 확인 필요)이면 바로 로그인 시도
+    await doLogin();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
