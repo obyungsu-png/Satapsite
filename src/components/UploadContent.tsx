@@ -8,6 +8,7 @@ import { SubscriptionManager } from './SubscriptionManager';
 import { AdManagement } from './AdManagement';
 import { BulkUpload } from './BulkUpload';
 import { StudentManagement } from './StudentManagement';
+import { VoucherCodeManagement } from './VoucherCodeManagement';
 
 // LocalStorage 기반 데이터 관리
 const STORAGE_KEY = 'sat_practice_tests';
@@ -706,10 +707,15 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
     return (
       <div className="min-h-screen bg-gray-50 py-6 md:py-12 px-3 md:px-6">
         <div className="max-w-7xl mx-auto">
-          <StudentManagement />
+          <StudentManagement onOpenVoucherTab={() => setUploadTab('수강권 코드')} />
         </div>
       </div>
     );
+  }
+
+  // 수강권 코드 관리 탭 선택 시 VoucherCodeManagement 컴포넌트 렌더링
+  if (uploadTab === '수강권 코드') {
+    return <VoucherCodeManagement />;
   }
 
   // 광고 관리 탭 선택 시 AdManagement 컴포넌트 렌더링
@@ -835,6 +841,17 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
             >
               <BookmarkPlus className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
               학생 관리
+            </button>
+            <button
+              onClick={() => setUploadTab('수강권 코드')}
+              className={`px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                uploadTab === '수강권 코드'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Tags className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1 sm:mr-2" />
+              수강권 코드
             </button>
             <button
               onClick={() => setUploadTab('광고 관리')}

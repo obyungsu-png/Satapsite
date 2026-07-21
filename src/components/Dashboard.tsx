@@ -25,6 +25,7 @@ import { supabase } from '../utils/supabase/client';
 import { AdManagement, Advertisement, AdBannerDisplay } from './AdManagement';
 import { LandingPage } from './LandingPage';
 import { BulkUpload } from './BulkUpload';
+import { RedeemVoucherForm } from './RedeemVoucherForm';
 
 interface DashboardProps {
   onStartTest: (testInfo?: any) => void;
@@ -714,20 +715,21 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   }, [showLoginPage, showSignUpPage, showLoginPopup]);
   
   // 관리자 모드 변경 감지 + 구독 상태 확인 (async)
-  useEffect(() => {
-    const checkAccess = async () => {
-      const adminMode = localStorage.getItem('adminMode') === 'true';
-      if (adminMode) {
-        setIsContentUnlocked(true);
-        setAccessChecked(true);
-        return;
-      }
-      // 구독 확인 (Supabase)
-      const subscribed = await hasActiveSubscription();
-      setIsContentUnlocked(subscribed);
+  // 수강권 코드를 직접 등록한 직후에도 재사용할 수 있도록 컴포넌트 스코프 함수로 분리.
+  const checkAccess = async () => {
+    const adminMode = localStorage.getItem('adminMode') === 'true';
+    if (adminMode) {
+      setIsContentUnlocked(true);
       setAccessChecked(true);
-    };
-    
+      return;
+    }
+    // 구독 확인 (Supabase)
+    const subscribed = await hasActiveSubscription();
+    setIsContentUnlocked(subscribed);
+    setAccessChecked(true);
+  };
+
+  useEffect(() => {
     // 초기 체크
     checkAccess();
 
@@ -4932,7 +4934,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
           <Lock className="w-12 h-12 text-gray-300" />
           <h2 className="text-xl font-bold text-gray-700">수강권이 필요합니다</h2>
-          <p className="text-sm text-gray-500">이 메뉴는 수강권 등록 후 이용할 수 있습니다. 관리자에게 문의하세요.</p>
+          <p className="text-sm text-gray-500">이 메뉴는 수강권 등록 후 이용할 수 있습니다. 관리자(학원/담당자)에게 받은 수강권 코드를 아래에 입력해주세요.</p>
+          <div className="w-full max-w-sm">
+            <RedeemVoucherForm email={currentUser?.email} onSuccess={() => checkAccess()} />
+          </div>
         </div>
       );
     }
@@ -5295,8 +5300,20 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <p className="text-xs text-gray-400 leading-relaxed mb-5">
               {unlockModal.needLogin
                 ? '로그인하면 오픈된 콘텐츠를 바로 이용할 수 있습니다.'
-                : '관리자에게 수강권 등록을 요청하세요. 로그인한 이메일 기준으로 등록됩니다.'}
+                : '관리자(학원/담당자)에게 받은 수강권 코드를 아래에 입력하면 로그인한 이메일 기준으로 바로 등록됩니다.'}
             </p>
+            {!unlockModal.needLogin && (
+              <div className="mb-4 text-left">
+                <RedeemVoucherForm
+                  email={currentUser?.email}
+                  compact
+                  onSuccess={async () => {
+                    await checkAccess();
+                    setUnlockModal(null);
+                  }}
+                />
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={() => setUnlockModal(null)}
