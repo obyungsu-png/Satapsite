@@ -572,9 +572,53 @@ const extractWordsFromTests = () => {
   return keyWords;
 };
 
+// ── 탭 ↔ URL 경로 매핑 (hash-based routing) ──
+const TAB_TO_URL: Record<string, string> = {
+  'Home': '/',
+  '스마트 연습': '/practice',
+  '강의 및 특강': '/pattern-drill',
+  '전문 훈련': '/specialized-training',
+  '연습 기록': '/history',
+  '가격': '/pricing',
+  '업로드': '/upload',
+};
+const URL_TO_TAB: Record<string, string> = Object.fromEntries(
+  Object.entries(TAB_TO_URL).map(([tab, url]) => [url, tab])
+);
+const SUBTAB_TO_URL: Record<string, string> = {
+  '기출문제': 'past-exams',
+  '공식문제': 'official',
+  '단어관리': 'vocabulary',
+  'SAT VOCA': 'sat-voca',
+};
+const URL_TO_SUBTAB: Record<string, string> = Object.fromEntries(
+  Object.entries(SUBTAB_TO_URL).map(([s, u]) => [u, s])
+);
+
+function parseUrlHash(): { tab: string; subTab: string } {
+  const hash = window.location.hash.replace(/^#\/?/, '');
+  if (!hash) return { tab: 'Home', subTab: '기출문제' };
+  const parts = hash.split('/');
+  const mainPath = '/' + parts[0];
+  let tab = URL_TO_TAB[mainPath] || 'Home';
+  let subTab = '기출문제';
+  if (tab === '스마트 연습' && parts[1]) {
+    subTab = URL_TO_SUBTAB[parts[1]] || '기출문제';
+  }
+  return { tab, subTab };
+}
+
+function buildUrl(tab: string, subTab: string): string {
+  const tabUrl = TAB_TO_URL[tab] || '/';
+  if (tab === '스마트 연습' && subTab && SUBTAB_TO_URL[subTab]) {
+    return `${tabUrl}/${SUBTAB_TO_URL[subTab]}`;
+  }
+  return tabUrl;
+}
+
 export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState('Home');
-  const [smartPracticeTab, setSmartPracticeTab] = useState('기출문제'); // 기출문제 or 공식문제 or 단어관리
+  const [activeTab, setActiveTab] = useState(() => parseUrlHash().tab);
+  const [smartPracticeTab, setSmartPracticeTab] = useState(() => parseUrlHash().subTab); // 기출문제 or 공식문제 or 단어관리
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login'); // 회원가입 모달 구분용
@@ -587,28 +631,31 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     return localStorage.getItem('adminMode') === 'true';
   });
 
-  // ── 브라우저 History 관리 ──
-  // 탭 변경 및 서브탭 변경 시 history.pushState로 하위 history 생성
-  // 뒤로가기(popstate) 시 이전 상태로 복원
+  // ── 브라우저 History 관리 (hash-based URL routing) ──
+  // 탭/서브탭 변경 시 URL hash와 함께 history.pushState
+  // 뒤로가기(popstate) 시 URL에서 탭 복원
   // 실전문제 풀이(gameState 변경)는 history에 영향 없음
   const isInitialMount = useRef(true);
   const isPopstateRef = useRef(false);
 
-  // 탭/서브탭 변경 → history push
+  // 탭/서브탭 변경 → URL hash 변경 + history push
   useEffect(() => {
+    const url = buildUrl(activeTab, smartPracticeTab);
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      window.history.replaceState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '');
+      // 초기 마운트: URL을 현재 탭에 맞게 보정 (replaceState — 새 entry 추가 안 함)
+      window.history.replaceState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '', `#${url}`);
       return;
     }
     if (isPopstateRef.current) {
       isPopstateRef.current = false;
       return;
     }
-    window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '');
+    // 탭 변경 시 새 history entry 추가 (URL hash 포함)
+    window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '', `#${url}`);
   }, [activeTab, smartPracticeTab]);
 
-  // 로그인/회원가입 모달 열림 → history push (뒤로가기로 모달 닫기)
+  // 로그인/회원가입 모달 열림 → history push (뒤로가기로 모달 닫기, URL은 변경하지 않음)
   useEffect(() => {
     if (isInitialMount.current) return;
     if (isPopstateRef.current) {
@@ -616,7 +663,8 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
       return;
     }
     if (showLoginPage || showSignUpPage || showLoginPopup) {
-      window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'modal' }, '');
+      const url = buildUrl(activeTab, smartPracticeTab);
+      window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'modal' }, '', `#${url}`);
     }
   }, [showLoginPage, showSignUpPage, showLoginPopup]);
 
@@ -628,6 +676,12 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
         isPopstateRef.current = true;
         setActiveTab(state.tab);
         if (state.subTab) setSmartPracticeTab(state.subTab);
+      } else {
+        // state가 없으면 URL hash에서 파싱
+        const { tab, subTab } = parseUrlHash();
+        isPopstateRef.current = true;
+        setActiveTab(tab);
+        setSmartPracticeTab(subTab);
       }
       // 모달이 열려 있으면 닫기
       if (showLoginPage) setShowLoginPage(false);
