@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Calendar, DollarSign, AlertCircle, TrendingUp, Users, Download, Plus, Trash2, Edit2 } from 'lucide-react';
 import { Button } from './ui/button';
-import { SERVER_BASE_URL, getServerHeaders } from '../utils/apiConfig';
+import { kvGet, kvSet } from '../utils/supabase/client';
 
 export interface Subscription {
   id: string;
@@ -29,21 +29,13 @@ export function SubscriptionManagement() {
   });
 
   useEffect(() => {
-    // Load subscriptions from Supabase
+    // Load subscriptions from Supabase KV store
+    // (서버에 /subscriptions 엔드포인트가 없어 kv_store 테이블 직접 사용)
     const loadSubscriptions = async () => {
-      try {
-        const response = await fetch(`${SERVER_BASE_URL}/subscriptions`, {
-          headers: getServerHeaders()
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setSubscriptions(data);
-            console.log('✅ Loaded subscriptions from Supabase:', data.length);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error loading subscriptions:', error);
+      const data = await kvGet('subscriptions');
+      if (Array.isArray(data)) {
+        setSubscriptions(data);
+        console.log('✅ Loaded subscriptions from Supabase:', data.length);
       }
     };
     loadSubscriptions();
@@ -51,20 +43,9 @@ export function SubscriptionManagement() {
 
   const saveSubscriptions = async (subs: Subscription[]) => {
     setSubscriptions(subs);
-    try {
-      const res = await fetch(`${SERVER_BASE_URL}/subscriptions`, {
-        method: 'POST',
-        headers: {
-          ...getServerHeaders(),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(subs)
-      });
-      if (!res.ok) console.error(`❌ Error saving subscriptions: ${res.status}`);
-      else console.log('💾 Saved subscriptions to Supabase');
-    } catch (error) {
-      console.error('❌ Error saving subscriptions:', error);
-    }
+    const ok = await kvSet('subscriptions', subs);
+    if (ok) console.log('💾 Saved subscriptions to Supabase');
+    else console.error('❌ Error saving subscriptions');
   };
 
   const handleAddSubscription = () => {

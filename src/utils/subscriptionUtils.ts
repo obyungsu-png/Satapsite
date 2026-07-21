@@ -1,21 +1,19 @@
-import { SERVER_BASE_URL, getServerHeaders } from './apiConfig';
+import { kvGet } from './supabase/client';
 
-// Check if user has an active subscription (Supabase 기반)
+// Check if user has an active subscription (Supabase KV store 기반)
+// 서버에 /subscriptions 엔드포인트가 없으므로(404) KV store를 직접 읽는다.
 export async function hasActiveSubscription(): Promise<boolean> {
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  
+
   if (!currentUser.email) {
     return false;
   }
 
   try {
-    const response = await fetch(`${SERVER_BASE_URL}/subscriptions`, {
-      headers: getServerHeaders()
-    });
-    if (!response.ok) return false;
-    
-    const subscriptions = await response.json();
-    const userSubscription = subscriptions.find((sub: any) => 
+    const subscriptions = await kvGet('subscriptions');
+    if (!Array.isArray(subscriptions)) return false;
+
+    const userSubscription = subscriptions.find((sub: any) =>
       sub.email === currentUser.email && sub.status === 'Active'
     );
 
@@ -25,8 +23,7 @@ export async function hasActiveSubscription(): Promise<boolean> {
     const expiryDate = new Date(userSubscription.expiryDate);
     const today = new Date();
     return expiryDate >= today;
-  } catch (error) {
-    console.error('Error checking subscription:', error);
+  } catch {
     return false;
   }
 }

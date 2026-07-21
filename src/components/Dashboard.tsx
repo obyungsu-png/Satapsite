@@ -138,18 +138,24 @@ const saveTestsBoth = async (tests: any[]) => {
 };
 
 // TestCard Component with hover effect for Practice
-function TestCard({ test, index, onStartTest, onStartReview }: { 
+function TestCard({ test, index, onStartTest, onStartReview, isUnlocked, onLockedClick }: { 
   test: any; 
   index: number; 
   onStartTest: () => void;
   onStartReview: () => void;
+  onViewWords?: () => void;
+  isUnlocked?: boolean;
+  onLockedClick?: () => void;
 }) {
+  // 3번째 카드(인덱스 2)부터 잠금 — 로그인 + 수강권 필요
+  const isLocked = index >= 2 && !isUnlocked;
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className="bg-white rounded-[20px] p-5 shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1.5 border border-gray-100 flex flex-col h-full relative"
+      style={isLocked ? { opacity: 0.6, backgroundColor: '#f5f5f5' } : {}}
     >
       <div className="mb-4 flex-grow">
         <div className="flex justify-between items-start mb-3">
@@ -170,36 +176,57 @@ function TestCard({ test, index, onStartTest, onStartReview }: {
         </p>
       </div>
 
-      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
-        <button
-          onClick={onStartTest}
-          className="flex-1 bg-[#3D5AA1] hover:bg-[#2F4A85] text-white text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+      {!isLocked && (
+        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-50">
+          <button
+            onClick={onStartTest}
+            className="flex-1 bg-[#3D5AA1] hover:bg-[#2F4A85] text-white text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            시작하기
+          </button>
+          <button
+            onClick={onStartReview}
+            className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-[#3D5AA1] text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+          >
+            복습용
+          </button>
+        </div>
+      )}
+
+      {/* Unlock Overlay */}
+      {isLocked && (
+        <motion.button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onLockedClick) onLockedClick();
+          }}
+          className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-[20px] opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
-          시작하기
-        </button>
-        <button
-          onClick={onStartReview}
-          className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-[#3D5AA1] text-[11px] font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
-        >
-          복습용
-        </button>
-      </div>
+          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm shadow-md" style={{ backgroundColor: '#D4EDFF', color: '#3D5AA1', fontWeight: 700 }}>
+            <Lock size={14} className="md:w-4 md:h-4" />
+            <span className="whitespace-nowrap">Unlock Now</span>
+          </div>
+        </motion.button>
+      )}
     </motion.div>
   );
 }
 
 // CourseCard Component with hover effect for Lectures
-function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateToPricing }: { 
+// index 0, 1번째 카드는 묣료, 3번째(인덱스 2)부터 수강권 필요
+function CourseCard({ course, index, category, onAction, isUnlocked, onLockedClick }: { 
   course: any; 
   index: number; 
   category: string;
   onAction: () => void;
   isUnlocked?: boolean;
-  onNavigateToPricing?: () => void;
+  onLockedClick?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = category === 'basic' ? BookOpen : category === 'pastExams' ? BookOpen : Target;
-  const isLocked = !isUnlocked; // 수강권 기반 잠금
+  const isLocked = index >= 2 && !isUnlocked; // 3번째 카드부터 잠금 (로그인 + 수강권 필요)
   
   return (
     <motion.div
@@ -262,8 +289,8 @@ function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateT
         <motion.button
           onClick={(e) => {
             e.stopPropagation();
-            if (onNavigateToPricing) {
-              onNavigateToPricing();
+            if (onLockedClick) {
+              onLockedClick();
             }
           }}
           className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
@@ -281,13 +308,13 @@ function CourseCard({ course, index, category, onAction, isUnlocked, onNavigateT
 }
 
 // TrainingCard Component with hover effect for Training
-function TrainingCard({ type, index, uploadedCount, onStartTraining, isUnlocked, onNavigateToPricing }: { 
+function TrainingCard({ type, index, uploadedCount, onStartTraining, isUnlocked, onLockedClick }: { 
   type: any; 
   index: number; 
   uploadedCount: number;
   onStartTraining: () => void;
   isUnlocked?: boolean;
-  onNavigateToPricing?: () => void;
+  onLockedClick?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = type.icon;
@@ -357,7 +384,7 @@ function TrainingCard({ type, index, uploadedCount, onStartTraining, isUnlocked,
             </Button>
           ) : (
             <Button
-              onClick={() => onNavigateToPricing?.()}
+              onClick={() => onLockedClick?.()}
               className="w-full py-1.5 rounded transition-colors text-white text-xs"
               size="sm"
               style={{ backgroundColor: '#9CA3AF' }}
@@ -385,8 +412,8 @@ function TrainingCard({ type, index, uploadedCount, onStartTraining, isUnlocked,
         <motion.button
           onClick={(e) => {
             e.stopPropagation();
-            if (onNavigateToPricing) {
-              onNavigateToPricing();
+            if (onLockedClick) {
+              onLockedClick();
             }
           }}
           className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl opacity-80 md:opacity-0 md:hover:opacity-100 transition-opacity touch-manipulation"
@@ -574,12 +601,11 @@ const extractWordsFromTests = () => {
 
 // ── 탭 ↔ URL 경로 매핑 (hash-based routing) ──
 const TAB_TO_URL: Record<string, string> = {
-  'Home': '/',
+  'Home': '/home',
   '스마트 연습': '/practice',
   '강의 및 특강': '/pattern-drill',
   '전문 훈련': '/specialized-training',
   '연습 기록': '/history',
-  '가격': '/pricing',
   '업로드': '/upload',
 };
 const URL_TO_TAB: Record<string, string> = Object.fromEntries(
@@ -594,24 +620,40 @@ const SUBTAB_TO_URL: Record<string, string> = {
 const URL_TO_SUBTAB: Record<string, string> = Object.fromEntries(
   Object.entries(SUBTAB_TO_URL).map(([s, u]) => [u, s])
 );
+// 강의 및 특강(Pattern Drill) 카테고리 ↔ URL
+const COURSECAT_TO_URL: Record<string, string> = {
+  'basic': 'basic-concepts',
+  'pastExams': 'past-exams',
+  'special': 'special-lectures',
+};
+const URL_TO_COURSECAT: Record<string, string> = Object.fromEntries(
+  Object.entries(COURSECAT_TO_URL).map(([s, u]) => [u, s])
+);
 
-function parseUrlHash(): { tab: string; subTab: string } {
+function parseUrlHash(): { tab: string; subTab: string; courseCat: string } {
   const hash = window.location.hash.replace(/^#\/?/, '');
-  if (!hash) return { tab: 'Home', subTab: '기출문제' };
+  if (!hash) return { tab: 'Home', subTab: '기출문제', courseCat: 'basic' };
   const parts = hash.split('/');
   const mainPath = '/' + parts[0];
   let tab = URL_TO_TAB[mainPath] || 'Home';
   let subTab = '기출문제';
+  let courseCat = 'basic';
   if (tab === '스마트 연습' && parts[1]) {
     subTab = URL_TO_SUBTAB[parts[1]] || '기출문제';
   }
-  return { tab, subTab };
+  if (tab === '강의 및 특강' && parts[1]) {
+    courseCat = URL_TO_COURSECAT[parts[1]] || 'basic';
+  }
+  return { tab, subTab, courseCat };
 }
 
-function buildUrl(tab: string, subTab: string): string {
+function buildUrl(tab: string, subTab: string, courseCat?: string): string {
   const tabUrl = TAB_TO_URL[tab] || '/';
   if (tab === '스마트 연습' && subTab && SUBTAB_TO_URL[subTab]) {
     return `${tabUrl}/${SUBTAB_TO_URL[subTab]}`;
+  }
+  if (tab === '강의 및 특강' && courseCat && COURSECAT_TO_URL[courseCat]) {
+    return `${tabUrl}/${COURSECAT_TO_URL[courseCat]}`;
   }
   return tabUrl;
 }
@@ -619,6 +661,7 @@ function buildUrl(tab: string, subTab: string): string {
 export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, learnedWords = [], practiceRecords = [], currentUser, setCurrentUser }: DashboardProps) {
   const [activeTab, setActiveTab] = useState(() => parseUrlHash().tab);
   const [smartPracticeTab, setSmartPracticeTab] = useState(() => parseUrlHash().subTab); // 기출문제 or 공식문제 or 단어관리
+  const [selectedCourseCategory, setSelectedCourseCategory] = useState(() => parseUrlHash().courseCat); // 강의 및 특강 카테고리
   const [showSignUpPage, setShowSignUpPage] = useState(false);
   const [showLoginPage, setShowLoginPage] = useState(false);
   const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login'); // 회원가입 모달 구분용
@@ -630,6 +673,12 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     // 관리자 모드가 활성화되어 있으면 자동으로 unlock
     return localStorage.getItem('adminMode') === 'true';
   });
+  const [accessChecked, setAccessChecked] = useState(false); // 구독 확인 완료 여부 (잠금 화면 깜빡임 방지)
+
+  // currentUser 변경 시 isLoggedIn 동기화 (세션 복원 등)
+  useEffect(() => {
+    setIsLoggedIn(!!currentUser);
+  }, [currentUser]);
 
   // ── 브라우저 History 관리 (hash-based URL routing) ──
   // 탭/서브탭 변경 시 URL hash와 함께 history.pushState
@@ -640,11 +689,11 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
 
   // 탭/서브탭 변경 → URL hash 변경 + history push
   useEffect(() => {
-    const url = buildUrl(activeTab, smartPracticeTab);
+    const url = buildUrl(activeTab, smartPracticeTab, selectedCourseCategory);
     if (isInitialMount.current) {
       isInitialMount.current = false;
       // 초기 마운트: URL을 현재 탭에 맞게 보정 (replaceState — 새 entry 추가 안 함)
-      window.history.replaceState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '', `#${url}`);
+      window.history.replaceState({ tab: activeTab, subTab: smartPracticeTab, courseCat: selectedCourseCategory, view: 'dashboard' }, '', `#${url}`);
       return;
     }
     if (isPopstateRef.current) {
@@ -652,8 +701,8 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
       return;
     }
     // 탭 변경 시 새 history entry 추가 (URL hash 포함)
-    window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'dashboard' }, '', `#${url}`);
-  }, [activeTab, smartPracticeTab]);
+    window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, courseCat: selectedCourseCategory, view: 'dashboard' }, '', `#${url}`);
+  }, [activeTab, smartPracticeTab, selectedCourseCategory]);
 
   // 로그인/회원가입 모달 열림 → history push (뒤로가기로 모달 닫기, URL은 변경하지 않음)
   useEffect(() => {
@@ -663,8 +712,8 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
       return;
     }
     if (showLoginPage || showSignUpPage || showLoginPopup) {
-      const url = buildUrl(activeTab, smartPracticeTab);
-      window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, view: 'modal' }, '', `#${url}`);
+      const url = buildUrl(activeTab, smartPracticeTab, selectedCourseCategory);
+      window.history.pushState({ tab: activeTab, subTab: smartPracticeTab, courseCat: selectedCourseCategory, view: 'modal' }, '', `#${url}`);
     }
   }, [showLoginPage, showSignUpPage, showLoginPopup]);
 
@@ -676,12 +725,14 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
         isPopstateRef.current = true;
         setActiveTab(state.tab);
         if (state.subTab) setSmartPracticeTab(state.subTab);
+        if (state.courseCat) setSelectedCourseCategory(state.courseCat);
       } else {
         // state가 없으면 URL hash에서 파싱
-        const { tab, subTab } = parseUrlHash();
+        const { tab, subTab, courseCat } = parseUrlHash();
         isPopstateRef.current = true;
         setActiveTab(tab);
         setSmartPracticeTab(subTab);
+        setSelectedCourseCategory(courseCat);
       }
       // 모달이 열려 있으면 닫기
       if (showLoginPage) setShowLoginPage(false);
@@ -698,11 +749,13 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
       const adminMode = localStorage.getItem('adminMode') === 'true';
       if (adminMode) {
         setIsContentUnlocked(true);
+        setAccessChecked(true);
         return;
       }
       // 구독 확인 (Supabase)
       const subscribed = await hasActiveSubscription();
       setIsContentUnlocked(subscribed);
+      setAccessChecked(true);
     };
     
     // 초기 체크
@@ -1011,7 +1064,6 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   const [isStudyHubUnlocked, setIsStudyHubUnlocked] = useState(false);
 
   // Course content state
-  const [selectedCourseCategory, setSelectedCourseCategory] = useState('basic');
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [coursePage, setCoursePage] = useState(1);
   const [wordListPage, setWordListPage] = useState(1);
@@ -2135,7 +2187,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#B3E5FC"
             iconColor="#3b5998"
             index={0}
-            onClick={() => setActiveTab('스마트 연습')}
+            onClick={() => {
+              if (!isLoggedIn) {
+                setActiveTab('스마트 연습');
+                setShowLoginPopup(true);
+                return;
+              }
+              setActiveTab('스마트 연습');
+            }}
           />
 
           <FeatureCard
@@ -2146,7 +2205,18 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#FFE0B2"
             iconColor="#3b5998"
             index={1}
-            onClick={() => setActiveTab('강의 및 특강')}
+            onClick={() => {
+              if (!isLoggedIn) {
+                setActiveTab('강의 및 특강');
+                setShowLoginPopup(true);
+                return;
+              }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                return;
+              }
+              setActiveTab('강의 및 특강');
+            }}
           />
           
           <FeatureCard
@@ -2157,7 +2227,18 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#D1C4E9"
             iconColor="#3b5998"
             index={2}
-            onClick={() => setActiveTab('전문 훈련')}
+            onClick={() => {
+              if (!isLoggedIn) {
+                setActiveTab('전문 훈련');
+                setShowLoginPopup(true);
+                return;
+              }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                return;
+              }
+              setActiveTab('전문 훈련');
+            }}
           />
 
           <FeatureCard
@@ -2168,7 +2249,18 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             hoverColor="#C8E6C9"
             iconColor="#3b5998"
             index={3}
-            onClick={() => setActiveTab('연습 기록')}
+            onClick={() => {
+              if (!isLoggedIn) {
+                setActiveTab('연습 기록');
+                setShowLoginPopup(true);
+                return;
+              }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                return;
+              }
+              setActiveTab('연습 기록');
+            }}
           />
         </div>
       </div>
@@ -3588,10 +3680,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     }
                   }}
                   isUnlocked={isContentUnlocked}
-                  onNavigateToPricing={() => {
-                    setShowLoginPage(false);
-                    setShowSignUpPage(false);
-                    setActiveTab('가격');
+                  onLockedClick={() => {
+                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                   }}
                 />
               ))}
@@ -3743,10 +3833,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         isUnlocked={isContentUnlocked}
         advertisements={advertisements}
         uploadedFiles={uploadedFiles}
-        onNavigateToPricing={() => {
-          setShowLoginPage(false);
-          setShowSignUpPage(false);
-          setActiveTab('가격');
+        onLockedClick={() => {
+          toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
         }}
       />
     );
@@ -4075,10 +4163,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   }
                 }}
                 isUnlocked={isContentUnlocked}
-                onNavigateToPricing={() => {
-                  setShowLoginPage(false);
-                  setShowSignUpPage(false);
-                  setActiveTab('가격');
+                onLockedClick={() => {
+                  toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                 }}
               />
             ))}
@@ -4857,6 +4943,42 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     }
     
     // Show regular tab content
+    // ── 렌더 레벨 게이팅: URL 직접 접근(#/history 등) 우회 차단 ──
+    const needsLoginTabs = ['스마트 연습', '강의 및 특강', '전문 훈련', '연습 기록'];
+    const needsSubscriptionTabs = ['강의 및 특강', '전문 훈련', '연습 기록'];
+    if (needsLoginTabs.includes(activeTab) && !isLoggedIn) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <Lock className="w-12 h-12 text-gray-300" />
+          <h2 className="text-xl font-bold text-gray-700">로그인이 필요합니다</h2>
+          <p className="text-sm text-gray-500">이 메뉴는 로그인 후 이용할 수 있습니다.</p>
+          <Button
+            onClick={() => setShowLoginPopup(true)}
+            className="px-6 py-2 text-white"
+            style={{ backgroundColor: '#2B478B' }}
+          >
+            로그인
+          </Button>
+        </div>
+      );
+    }
+    if (needsSubscriptionTabs.includes(activeTab) && !isContentUnlocked) {
+      if (!accessChecked) {
+        // 구독 확인 중 — 잠금 화면 깜빡임 방지
+        return (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-sm text-gray-400">확인 중...</div>
+          </div>
+        );
+      }
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
+          <Lock className="w-12 h-12 text-gray-300" />
+          <h2 className="text-xl font-bold text-gray-700">수강권이 필요합니다</h2>
+          <p className="text-sm text-gray-500">이 메뉴는 수강권 등록 후 이용할 수 있습니다. 관리자에게 문의하세요.</p>
+        </div>
+      );
+    }
     switch (activeTab) {
       case 'Home':
         return <LandingPage onGetStarted={() => setActiveTab('스마트 연습')} />;
@@ -4966,7 +5088,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       return;
                     }
                     if (!isContentUnlocked) {
-                      setActiveTab('가격');
+                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                       return;
                     }
                     setShowLoginPage(false);
@@ -4992,7 +5114,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       return;
                     }
                     if (!isContentUnlocked) {
-                      setActiveTab('가격');
+                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                       return;
                     }
                     setShowLoginPage(false);
@@ -5018,7 +5140,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       return;
                     }
                     if (!isContentUnlocked) {
-                      setActiveTab('가격');
+                      toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                       return;
                     }
                     setShowLoginPage(false);
@@ -5173,6 +5295,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     setShowMobileMenu(false);
                     return;
                   }
+                  if (!isContentUnlocked) {
+                    setShowMobileMenu(false);
+                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                    return;
+                  }
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('강의 및 특강');
@@ -5196,6 +5323,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     setShowMobileMenu(false);
                     return;
                   }
+                  if (!isContentUnlocked) {
+                    setShowMobileMenu(false);
+                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                    return;
+                  }
                   setShowLoginPage(false);
                   setShowSignUpPage(false);
                   setActiveTab('전문 훈련');
@@ -5217,6 +5349,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                     setActiveTab('연습 기록');
                     setShowLoginPopup(true);
                     setShowMobileMenu(false);
+                    return;
+                  }
+                  if (!isContentUnlocked) {
+                    setShowMobileMenu(false);
+                    toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                     return;
                   }
                   setShowLoginPage(false);
@@ -5374,6 +5511,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 setShowLoginPopup(true);
                 return;
               }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                return;
+              }
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('강의 및 특강');
@@ -5397,6 +5538,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 setShowLoginPopup(true);
                 return;
               }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
+                return;
+              }
               setShowLoginPage(false);
               setShowSignUpPage(false);
               setActiveTab('전문 훈련');
@@ -5418,6 +5563,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 setShowSignUpPage(false);
                 setActiveTab('연습 기록');
                 setShowLoginPopup(true);
+                return;
+              }
+              if (!isContentUnlocked) {
+                toast.error('수강권이 필요합니다. 관리자에게 문의하세요.');
                 return;
               }
               setShowLoginPage(false);

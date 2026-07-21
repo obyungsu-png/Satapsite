@@ -17,7 +17,7 @@ interface TrainingContentProps {
   answerDisplayMode: string;
   setAnswerDisplayMode: (mode: string) => void;
   onStartTest: (testInfo: any) => void;
-  onNavigateToPricing?: () => void;
+  onLockedClick?: () => void;
   isUnlocked?: boolean;
   advertisements?: Advertisement[];
   uploadedFiles?: Array<{
@@ -49,7 +49,7 @@ export function TrainingContent({
   answerDisplayMode,
   setAnswerDisplayMode,
   onStartTest,
-  onNavigateToPricing,
+  onLockedClick,
   isUnlocked,
   advertisements = [],
   uploadedFiles = []
@@ -251,8 +251,8 @@ export function TrainingContent({
                       <motion.button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (onNavigateToPricing) {
-                            onNavigateToPricing();
+                          if (onLockedClick) {
+                            onLockedClick();
                           }
                         }}
                         className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl opacity-0 hover:opacity-100 transition-opacity"
