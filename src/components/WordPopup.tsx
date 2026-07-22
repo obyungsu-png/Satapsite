@@ -17,6 +17,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
   const [definitions, setDefinitions] = useState<WordDefinition[]>([]);
   const [translation, setTranslation] = useState<WordTranslation | null>(null);
   const [error, setError] = useState(false);
+  const [activeLang, setActiveLang] = useState<'en' | 'ko'>(language);
   const popupRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState({ x, y });
 
@@ -28,7 +29,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
     setTranslation(null);
 
     (async () => {
-      if (language === 'en') {
+      if (activeLang === 'en') {
         const defs = await getWordDefinitions(word);
         if (cancelled) return;
         if (defs.length === 0) setError(true);
@@ -43,7 +44,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
     })();
 
     return () => { cancelled = true; };
-  }, [word, language, context]);
+  }, [word, activeLang, context]);
 
   // 팝업 위치 조정 (화면 경계 + AI 튜터 위젯 영역 회피)
   useEffect(() => {
@@ -105,19 +106,39 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
       <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-gray-900">{word}</span>
-          {language === 'en' && definitions[0]?.phonetic && (
+          {activeLang === 'en' && definitions[0]?.phonetic && (
             <span className="text-sm text-gray-500">{definitions[0].phonetic}</span>
           )}
-          {language === 'ko' && translation?.partOfSpeech && (
+          {activeLang === 'ko' && translation?.partOfSpeech && (
             <span className="text-xs text-gray-500 italic">{translation.partOfSpeech}</span>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-        >
-          ×
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-gray-100 rounded-full p-0.5 text-xs">
+            <button
+              onClick={() => setActiveLang('ko')}
+              className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                activeLang === 'ko' ? 'bg-white text-[#1e6b73] shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              KO
+            </button>
+            <button
+              onClick={() => setActiveLang('en')}
+              className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                activeLang === 'en' ? 'bg-white text-[#1e6b73] shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* 내용 */}
@@ -128,7 +149,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
         </div>
       ) : error ? (
         <p className="text-sm text-gray-500 py-2">이 단어의 정의를 찾을 수 없습니다.</p>
-      ) : language === 'en' ? (
+      ) : activeLang === 'en' ? (
         <div className="space-y-2">
           {definitions.map((def, i) => (
             <div key={i} className="text-sm">

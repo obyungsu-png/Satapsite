@@ -547,21 +547,6 @@ app.delete('/make-server-46fa08c1/delete-image/:filePath', async (c) => {
 function getAIConfig(model: string): { apiKey: string; endpoint: string; modelName: string } {
   const modelLower = (model || '').toLowerCase();
 
-  // Claude 4 – apiclaude.cc proxy
-  if (modelLower.includes('claude')) {
-    const apiKey = Deno.env.get('APICLAUDE_API_KEY');
-    if (!apiKey) throw new Error('APICLAUDE_API_KEY not configured');
-    const endpoint = Deno.env.get('APICLAUDE_ENDPOINT') || 'https://apiclaude.cc/v1/chat/completions';
-    return { apiKey, endpoint, modelName: 'claude-3-opus-20240229' };
-  }
-
-  // DeepSeek
-  if (modelLower.includes('deepseek')) {
-    const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
-    if (!apiKey) throw new Error('DEEPSEEK_API_KEY not configured');
-    return { apiKey, endpoint: 'https://api.deepseek.com/v1/chat/completions', modelName: 'deepseek-chat' };
-  }
-
   // GLM (Zhipu AI)
   if (modelLower.includes('glm')) {
     const apiKey = Deno.env.get('GLM_API_KEY');
@@ -569,10 +554,11 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
     return { apiKey, endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', modelName: model };
   }
 
-  // Default: OpenAI
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey) throw new Error('OPENAI_API_KEY not configured');
-  return { apiKey, endpoint: 'https://api.openai.com/v1/chat/completions', modelName: model || 'gpt-4o-mini' };
+  // Default: Claude – apiclaude.cc proxy
+  const apiKey = Deno.env.get('APICLAUDE_API_KEY');
+  if (!apiKey) throw new Error('APICLAUDE_API_KEY not configured');
+  const endpoint = Deno.env.get('APICLAUDE_ENDPOINT') || 'https://apiclaude.cc/v1/chat/completions';
+  return { apiKey, endpoint, modelName: 'claude-sonnet-5' };
 }
 
 // ==============================================
@@ -583,7 +569,7 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
 app.post('/make-server-46fa08c1/ai-analysis', async (c) => {
   try {
     const { type, question, passage, choices, model } = await c.req.json();
-    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
+    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'claude-sonnet-5';
 
     let apiKey: string;
     let endpoint: string;
@@ -681,7 +667,7 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
       return c.json({ success: false, error: 'messages must be a non-empty array' }, 400);
     }
 
-    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'gpt-4o-mini';
+    const requestModel = (typeof model === 'string' && model.trim()) ? model : 'claude-sonnet-5';
 
     let apiKey: string;
     let endpoint: string;
@@ -718,7 +704,7 @@ app.post('/make-server-46fa08c1/ai-chat', async (c) => {
       console.error('AI chat API error:', errorText);
       return c.json({
         success: false,
-        error: 'OpenAI API request failed',
+        error: 'AI API request failed',
         details: errorText
       }, response.status);
     }

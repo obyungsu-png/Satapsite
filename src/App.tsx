@@ -1483,11 +1483,12 @@ export default function App() {
                       setShowSimilarResults({});
                       setSimilarFullscreenTab(null);
 
-                      const model = localStorage.getItem('selectedAIModel') || 'gpt-4o-mini';
-                      const isGlm = model.startsWith('glm-');
+                      const storedModel = localStorage.getItem('selectedAIModel') || 'claude-sonnet-5';
+                      const isGlm = storedModel.startsWith('glm-');
+                      const model = isGlm ? storedModel : 'claude-sonnet-5';
                       const endpoint = isGlm
                         ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-                        : 'https://api.deepseek.com/v1/chat/completions';
+                        : '/api/claude/chat/completions';
                       const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
 
                       fetch(endpoint, {
@@ -1700,11 +1701,12 @@ export default function App() {
                       setShowSimilarResults({});
                       setSimilarFullscreenTab(null);
 
-                      const model = localStorage.getItem('selectedAIModel') || 'gpt-4o-mini';
-                      const isGlm = model.startsWith('glm-');
+                      const storedModel = localStorage.getItem('selectedAIModel') || 'claude-sonnet-5';
+                      const isGlm = storedModel.startsWith('glm-');
+                      const model = isGlm ? storedModel : 'claude-sonnet-5';
                       const endpoint = isGlm
                         ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-                        : 'https://api.deepseek.com/v1/chat/completions';
+                        : '/api/claude/chat/completions';
                       const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
 
                       fetch(endpoint, {
@@ -1800,11 +1802,12 @@ export default function App() {
                       setShowSimilarResults({});
                       setSimilarFullscreenTab(null);
 
-                      const model = localStorage.getItem('selectedAIModel') || 'gpt-4o-mini';
-                      const isGlm = model.startsWith('glm-');
+                      const storedModel = localStorage.getItem('selectedAIModel') || 'claude-sonnet-5';
+                      const isGlm = storedModel.startsWith('glm-');
+                      const model = isGlm ? storedModel : 'claude-sonnet-5';
                       const endpoint = isGlm
                         ? 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-                        : 'https://api.deepseek.com/v1/chat/completions';
+                        : '/api/claude/chat/completions';
                       const apiKey = isGlm ? 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff' : '';
 
                       fetch(endpoint, {
