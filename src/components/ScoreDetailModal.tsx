@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ArrowLeft, Bookmark } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, Bookmark, Download } from "lucide-react";
 import { SAT_AI_Widget } from "./SAT_AI_Widget";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 interface ScoreDetailModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export function ScoreDetailModal({
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showScore, setShowScore] = useState(false);
   const [reviewingQuestion, setReviewingQuestion] = useState<any | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
   if (!questions || !Array.isArray(questions)) return null;
@@ -33,6 +36,88 @@ export function ScoreDetailModal({
 
   const totalQuestions = questions?.length || 0;
   const incorrectAnswers = totalQuestions - correctAnswers;
+
+  // PDF 다운로드: 문제/정답/내 답/해설을 담은 복습 자료 생성
+  const handleDownloadPDF = async () => {
+    if (isGeneratingPdf) return;
+    setIsGeneratingPdf(true);
+    toast.info('PDF를 생성하고 있습니다. 잠시만 기다려주세요...');
+    try {
+      // 화면 밖 PDF 콘텐츠가 렌더링될 시간 확보
+      await new Promise((r) => setTimeout(r, 300));
+      const container = pdfContentRef.current;
+      if (!container) throw new Error('PDF 콘텐츠를 찾을 수 없습니다.');
+
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const contentWidth = pageWidth - margin * 2;
+      let cursorY = margin;
+
+      const blocks = Array.from(container.querySelectorAll('[data-pdf-block]')) as HTMLElement[];
+
+      for (const block of blocks) {
+        const canvas = await html2canvas(block, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+        });
+        const blockHeightMm = (canvas.height * contentWidth) / canvas.width;
+
+        if (blockHeightMm <= pageHeight - margin * 2) {
+          // 한 페이지에 들어가는 블록: 필요 시 페이지 넘김 후 배치
+          if (cursorY + blockHeightMm > pageHeight - margin) {
+            pdf.addPage();
+            cursorY = margin;
+          }
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, cursorY, contentWidth, blockHeightMm);
+          cursorY += blockHeightMm + 4;
+        } else {
+          // 페이지보다 큰 블록: 페이지 크기로 잘라서 순서대로 배치
+          const sliceHeightPx = Math.floor(((pageHeight - margin * 2) / contentWidth) * canvas.width);
+          let offset = 0;
+          while (offset < canvas.height) {
+            const h = Math.min(sliceHeightPx, canvas.height - offset);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvas.width;
+            sliceCanvas.height = h;
+            const ctx = sliceCanvas.getContext('2d');
+            if (ctx) {
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+              ctx.drawImage(canvas, 0, offset, canvas.width, h, 0, 0, canvas.width, h);
+            }
+            const sliceHeightMm = (h * contentWidth) / canvas.width;
+            if (cursorY + sliceHeightMm > pageHeight - margin && cursorY > margin) {
+              pdf.addPage();
+              cursorY = margin;
+            }
+            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, cursorY, contentWidth, sliceHeightMm);
+            cursorY += sliceHeightMm;
+            offset += h;
+            if (offset < canvas.height) {
+              pdf.addPage();
+              cursorY = margin;
+            }
+          }
+          cursorY += 4;
+        }
+      }
+
+      pdf.save(`SAT_복습자료_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF가 다운로드되었습니다!');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('PDF 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   // Analysis by question type
   const analysisData = {

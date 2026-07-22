@@ -24,12 +24,11 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
   const [uploadLocation, setUploadLocation] = useState(propUploadLocation || '스마트 연습');
   const [uploadSubcategory, setUploadSubcategory] = useState(propUploadSubcategory || '');
 
-  // 과목 구분 (스마트 연습 전용): 리딩·문법은 한 세트(모듈1+2 통합), 수학은 모듈별 별도 시험
+  // 과목 구분 (스마트 연습 전용): 리딩·문법과 수학 모두 모듈1+2 통합 한 세트로 업로드
   const [subjectType, setSubjectType] = useState<'reading' | 'math'>('reading');
-  const [moduleInfo, setModuleInfo] = useState<'module1' | 'module2'>('module1');
 
-  // 과목별 최대 문제 수 (리딩: 모듈1+2 = 27+27, 수학: 모듈당 22)
-  const maxQuestions = subjectType === 'math' ? 22 : 54;
+  // 과목별 최대 문제 수 (리딩: 모듈1+2 = 27+27 = 54, 수학: 모듈1+2 = 22+22 = 44)
+  const maxQuestions = subjectType === 'math' ? 44 : 54;
 
   // Category options
   const categoryOptions: Record<string, Array<{value: string, label: string}>> = {
@@ -75,6 +74,7 @@ B: 도시 집적 경제의 정의
 C: 산업의 발전
 D: 경제적 손실
 ANSWER: B
+EXPLANATION: 도시 집적 경제의 정의를 묻는 문제입니다.
 
 PASSAGE: 다른 지문...
 QUESTION: 두 번째 질문
@@ -83,6 +83,7 @@ B: 선택지 B
 C: 선택지 C
 D: 선택지 D
 ANSWER: A
+EXPLANATION: 두 번째 문제 해설입니다.
 
 _____
 
@@ -93,6 +94,7 @@ B: 선택지 B
 C: 선택지 C
 D: 선택지 D
 ANSWER: C
+EXPLANATION: Module 2 첫 번째 문제 해설입니다.
 
 PASSAGE: Module 2 두 번째 지문...
 QUESTION: Module 2 두 번째 질문
@@ -100,7 +102,8 @@ A: 선택지 A
 B: 선택지 B
 C: 선택지 C
 D: 선택지 D
-ANSWER: B`;
+ANSWER: B
+EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
   };
 
   const downloadTemplate = () => {
@@ -245,7 +248,7 @@ ANSWER: B`;
     if (questions.length > maxQuestions) {
       throw new Error(
         subjectType === 'math'
-          ? `총 ${questions.length}개 문제가 있습니다. 수학 모듈별 시험은 최대 22문제까지 가능합니다.`
+          ? `총 ${questions.length}개 문제가 있습니다. 수학은 최대 44문제(모듈1: 22 + 모듈2: 22)까지 가능합니다.`
           : `총 ${questions.length}개 문제가 있습니다. 최대 54문제(모듈1: 27 + 모듈2: 27)까지 가능합니다.`
       );
     }
@@ -318,6 +321,8 @@ ANSWER: B`;
             currentQuestion.choiceD = line.substring(2).trim();
           } else if (line.startsWith('ANSWER:')) {
             currentQuestion.answer = line.substring(7).trim().toLowerCase();
+          } else if (line.startsWith('EXPLANATION:')) {
+            currentQuestion.explanation = line.substring(12).trim();
           }
         }
 
@@ -340,7 +345,7 @@ ANSWER: B`;
       if (allQuestions.length > maxQuestions) {
         throw new Error(
           subjectType === 'math'
-            ? `총 ${allQuestions.length}개 문제가 있습니다. 수학 모듈별 시험은 최대 22문제까지 가능합니다.`
+            ? `총 ${allQuestions.length}개 문제가 있습니다. 수학은 최대 44문제(모듈1: 22 + 모듈2: 22)까지 가능합니다.`
             : `총 ${allQuestions.length}개 문제가 있습니다. 최대 54문제까지 가능합니다.`
         );
       }
@@ -351,7 +356,8 @@ ANSWER: B`;
         passage: q.passage || '',
         question: q.question || '',
         choices: [q.choiceA || '', q.choiceB || '', q.choiceC || '', q.choiceD || ''],
-        correctAnswer: q.answer || 'a'
+        correctAnswer: q.answer || 'a',
+        explanation: q.explanation || ''
       }));
 
       return formattedQuestions;
@@ -389,21 +395,15 @@ ANSWER: B`;
       const newFiles = [];
       const isSmartPractice = uploadLocation === '스마트 연습';
 
-      // 수학 모듈별 시험은 카드 제목에 모듈 표기를 자동 추가 (예: "2025년 6월 수학 [모듈1]")
-      const finalTitle =
-        isSmartPractice && subjectType === 'math'
-          ? `${cardTitle.trim()} [${moduleInfo === 'module1' ? '모듈1' : '모듈2'}]`
-          : cardTitle.trim();
-
       // Create single card with all questions
       const combinedFile = {
         id: `bulk_${Date.now()}`,
-        name: finalTitle,
+        name: cardTitle.trim(),
         type: 'bulk-upload',
         location: uploadLocation,
         subcategory: uploadSubcategory,
         subjectType: isSmartPractice ? subjectType : undefined, // 실전 시험 과목 구분 (Reading/Math 판별용)
-        moduleInfo: isSmartPractice && subjectType === 'math' ? moduleInfo : null, // 수학: 모듈별 별도 시험
+        moduleInfo: null, // 리딩·수학 모두 모듈1+2 통합 시험
         uploadDate: new Date().toISOString().split('T')[0],
         status: 'completed' as const,
         questionCount: parsedData.length,
@@ -446,11 +446,11 @@ ANSWER: B`;
             <div className="bg-white rounded-lg p-4 text-xs text-gray-600 space-y-2">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span><strong>1개 카드에 통합</strong> (최대 54문제)</span>
+                <span><strong>1개 카드에 통합</strong> (리딩 최대 54문제 · 수학 최대 44문제)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span><strong>간편 양식:</strong> PASSAGE, QUESTION, A~D, ANSWER만 입력</span>
+                <span><strong>간편 양식:</strong> PASSAGE, QUESTION, A~D, ANSWER, EXPLANATION(선택) 입력</span>
               </div>
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-purple-600 flex-shrink-0" />
@@ -587,43 +587,9 @@ ANSWER: B`;
                 }`}
               >
                 🧮 수학
-                <span className="block text-xs font-normal mt-1 text-gray-400">모듈별 별도 시험 (모듈당 최대 22문제)</span>
+                <span className="block text-xs font-normal mt-1 text-gray-400">한 세트 = 모듈1 + 모듈2 (최대 44문제)</span>
               </button>
             </div>
-
-            {/* 모듈 구분 (수학 전용) */}
-            {subjectType === 'math' && (
-              <div className="mt-3">
-                <label className="block text-sm text-gray-600 mb-2">모듈 선택 (수학) *</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setModuleInfo('module1')}
-                    className={`px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
-                      moduleInfo === 'module1'
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                    }`}
-                  >
-                    모듈 1
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModuleInfo('module2')}
-                    className={`px-4 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
-                      moduleInfo === 'module2'
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                        : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
-                    }`}
-                  >
-                    모듈 2
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  💡 수학은 모듈1·모듈2를 각각 따로 업로드하면 별도의 시험 카드로 생성됩니다.
-                </p>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -679,7 +645,7 @@ ANSWER: B`;
                 <p className="text-sm text-gray-700 font-medium">
                   {csvFileName ? csvFileName : 'CSV 파일을 선택하세요'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">.csv 파일 (최대 {maxQuestions}문제{subjectType === 'math' ? ' · 수학 모듈별' : ''})</p>
+                <p className="text-xs text-gray-500 mt-1">.csv 파일 (최대 {maxQuestions}문제)</p>
               </div>
               <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleCsvFile} />
             </label>
@@ -726,6 +692,7 @@ B: 선택지 B
 C: 선택지 C
 D: 선택지 D
 ANSWER: B
+EXPLANATION: 해설 (선택)
 
 PASSAGE: 다음 지문...
 QUESTION: 다음 질문
@@ -733,7 +700,8 @@ A: 선택지 A
 B: 선택지 B
 C: 선택지 C
 D: 선택지 D
-ANSWER: A`}
+ANSWER: A
+EXPLANATION: 다음 해설`}
               </pre>
             </div>
             <textarea
@@ -745,11 +713,11 @@ ANSWER: A`}
             <div className="mt-3 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 space-y-1">
               <p className="font-semibold">ℹ️ 입력 팁:</p>
               <ul className="list-disc list-inside space-y-0.5 ml-2">
-                <li>각 필드는 대문자로 시작: PASSAGE:, QUESTION:, A:, B:, C:, D:, ANSWER:</li>
+                <li>각 필드는 대문자로 시작: PASSAGE:, QUESTION:, A:, B:, C:, D:, ANSWER:, EXPLANATION:(선택)</li>
                 <li>문제 구분은 빈 줄 1칸 띄우기</li>
                 <li><strong>Module 구분:</strong> _____ (밑줄 5개)로 Module 1과 Module 2 구분 가능</li>
                 <li>문제 번호는 자동 생성됨 (===문제=== 불필요)</li>
-                <li>최대 54문제까지 업로드 가능 (리딩 27+27, 수학 22+22)</li>
+                <li>최대 {maxQuestions}문제까지 업로드 가능 (리딩·문법 27+27 = 54, 수학 22+22 = 44)</li>
               </ul>
             </div>
           </div>

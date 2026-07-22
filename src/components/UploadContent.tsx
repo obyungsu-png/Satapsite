@@ -166,6 +166,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [editingCorrectAnswer, setEditingCorrectAnswer] = useState('a');
   const [editingExplanation, setEditingExplanation] = useState('');
   const [editingImageUrl, setEditingImageUrl] = useState(''); // Image URL for editing
+  const [editingVocabulary, setEditingVocabulary] = useState(''); // CSV vocabulary field
+  const [editingAnalysis, setEditingAnalysis] = useState(''); // CSV analysis field
+  const [editingModule, setEditingModule] = useState(''); // CSV module field ('1' | '2' | '')
+  const [editingImageUploading, setEditingImageUploading] = useState(false);
 
   // Training classification for editing
   const [editingTrainingCategory, setEditingTrainingCategory] = useState('');
@@ -348,6 +352,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
     try {
       if (target === 'manual') {
         setManualImageUploading(true);
+      } else if (target === 'editing') {
+        setEditingImageUploading(true);
       }
 
       // Convert file to base64
@@ -392,6 +398,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
         } finally {
           if (target === 'manual') {
             setManualImageUploading(false);
+          } else if (target === 'editing') {
+            setEditingImageUploading(false);
           }
         }
       };
@@ -402,6 +410,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
       toast.error('파일을 읽을 수 없습니다.');
       if (target === 'manual') {
         setManualImageUploading(false);
+      } else if (target === 'editing') {
+        setEditingImageUploading(false);
       }
     }
   };
@@ -737,18 +747,6 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden" style={{ backgroundColor: '#1e3a8a' }}>
-        {/* Decorative circles */}
-        <div className="absolute top-6 left-12 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
-        <div className="absolute bottom-6 right-12 w-32 h-32 rounded-full opacity-20" style={{ backgroundColor: '#60a5fa' }}></div>
-        
-        <div className="max-w-7xl mx-auto px-6 py-6 relative z-10">
-          <h1 className="text-2xl md:text-3xl font-bold text-white text-center mb-2">SAT Content Upload</h1>
-          <p className="text-sm md:text-base text-blue-100 text-center">Your Path to Success</p>
-        </div>
-      </div>
-
       {/* Sub Tabs */}
       <div className="bg-white border-b border-gray-200 px-4 sm:px-6 overflow-x-auto">
         <div className="max-w-7xl mx-auto">
@@ -1518,6 +1516,102 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                     />
                                   </div>
 
+                                  {/* Image Upload (대량 업로드 imageUrl 연동) */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      이미지/그래프
+                                      <span className="text-gray-500 ml-2 text-xs font-normal">(선택사항 - CSV의 imageUrl과 연동됩니다)</span>
+                                    </label>
+                                    <div className="flex flex-col gap-2">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            handleImageUpload(file, 'editing');
+                                          }
+                                          e.target.value = '';
+                                        }}
+                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                        disabled={editingImageUploading}
+                                      />
+                                      {editingImageUploading && (
+                                        <p className="text-sm text-blue-600">이미지 업로드 중...</p>
+                                      )}
+                                      {editingImageUrl && (
+                                        <div className="relative w-fit">
+                                          <img
+                                            src={editingImageUrl}
+                                            alt="Preview"
+                                            className="max-w-full h-auto max-h-48 rounded-md border border-gray-300"
+                                          />
+                                          <button
+                                            onClick={() => setEditingImageUrl('')}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                            type="button"
+                                          >
+                                            ×
+                                          </button>
+                                        </div>
+                                      )}
+                                      <input
+                                        type="text"
+                                        value={editingImageUrl}
+                                        onChange={(e) => setEditingImageUrl(e.target.value)}
+                                        className="w-full p-2 text-sm border border-gray-300 rounded-md"
+                                        placeholder="또는 이미지 URL 직접 입력"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Vocabulary (대량 업로드 vocabulary 연동) */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      단어 (vocabulary)
+                                      <span className="text-gray-500 ml-2 text-xs font-normal">(선택사항 - CSV의 vocabulary와 연동됩니다)</span>
+                                    </label>
+                                    <textarea
+                                      value={editingVocabulary}
+                                      onChange={(e) => setEditingVocabulary(e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                                      rows={2}
+                                      placeholder="예: agglomeration:집적; economy:경제"
+                                    />
+                                  </div>
+
+                                  {/* Analysis (대량 업로드 analysis 연동) */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      분석 (analysis)
+                                      <span className="text-gray-500 ml-2 text-xs font-normal">(선택사항 - CSV의 analysis와 연동됩니다)</span>
+                                    </label>
+                                    <textarea
+                                      value={editingAnalysis}
+                                      onChange={(e) => setEditingAnalysis(e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-md resize-none"
+                                      rows={2}
+                                      placeholder="예: 주제문은 첫 문장에 있다"
+                                    />
+                                  </div>
+
+                                  {/* Module (대량 업로드 module 연동) */}
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      모듈 (module)
+                                      <span className="text-gray-500 ml-2 text-xs font-normal">(선택사항 - CSV의 module과 연동됩니다)</span>
+                                    </label>
+                                    <select
+                                      value={editingModule}
+                                      onChange={(e) => setEditingModule(e.target.value)}
+                                      className="w-full p-3 border border-gray-300 rounded-md bg-white"
+                                    >
+                                      <option value="">자동 (문제 순서로 구분)</option>
+                                      <option value="1">모듈 1</option>
+                                      <option value="2">모듈 2</option>
+                                    </select>
+                                  </div>
+
                                   {/* Training Classification Section */}
                                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4">
                                     <div className="flex items-center gap-2 mb-3">
@@ -1641,11 +1735,11 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                       toast.error('제목을 입력하세요.');
                                       return;
                                     }
-                                    
+
                                     if (file.data) {
-                                      if (!editingPassage || !editingQuestion || 
+                                      if (!editingQuestion ||
                                           editingChoices.some(c => !c) || !editingExplanation) {
-                                        toast.error('모든 필드를 입력해주세요.');
+                                        toast.error('질문, 선택지, 해설을 모두 입력해주세요.');
                                         return;
                                       }
                                     }
@@ -1656,14 +1750,21 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                           // Check if data is an array
                                           if (Array.isArray(f.data)) {
                                             // Update specific question in array
+                                            // 기존 필드를 모두 보존(spread)한 뒤 편집된 값으로 덮어써서
+                                            // 대량 업로드의 imageUrl/vocabulary/analysis/module 등이 유실되지 않게 한다
                                             const updatedData = [...f.data];
                                             updatedData[editingQuestionIdx] = {
+                                              ...updatedData[editingQuestionIdx],
                                               title: editingTitle,
                                               passage: editingPassage,
                                               question: editingQuestion,
                                               choices: editingChoices,
                                               correctAnswer: editingCorrectAnswer,
                                               explanation: editingExplanation,
+                                              imageUrl: editingImageUrl || undefined,
+                                              vocabulary: editingVocabulary,
+                                              analysis: editingAnalysis,
+                                              module: editingModule === '1' || editingModule === '2' ? Number(editingModule) : null,
                                               trainingCategory: editingTrainingCategory,
                                               trainingType: editingTrainingType,
                                               trainingDifficulty: editingTrainingDifficulty,
@@ -1680,12 +1781,17 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               ...f,
                                               name: editingCardTitle,
                                               data: {
+                                                ...f.data,
                                                 title: editingTitle,
                                                 passage: editingPassage,
                                                 question: editingQuestion,
                                                 choices: editingChoices,
                                                 correctAnswer: editingCorrectAnswer,
                                                 explanation: editingExplanation,
+                                                imageUrl: editingImageUrl || undefined,
+                                                vocabulary: editingVocabulary,
+                                                analysis: editingAnalysis,
+                                                module: editingModule === '1' || editingModule === '2' ? Number(editingModule) : null,
                                                 trainingCategory: editingTrainingCategory,
                                                 trainingType: editingTrainingType,
                                                 trainingDifficulty: editingTrainingDifficulty,
@@ -1705,6 +1811,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                     setEditingChoices(['', '', '', '']);
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
+                                    setEditingImageUrl('');
+                                    setEditingVocabulary('');
+                                    setEditingAnalysis('');
+                                    setEditingModule('');
                                     setEditingTrainingCategory('');
                                     setEditingTrainingType('');
                                     setEditingTrainingDifficulty('');
@@ -1726,6 +1836,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                     setEditingChoices(['', '', '', '']);
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
+                                    setEditingImageUrl('');
+                                    setEditingVocabulary('');
+                                    setEditingAnalysis('');
+                                    setEditingModule('');
                                     setEditingTrainingCategory('');
                                     setEditingTrainingType('');
                                     setEditingTrainingDifficulty('');
@@ -1794,8 +1908,13 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               setEditingPassage(q.passage || '');
                                               setEditingQuestion(q.question || '');
                                               setEditingChoices(q.choices || ['', '', '', '']);
-                                              setEditingCorrectAnswer(q.correctAnswer || 'a');
+                                              setEditingCorrectAnswer(q.correctAnswer || q.answer || 'a');
                                               setEditingExplanation(q.explanation || '');
+                                              // 대량 업로드(CSV/텍스트) 추가 필드 연동
+                                              setEditingImageUrl(q.imageUrl || '');
+                                              setEditingVocabulary(q.vocabulary || '');
+                                              setEditingAnalysis(q.analysis || '');
+                                              setEditingModule(q.module ? String(q.module) : '');
                                               // Load training data
                                               setEditingTrainingCategory(q.trainingCategory || '');
                                               setEditingTrainingType(q.trainingType || '');
@@ -1855,8 +1974,13 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               setEditingPassage(file.data.passage);
                                               setEditingQuestion(file.data.question);
                                               setEditingChoices(file.data.choices);
-                                              setEditingCorrectAnswer(file.data.correctAnswer);
+                                              setEditingCorrectAnswer(file.data.correctAnswer || file.data.answer || 'a');
                                               setEditingExplanation(file.data.explanation);
+                                              // 대량 업로드(CSV/텍스트) 추가 필드 연동
+                                              setEditingImageUrl(file.data.imageUrl || '');
+                                              setEditingVocabulary(file.data.vocabulary || '');
+                                              setEditingAnalysis(file.data.analysis || '');
+                                              setEditingModule(file.data.module ? String(file.data.module) : '');
                                               // Load training data
                                               setEditingTrainingCategory(file.data.trainingCategory || '');
                                               setEditingTrainingType(file.data.trainingType || '');
