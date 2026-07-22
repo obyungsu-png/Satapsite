@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Upload, FileText, BookOpen, Target, BarChart3, Settings, FileDown, PlusCircle, Edit3, Tags, Trash2, BookmarkPlus, Megaphone, FileUp, Zap, Check } from 'lucide-react';
-import { AdBanner } from './AdBanner';
 import { toast } from 'sonner';
 import { SATVocaManagement } from './SATVocaManagement';
 import { SubscriptionManager } from './SubscriptionManager';
@@ -885,7 +884,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
         <div className="grid grid-cols-1 gap-4 sm:gap-6">
           {/* Main Panel - Input Form */}
           <div className="space-y-4 sm:space-y-6">
-            {/* Category Selection */}
+            {/* Category Selection - 직접 입력/파일 업로드 탭에서만 표시 */}
+            {(uploadTab === '직접 입력' || uploadTab === '파일업로드') && (
             <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-medium text-gray-800 mb-3 sm:mb-4">업로드 위치 선택</h2>
               
@@ -928,6 +928,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                 </div>
               )}
             </div>
+            )}
 
             {/* Direct Input Form */}
             {uploadTab === '직접 입력' && (
@@ -2045,7 +2046,6 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
           </div>
         </div>
       </div>
-      {uploadTab !== '관리자모드' && <AdBanner />}
     </div>
   );
 }
