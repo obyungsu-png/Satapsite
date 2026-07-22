@@ -1902,8 +1902,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
               </div>
             )}
 
-            {/* Settings Tab */}
-            {uploadTab === '설정' && (
+            {/* Management Tab */}
+            {uploadTab === '관리' && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Settings className="h-5 w-5 text-blue-600" />
