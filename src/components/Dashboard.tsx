@@ -700,8 +700,17 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     // storage 이벤트 리스너 추가 (다른 탭에서 변경 시 감지)
     window.addEventListener('storage', checkAccess);
 
-    // 창이 다시 포커스될 때 재확인 (관리자가 수강권 부여한 직후 반영)
-    window.addEventListener('focus', checkAccess);
+    // 창이 다시 포커스될 때 재확인 (throttle: 30초 내 중복 호출 방지로 API 과다 호출 억제)
+    let lastFocusCheck = Date.now();
+    const FOCUS_THROTTLE_MS = 30000;
+    const throttledFocusCheck = () => {
+      const now = Date.now();
+      if (now - lastFocusCheck >= FOCUS_THROTTLE_MS) {
+        lastFocusCheck = now;
+        checkAccess();
+      }
+    };
+    window.addEventListener('focus', throttledFocusCheck);
 
     // 로그인 상태 변경 시 재확인
     if (currentUser) {
@@ -710,7 +719,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
 
     return () => {
       window.removeEventListener('storage', checkAccess);
-      window.removeEventListener('focus', checkAccess);
+      window.removeEventListener('focus', throttledFocusCheck);
     };
   }, [currentUser]);
 
@@ -1671,11 +1680,14 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     loadInitialData();
   }, []);
 
-  // Save to localStorage AND Supabase whenever practiceTests changes
+  // Save to localStorage AND Supabase whenever practiceTests changes (debounce 1s)
   useEffect(() => {
     if (!isDataLoaded) return; // 초기 로드 중에는 저장하지 않음
-    
-    saveTestsBoth(practiceTests);
+
+    const timer = setTimeout(() => {
+      saveTestsBoth(practiceTests);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [practiceTests, isDataLoaded]);
   
   // Update practiceTests when uploadedFiles changes

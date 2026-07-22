@@ -12,31 +12,27 @@ interface AiTutorPopupProps {
 }
 
 export function AiTutorPopup({ action, text, context, x, y, onClose }: AiTutorPopupProps) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState<string>('');
   const [error, setError] = useState(false);
+  const [requested, setRequested] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x, y });
 
-  useEffect(() => {
-    let cancelled = false;
+  // 유저가 직접 [요청하기] 버튼을 누를 때만 LLM API 호출 (렌더링 시 자동 호출 방지)
+  const handleRequest = async () => {
+    setRequested(true);
     setLoading(true);
     setError(false);
     setAnswer('');
-    (async () => {
-      const res = await askAiTutor(action, text, context);
-      if (cancelled) return;
-      if (!res) {
-        setError(true);
-      } else {
-        setAnswer(res);
-      }
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [action, text, context]);
+    const res = await askAiTutor(action, text, context);
+    if (!res) {
+      setError(true);
+    } else {
+      setAnswer(res);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (popupRef.current) {
@@ -93,7 +89,14 @@ export function AiTutorPopup({ action, text, context, x, y, onClose }: AiTutorPo
 
       <div className="text-xs text-gray-500 italic mb-2 line-clamp-2">"{text}"</div>
 
-      {loading ? (
+      {!requested ? (
+        <button
+          onClick={handleRequest}
+          className="w-full mt-1 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-semibold hover:from-purple-600 hover:to-purple-700 transition-colors flex items-center justify-center gap-1.5"
+        >
+          {AI_TUTOR_ACTION_LABELS[action]} 요청하기
+        </button>
+      ) : loading ? (
         <div className="flex items-center py-3">
           <div className="w-5 h-5 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
           <span className="ml-2 text-sm text-gray-500">AI가 답변 중...</span>
