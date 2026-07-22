@@ -361,6 +361,17 @@ export function ScoreDetailModal({
             >
               분석
             </Button>
+            <Button
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPdf}
+              variant="outline"
+              size="sm"
+              className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-xs md:text-sm px-2 md:px-4 flex items-center gap-1.5"
+              style={{ borderColor: '#10b981', color: '#059669' }}
+            >
+              <Download className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              {isGeneratingPdf ? 'PDF 생성 중...' : 'PDF 다운로드'}
+            </Button>
           </div>
           <button
             onClick={onClose}
@@ -823,6 +834,117 @@ export function ScoreDetailModal({
             닫기
           </Button>
         </div>
+      </div>
+
+      {/* PDF 생성용 화면 밖 콘텐츠 (html2canvas가 캡처) */}
+      <div
+        ref={pdfContentRef}
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '780px',
+          background: '#ffffff',
+          padding: '40px',
+          fontFamily: '"Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
+          color: '#1f2937',
+        }}
+      >
+        {/* 표지 블록 */}
+        <div data-pdf-block style={{ borderBottom: '3px solid #0e7490', paddingBottom: '16px', marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#0e7490', margin: 0 }}>SAT 복습 자료</h1>
+          <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
+            생성일: {new Date().toLocaleDateString('ko-KR')} · 총 {totalQuestions}문제 · 정답 {correctAnswers} · 오답 {incorrectAnswers}
+          </p>
+        </div>
+
+        {/* 문제별 블록 */}
+        {questions.map((question: any, idx: number) => {
+          const correctAnswer = question.correctAnswer?.toUpperCase() || '';
+          const userAnswer = selectedAnswers[question.id] ? selectedAnswers[question.id].toUpperCase() : '';
+          const isCorrect = userAnswer === correctAnswer;
+          const choices: Array<{ id: string; text: string }> = (question.choices || []).map((c: any, i: number) =>
+            typeof c === 'string' ? { id: String.fromCharCode(65 + i), text: c } : { id: (c.id || '').toUpperCase(), text: c.text || '' }
+          );
+
+          return (
+            <div
+              key={question.id || idx}
+              data-pdf-block
+              style={{
+                marginBottom: '20px',
+                padding: '16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                pageBreakInside: 'avoid',
+              }}
+            >
+              {/* 문제 헤더 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 700, color: '#111827' }}>문제 {question.id}</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: isCorrect ? '#059669' : userAnswer ? '#dc2626' : '#9ca3af' }}>
+                  {userAnswer ? (isCorrect ? '정답' : '오답') : '미응답'}
+                </span>
+              </div>
+
+              {/* 지문 */}
+              {question.passage && (
+                <div style={{ background: '#f9fafb', padding: '10px 12px', borderRadius: '6px', marginBottom: '10px', fontSize: '13px', lineHeight: 1.7, color: '#374151', whiteSpace: 'pre-line' }}>
+                  {question.passage}
+                </div>
+              )}
+
+              {/* 질문 */}
+              <p style={{ fontSize: '14px', lineHeight: 1.6, color: '#111827', marginBottom: '10px', whiteSpace: 'pre-line' }}>
+                {question.question}
+              </p>
+
+              {/* 선택지 */}
+              <div style={{ marginBottom: '10px' }}>
+                {choices.map((choice) => {
+                  const isCorrectChoice = choice.id === correctAnswer;
+                  const isUserChoice = choice.id === userAnswer;
+                  return (
+                    <div
+                      key={choice.id}
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        padding: '6px 10px',
+                        marginBottom: '4px',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        lineHeight: 1.5,
+                        background: isCorrectChoice ? '#ecfdf5' : isUserChoice ? '#fef2f2' : 'transparent',
+                        border: isCorrectChoice ? '1px solid #10b981' : isUserChoice ? '1px solid #ef4444' : '1px solid #f3f4f6',
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, minWidth: '16px', color: isCorrectChoice ? '#059669' : isUserChoice ? '#dc2626' : '#6b7280' }}>
+                        {choice.id}.
+                      </span>
+                      <span style={{ flex: 1, color: '#374151' }}>{choice.text}</span>
+                      {isCorrectChoice && <span style={{ fontSize: '11px', fontWeight: 700, color: '#059669' }}>정답</span>}
+                      {isUserChoice && !isCorrectChoice && <span style={{ fontSize: '11px', fontWeight: 700, color: '#dc2626' }}>내 답</span>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 정답 / 내 답 요약 */}
+              <div style={{ display: 'flex', gap: '16px', fontSize: '12px', marginBottom: '8px' }}>
+                <span><strong style={{ color: '#059669' }}>정답:</strong> {correctAnswer}</span>
+                <span><strong style={{ color: '#6b7280' }}>내 답:</strong> {userAnswer || '미응답'}</span>
+              </div>
+
+              {/* 해설 */}
+              {question.explanation && (
+                <div style={{ background: '#eff6ff', borderLeft: '3px solid #3b82f6', padding: '8px 12px', borderRadius: '4px', fontSize: '12px', lineHeight: 1.6, color: '#1e40af' }}>
+                  <strong>해설:</strong> {question.explanation}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
