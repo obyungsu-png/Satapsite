@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Trash2, Underline, FileText } from "lucide-react";
+import { ReviewSelectionToolbar, HighlightColor } from "./ReviewSelectionToolbar";
+import { WordPopup } from "./WordPopup";
+import { AiTutorPopup } from "./AiTutorPopup";
+import { AiTutorAction } from "../utils/aiTutor";
 
 interface PassagePanelProps {
   content: string;
@@ -7,6 +11,7 @@ interface PassagePanelProps {
   onExpandRight?: () => void;
   isExpanded?: boolean;
   expandDirection?: 'left' | 'right' | null;
+  isPracticeReview?: boolean;
 }
 
 interface HighlightData {
@@ -23,7 +28,7 @@ interface ToolbarPosition {
   y: number;
 }
 
-export function PassagePanel({ content, highlightsMode = false, onExpandRight, isExpanded = false, expandDirection = null }: PassagePanelProps) {
+export function PassagePanel({ content, highlightsMode = false, onExpandRight, isExpanded = false, expandDirection = null, isPracticeReview = false }: PassagePanelProps) {
   // Add default highlight for question 4 passage
   const getInitialHighlights = (): HighlightData[] => {
     if (content.includes("In the decades after Mexico")) {
@@ -47,6 +52,10 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarPosition, setToolbarPosition] = useState<ToolbarPosition>({ x: 0, y: 0 });
   const [selectedRange, setSelectedRange] = useState<{ start: number; end: number; text: string } | null>(null);
+  const [reviewHighlightColor, setReviewHighlightColor] = useState<HighlightColor>('yellow');
+  const [reviewUnderlineColor, setReviewUnderlineColor] = useState<HighlightColor>('blue');
+  const [wordPopup, setWordPopup] = useState<{ word: string; x: number; y: number } | null>(null);
+  const [aiPopup, setAiPopup] = useState<{ action: AiTutorAction; text: string; x: number; y: number } | null>(null);
   // Responsive default: 21px on mobile for better readability, 18px on desktop
   const [fontSize, setFontSize] = useState(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) return 23;
@@ -427,9 +436,40 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
         </p>
       </div>
 
-      {/* Highlight Toolbar - Desktop: floating near selection, Mobile: bottom sticky bar */}
-      {showToolbar && highlightsMode && (
-        <div 
+      {/* Practice Review toolbar: single highlight/underline + dict + AI submenu */}
+      {showToolbar && highlightsMode && isPracticeReview && selectedRange && (
+        <div
+          className="absolute z-30"
+          style={getClampedToolbarStyle()}
+        >
+          <ReviewSelectionToolbar
+            highlightColor={reviewHighlightColor}
+            underlineColor={reviewUnderlineColor}
+            onHighlight={(color) => {
+              addHighlight(color, 'highlight');
+            }}
+            onUnderline={(color) => {
+              addHighlight(color, 'underline');
+            }}
+            onHighlightColorChange={setReviewHighlightColor}
+            onUnderlineColorChange={setReviewUnderlineColor}
+            onDictionary={(anchor) => {
+              const firstWord = selectedRange.text.trim().split(/\s+/)[0] || '';
+              if (!firstWord) return;
+              setWordPopup({ word: firstWord, x: anchor.x, y: anchor.y });
+              setShowToolbar(false);
+            }}
+            onAiTutor={(action, anchor) => {
+              setAiPopup({ action, text: selectedRange.text, x: anchor.x, y: anchor.y });
+              setShowToolbar(false);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Original toolbar (real exam) */}
+      {showToolbar && highlightsMode && !isPracticeReview && (
+        <div
           className="absolute z-30 bg-white border border-gray-200 rounded-2xl md:rounded-full shadow-xl md:shadow-lg px-2 md:px-3 py-2 md:py-2 flex items-center justify-center gap-1 md:gap-2"
           style={getClampedToolbarStyle()}
         >
@@ -487,6 +527,30 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
             <FileText className="h-5 w-5 md:h-4 md:w-4" />
           </button>
         </div>
+      )}
+
+      {/* Dictionary popup (practice review) */}
+      {wordPopup && (
+        <WordPopup
+          word={wordPopup.word}
+          context={content}
+          language="ko"
+          x={wordPopup.x}
+          y={wordPopup.y}
+          onClose={() => setWordPopup(null)}
+        />
+      )}
+
+      {/* AI tutor popup (practice review) */}
+      {aiPopup && (
+        <AiTutorPopup
+          action={aiPopup.action}
+          text={aiPopup.text}
+          context={content}
+          x={aiPopup.x}
+          y={aiPopup.y}
+          onClose={() => setAiPopup(null)}
+        />
       )}
     </div>
   );

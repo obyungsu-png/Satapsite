@@ -115,6 +115,7 @@ export function MobileExamTabs({
               highlightsMode={highlightsMode}
               isExpanded={false}
               expandDirection={null}
+              isPracticeReview={isPracticeReview}
             />
           </div>
         ) : (
