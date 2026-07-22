@@ -19,19 +19,6 @@ app.use('/api/claude', createProxyMiddleware({
   }
 }));
 
-app.use('/api/deepseek', createProxyMiddleware({
-  target: 'https://api.deepseek.com',
-  changeOrigin: true,
-  pathRewrite: { '^/api/deepseek': '/v1' },
-  on: {
-    proxyReq: (proxyReq, req) => {
-      console.log('[Proxy] DeepSeek ->', req.method, req.url);
-    }
-  }
-}));
-
-
-
 // JSON body parser after proxies (for any non-proxy routes)
 app.use(express.json({ limit: '50mb' }));
 

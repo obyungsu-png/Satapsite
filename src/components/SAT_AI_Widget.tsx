@@ -12,7 +12,6 @@ interface ChatMessage {
 
 const AI_MODEL_OPTIONS = [
   { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
-  { value: 'deepseek-chat', label: 'DeepSeek' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' },
 ] as const;
@@ -40,10 +39,6 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
     apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
     endpoint = '/api/claude/chat/completions';
     modelName = 'claude-sonnet-5';
-  } else if (m.includes('deepseek')) {
-    apiKey = '';
-    endpoint = '/api/deepseek/chat/completions';
-    modelName = 'deepseek-chat';
   } else if (m.includes('glm-5.2')) {
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
@@ -52,10 +47,6 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
     apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
     endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     modelName = 'glm-4.7';
-  } else {
-    apiKey = '';
-    endpoint = 'https://api.openai.com/v1/chat/completions';
-    modelName = 'gpt-4o-mini';
   }
 
   if (!apiKey) {

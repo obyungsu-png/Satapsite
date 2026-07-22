@@ -1,7 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/claude/(.*)", "destination": "/api/claude/$1" },
-    { "source": "/api/deepseek/(.*)", "destination": "/api/deepseek/$1" }
+    { "source": "/api/claude/(.*)", "destination": "/api/claude/$1" }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "build"
