@@ -4287,7 +4287,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                      { value: 'gpt-4o-mini', label: 'GPT-4o mini', desc: 'OpenAI GPT-4o mini 모델', color: 'blue' },
+                      { value: 'claude-4', label: 'Claude 4', desc: 'Claude 4 모델 (apiclaude.cc)', color: 'orange' },
                       { value: 'glm-4.7', label: 'SGR 2.0', desc: 'SGR 2.0 모델', color: 'green' },
                       { value: 'glm-5.2', label: 'GLM 5.2', desc: 'Zhipu AI GLM 5.2 모델', color: 'purple' }
                     ].map((model) => {
@@ -4319,7 +4319,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   </div>
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-sm text-amber-800">
-                      💡 현재 선택된 모델: <strong>{localStorage.getItem('selectedAIModel') || 'gpt-4o-mini'}</strong> — 문제 풀이 화면의 AI 분석에서 이 모델이 사용됩니다.
+                      💡 현재 선택된 모델: <strong>{localStorage.getItem('selectedAIModel') || 'claude-4'}</strong> — 문제 풀이 화면의 AI 분석에서 이 모델이 사용됩니다.
                     </p>
                   </div>
                 </div>

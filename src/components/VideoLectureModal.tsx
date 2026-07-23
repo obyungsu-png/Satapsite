@@ -7,8 +7,6 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const AI_MODEL_OPTIONS = [
   { value: 'claude-4', label: 'Claude 4' },
-  { value: 'deepseek-chat', label: 'DeepSeek' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o mini' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' }
 ] as const;
@@ -16,7 +14,7 @@ const AI_MODEL_OPTIONS = [
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
 
 function getStoredAIModel(): AIModel {
-  return (localStorage.getItem('selectedAIModel') as AIModel) || 'gpt-4o-mini';
+  return (localStorage.getItem('selectedAIModel') as AIModel) || 'claude-4';
 }
 
 interface VideoLectureModalProps {
@@ -47,56 +45,78 @@ export function VideoLectureModal({ isOpen, onClose, questionId, testInfo, curre
 
   const handleAIRequest = async (type: string) => {
     setIsAILoading(true);
-    
+
     try {
-      // Call DeepSeek API through server
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/ai-analysis`, {
+      // 타입별 시스템 프롬프트 구성
+      const promptMap: Record<string, string> = {
+        '해석': '당신은 SAT 전문 강사입니다. 다음 SAT 지문을 자연스럽고 정확한 한국어로 번역해주세요. 학생이 내용을 쉽게 이해할 수 있도록 문단별로 번역하세요.',
+        '분석': '당신은 SAT 전문 강사입니다. 다음 SAT 문제를 분석해주세요. 문제 유형, 출제 의도, 해결 전략, 주의사항을 한국어로 명확하게 설명해주세요.',
+        '단어': '당신은 SAT 어휘 전문가입니다. 다음 SAT 지문에서 학생이 반드시 알아야 할 핵심 어휘 5~7개를 추출하고, 각 단어의 품사·뜻·예문을 한국어로 설명해주세요.',
+        '정답': '당신은 SAT 전문 강사입니다. 다음 SAT 문제의 정답을 찾고, 정답인 이유와 오답인 이유를 각 선택지별로 한국어로 상세히 해설해주세요.'
+      };
+
+      const passageText = currentQuestion?.passage || '지문 없음';
+      const questionText = currentQuestion?.question || '문제 없음';
+      const choicesArr = currentQuestion?.choices || [];
+      const choicesText = Array.isArray(choicesArr)
+        ? choicesArr.map((c: any, i: number) => `${String.fromCharCode(65 + i)}. ${c.text || c}`).join('\n')
+        : String(choicesArr);
+
+      const userContent = `지문:\n${passageText}\n\n문제:\n${questionText}\n\n선택지:\n${choicesText}`;
+      const systemContent = promptMap[type] || '다음 SAT 문제를 한국어로 분석해주세요.';
+
+      // GLM 외 모든 모델은 Claude(apiclaude.cc) 통합
+      const isGlm = selectedModel.includes('glm');
+      let endpoint: string;
+      let apiKey: string;
+      let modelName: string;
+
+      if (isGlm) {
+        endpoint = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+        apiKey = 'dc2213720f4b4a88ae06ddbd434ab1dd.qDGcLtBM9gGqp6ff';
+        modelName = selectedModel.includes('5.2') ? 'glm-5.2' : 'glm-4.7';
+      } else {
+        endpoint = '/api/claude/chat/completions';
+        apiKey = 'sk-b61aadf9ae08a918738cd7adee5f261c550b41bc4bf95987602816c3ce9e84f0';
+        modelName = 'claude-sonnet-5';
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          type,
-          model: selectedModel,
-          question: currentQuestion?.question || '',
-          passage: currentQuestion?.passage || '',
-          choices: currentQuestion?.choices || []
+          model: modelName,
+          messages: [
+            { role: 'system', content: systemContent },
+            { role: 'user', content: userContent }
+          ],
+          max_tokens: 1500,
+          temperature: 0.4
         })
       });
 
       if (!response.ok) {
-        throw new Error('AI 분석 요청 실패');
+        throw new Error(`AI 분석 요청 실패 (${response.status})`);
       }
 
       const data = await response.json();
-      
-      if (data.success) {
-        setAIResponses(prev => ({
-          ...prev,
-          [type]: data.response
-        }));
-        toast.success(`${type} AI 분석 완료! (${AI_MODEL_OPTIONS.find((option) => option.value === selectedModel)?.label})`);
-      } else {
-        throw new Error(data.error || 'AI 분석 실패');
-      }
-    } catch (error) {
-      console.error('AI request error:', error);
-      
-      // Fallback to mock response for demo
-      const mockResponses: Record<string, string> = {
-        '해석': `**지문 해석**\n\n이 지문은 [주제]에 대해 설명하고 있습니다.\n\n주요 내용:\n- 첫 번째 단락: ...\n- 두 번째 단락: ...\n- 핵심 논지: ...\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
-        '분석': `**문제 분석**\n\n이 문제는 [유형] 문제입니다.\n\n핵심 포인트:\n✓ 출제 의도: ...\n✓ 해결 전략: ...\n✓ 주의사항: ...\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
-        '단어': `**핵심 단어**\n\n📚 중요 어휘:\n\n1. **agglomeration** - 집적, 집합\n   예문: urban agglomeration economies\n\n2. **foster** - 촉진하다, 육성하다\n   예문: foster innovation\n\n(AI API 연결 필요 - 현재는 데모 모드)`,
-        '정답': `**정답 해설**\n\n✅ 정답: B\n\n선택지 분석:\nA. ❌ [이유]\nB. ✅ [정답 근거]\nC. ❌ [이유]\nD. ❌ [이유]\n\n(AI API 연결 필요 - 현재는 데모 모드)`
-      };
-      
+      const aiText = data.choices?.[0]?.message?.content || '응답을 생성하지 못했습니다.';
+
       setAIResponses(prev => ({
         ...prev,
-        [type]: mockResponses[type] || '내용을 생성 중입니다...'
+        [type]: aiText
       }));
-      
-      toast.info('데모 모드로 실행 중입니다. AI API 연결이 필요합니다.');
+      toast.success(`${type} AI 분석 완료! (${AI_MODEL_OPTIONS.find((option) => option.value === selectedModel)?.label})`);
+    } catch (error) {
+      console.error('AI request error:', error);
+      setAIResponses(prev => ({
+        ...prev,
+        [type]: `AI 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\n\n오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+      }));
+      toast.error('AI 분석 중 오류가 발생했습니다.');
     } finally {
       setIsAILoading(false);
     }

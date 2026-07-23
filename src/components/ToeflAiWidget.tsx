@@ -289,7 +289,7 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
     try {
       const isClaude = selectedModel === 'claude';
       const endpoint = isClaude ? CLAUDE_PROXY_ENDPOINT : GLM_API_ENDPOINT;
-      const apiKey = isClaude ? '' : GLM_API_KEY;
+      const apiKey = isClaude ? 'sk-b61aadf9ae08a918738cd7adee5f261c550b41bc4bf95987602816c3ce9e84f0' : GLM_API_KEY;
       const modelId = isClaude ? CLAUDE_MODEL : GLM_MODEL;
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };

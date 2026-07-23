@@ -2083,7 +2083,7 @@ export default function App() {
                       }}
                       onPracticeClick={() => {
                         setSimilarLoading(true);
-                        const apiKey = 'sk-54ae310275be8eebb33ecd4112b373367a66adf31cabb15f8e5dcdea9bb51882';
+                        const apiKey = 'sk-b61aadf9ae08a918738cd7adee5f261c550b41bc4bf95987602816c3ce9e84f0';
                         const requestBody = JSON.stringify({
                           model: 'claude-sonnet-5',
                           messages: [
