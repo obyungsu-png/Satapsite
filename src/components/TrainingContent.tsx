@@ -59,7 +59,7 @@ export function TrainingContent({
   
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [sgrOverlay, setSgrOverlay] = useState<null | 'class' | 'voca'>(null);
+  const [activeSgrViewer, setActiveSgrViewer] = useState<'class' | 'voca' | null>(null);
   const subjectTabs = ['독해', '문법', '수학'];
 
   // Two special SGR entries always shown at the front of the Question Types grid
@@ -75,6 +75,8 @@ export function TrainingContent({
   // Question types by subject
   const questionTypesBySubject: { [key: string]: any[] } = {
     '독해': [
+      { id: 'sgr-class', name: 'SGR Class', icon: BookOpen, sgrViewer: 'class' },
+      { id: 'sgr-voca', name: 'SGR Voca', icon: BookOpen, sgrViewer: 'voca' },
       { id: 'central-ideas', name: 'Central Ideas and Details', icon: Target },
       { id: 'evidence-textual', name: 'Command of Evidence (Textual)', icon: BookOpen },
       { id: 'evidence-quantitative', name: 'Command of Evidence (Quantitative)', icon: BarChart3 },
@@ -141,6 +143,22 @@ export function TrainingContent({
   }));
   
   const questionTypes = [...sgrSpecialTypes, ...baseQuestionTypes, ...uploadedQuestionTypes];
+
+  if (activeSgrViewer) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 md:px-6 py-3 shadow-sm">
+          <button
+            onClick={() => setActiveSgrViewer(null)}
+            className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            ← Question Types로 돌아가기
+          </button>
+        </div>
+        {activeSgrViewer === 'class' ? <SGRClassViewer /> : <SGRVocaViewer />}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -219,8 +237,8 @@ export function TrainingContent({
                   }}
                   onClick={() => {
                     if (isLocked) return;
-                    if ((type as any).isSgr) {
-                      setSgrOverlay((type as any).isSgr);
+                    if (type.sgrViewer) {
+                      setActiveSgrViewer(type.sgrViewer);
                       return;
                     }
                     setSelectedCard(type.id);

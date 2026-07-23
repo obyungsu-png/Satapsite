@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ChevronLeft, ChevronRight, Download, Moon, Sun,
   BookOpen, Eye, EyeOff, Layers, PenLine,
-  Highlighter, Check, Volume2, ImageIcon, ListChecks, FileText
+  Highlighter, Check, Volume2, ImageIcon, ListChecks, FileText, Pen
 } from "lucide-react";
 import type { SGRVocaLesson, VocaMcq, VocaPassageQuestion } from "./types";
 import { loadVocaLessons, SGR_VOCA_EVENT } from "./types";
@@ -13,6 +13,7 @@ import { WordPopup } from "../SGRClass/WordPopup";
 import { AiActionPopup } from "../SGRClass/AiActionPopup";
 import { ReadingReviewPassage } from "../SGRClass/ReadingReviewPassage";
 import { ReadingReviewActions } from "../SGRClass/ReadingReviewToolbar";
+import HandwritingOverlay from "../HandwritingOverlay";
 
 type PageKey = "wordlist" | "exerciseAB" | "exerciseC" | "reading";
 
@@ -417,6 +418,8 @@ export default function SGRVocaViewer() {
 
   // Tools
   const [toolsOpen, setToolsOpen] = useState(false);
+  // 필기(자유 그리기) 모드
+  const [penActive, setPenActive] = useState(false);
   const [language, setLanguage] = useState<"en" | "ko">("en");
   const [popupData, setPopupData] = useState<{ word: string; context: string; x: number; y: number } | null>(null);
   const [clearTrigger, setClearTrigger] = useState(0);
@@ -571,6 +574,20 @@ export default function SGRVocaViewer() {
                   onLanguageChange={setLanguage}
                 />
               )}
+
+              {/* 필기(자유 그리기) 버튼 */}
+              <button
+                onClick={() => setPenActive(v => !v)}
+                title="필기: 자유롭게 그리기"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                  penActive
+                    ? "bg-rose-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
+              >
+                <Pen className="w-4 h-4" />
+                <span className="hidden sm:inline">필기</span>
+              </button>
               <div className="relative group">
                 <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white">
                   <Download className="w-4 h-4" />
@@ -596,6 +613,7 @@ export default function SGRVocaViewer() {
         </div>
 
         {/* Page content */}
+        <div className="relative">
         <ReadingReviewPassage
           toolsOpen={toolsOpen}
           onDictionary={handleDictionary}
@@ -617,6 +635,12 @@ export default function SGRVocaViewer() {
             </motion.div>
           </AnimatePresence>
         </ReadingReviewPassage>
+        {/* 필기 오버레이 (펜 모드일 때만 활성) */}
+        <HandwritingOverlay
+          active={penActive}
+          storageKey={`sgrVoca_pen_${selected.id}_${pageKey}`}
+        />
+        </div>
 
         {/* 단어 뜻 팝업 */}
         {popupData && (

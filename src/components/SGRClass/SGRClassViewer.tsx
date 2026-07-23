@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Download, Moon, Sun,
   BookOpen, ImageIcon, Eye, EyeOff, Sparkles,
   FileText, HelpCircle, Layers,
-  Volume2, Zap, MousePointer, Highlighter
+  Volume2, Zap, MousePointer, Highlighter, Pen
 } from "lucide-react";
 import type { SGRLesson, Question, OutlineQuestion, GrammarPoint, DirectReadingItem } from "./types";
 import { loadLessons, SGR_EVENT, syncFromServer } from "./types";
@@ -14,6 +14,7 @@ import { WordPopup } from "./WordPopup";
 import { AiActionPopup } from "./AiActionPopup";
 import { ReadingReviewPassage } from "./ReadingReviewPassage";
 import { ReadingReviewActions } from "./ReadingReviewToolbar";
+import HandwritingOverlay from "../HandwritingOverlay";
 import "../../utils/sgrClassApi"; // 서버 연동 함수 등록
 
 // ─── inline formatter: **bold**, __underline__, ___blank___ ──
@@ -934,6 +935,8 @@ export default function SGRClassViewer() {
 
   // Tools (drag-popover based highlight/underline/dictionary)
   const [toolsOpen, setToolsOpen] = useState(false);
+  // 필기(자유 그리기) 모드
+  const [penActive, setPenActive] = useState(false);
   const [language, setLanguage] = useState<"en" | "ko">("en");
   const [popupData, setPopupData] = useState<{ word: string; context: string; x: number; y: number } | null>(null);
   const [clearTrigger, setClearTrigger] = useState(0);
@@ -1089,6 +1092,20 @@ export default function SGRClassViewer() {
                   onLanguageChange={setLanguage}
                 />
               )}
+
+              {/* 필기(자유 그리기) 버튼 */}
+              <button
+                onClick={() => setPenActive(v => !v)}
+                title="필기: 자유롭게 그리기"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                  penActive
+                    ? "bg-rose-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+                }`}
+              >
+                <Pen className="w-4 h-4" />
+                <span className="hidden sm:inline">필기</span>
+              </button>
               <div className="relative group">
                 <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold bg-cyan-600 hover:bg-cyan-700 text-white">
                   <Download className="w-4 h-4" />
@@ -1114,6 +1131,7 @@ export default function SGRClassViewer() {
         </div>
 
         {/* Page content */}
+        <div className="relative">
         <ReadingReviewPassage
           toolsOpen={toolsOpen}
           onDictionary={handleDictionary}
@@ -1136,6 +1154,12 @@ export default function SGRClassViewer() {
             </motion.div>
           </AnimatePresence>
         </ReadingReviewPassage>
+        {/* 필기 오버레이 (펜 모드일 때만 활성) */}
+        <HandwritingOverlay
+          active={penActive}
+          storageKey={`sgrClass_pen_${selected.id}_${pageKey}`}
+        />
+        </div>
 
         {/* 단어 뜻 팝업 (createPortal 기반) */}
         {popupData && (

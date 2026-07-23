@@ -1,7 +1,7 @@
 ﻿import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Button } from "./ui/button";
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database, Sparkles, ArrowLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import specialIcon from '../assets/d7f2c71b688d83c12f0a6e1dec983a339119de39.png';
@@ -28,6 +28,8 @@ import { BulkUpload } from './BulkUpload';
 import { RedeemVoucherForm } from './RedeemVoucherForm';
 import LMSSGRClass from './SGRClass/LMSSGRClass';
 import LMSSGRVoca from './SGRVoca/LMSSGRVoca';
+import SGRClassViewer from './SGRClass/SGRClassViewer';
+import SGRVocaViewer from './SGRVoca/SGRVocaViewer';
 
 // uploadedFiles 전용 localStorage 키 (practiceTests의 'sat_practice_tests'와 충돌 방지)
 const UPLOADED_FILES_KEY = 'sat_uploaded_files';
@@ -557,6 +559,8 @@ const COURSECAT_TO_URL: Record<string, string> = {
   'basic': 'basic-concepts',
   'pastExams': 'past-exams',
   'special': 'special-lectures',
+  'sgrClass': 'sgr-class',
+  'sgrVoca': 'sgr-voca',
 };
 const URL_TO_COURSECAT: Record<string, string> = Object.fromEntries(
   Object.entries(COURSECAT_TO_URL).map(([s, u]) => [u, s])
@@ -3680,8 +3684,59 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     const courseCategories = [
       { id: 'basic', name: 'Basic Concepts', icon: BookOpen, description: 'Systematically learn essential SAT concepts' },
       { id: 'pastExams', name: 'Past Exams', icon: BookOpen, description: 'Real practice with actual SAT past papers' },
-      { id: 'special', name: 'Special Lectures', icon: Target, description: 'Special lecture series for high scores' }
+      { id: 'special', name: 'Special Lectures', icon: Target, description: 'Special lecture series for high scores' },
+      { id: 'sgrClass', name: 'SGR Class', icon: BookOpen, description: 'SGR Class 리딩 뷰어' },
+      { id: 'sgrVoca', name: 'SGR Voca', icon: Sparkles, description: 'SGR Voca 어휘 뷰어' }
     ];
+
+    // Reset page when category changes
+    const handleCategoryChange = (categoryId: string) => {
+      setSelectedCourseCategory(categoryId);
+      setCoursePage(1);
+    };
+
+    // SGR Class / SGR Voca 뷰어 풀스크린 렌더링
+    if (selectedCourseCategory === 'sgrClass' || selectedCourseCategory === 'sgrVoca') {
+      const isClass = selectedCourseCategory === 'sgrClass';
+      return (
+        <div className="min-h-screen bg-gray-50">
+          {/* Top bar with back button + category tabs */}
+          <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <button
+                  onClick={() => handleCategoryChange('basic')}
+                  className="flex items-center gap-1.5 text-sm font-bold text-gray-600 hover:text-[#3D5AA1] transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  목록으로
+                </button>
+                <h1 className="text-base md:text-lg font-bold text-gray-900">
+                  {isClass ? 'SGR Class' : 'SGR Voca'}
+                </h1>
+                <div className="w-20" />
+              </div>
+              <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm w-fit">
+                {courseCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.id)}
+                    className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 ${
+                      selectedCourseCategory === category.id
+                        ? 'bg-[#3D5AA1] text-white shadow-md'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {isClass ? <SGRClassViewer /> : <SGRVocaViewer />}
+        </div>
+      );
+    }
 
     // Course data for each category
     const courseData = {
@@ -3834,12 +3889,6 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     const totalCoursePages = Math.ceil(allCourses.length / coursesPerPage);
     const startCourseIndex = (coursePage - 1) * coursesPerPage;
     const currentCourses = allCourses.slice(startCourseIndex, startCourseIndex + coursesPerPage);
-
-    // Reset page when category changes
-    const handleCategoryChange = (categoryId: string) => {
-      setSelectedCourseCategory(categoryId);
-      setCoursePage(1);
-    };
 
     // Generate page numbers for course pagination
     const generateCoursePageNumbers = () => {
