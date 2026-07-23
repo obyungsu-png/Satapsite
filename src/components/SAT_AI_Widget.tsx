@@ -37,7 +37,7 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
   let modelName = model;
 
   if (m.includes('claude')) {
-    apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+    apiKey = 'sk-54ae310275be8eebb33ecd4112b373367a66adf31cabb15f8e5dcdea9bb51882';
     endpoint = '/api/claude/chat/completions';
     modelName = 'claude-sonnet-5';
   } else if (m.includes('deepseek')) {
@@ -60,7 +60,7 @@ function getAIConfig(model: string): { apiKey: string; endpoint: string; modelNa
 
   if (!apiKey) {
     console.warn('[SAT AI] Unknown model:', model, '- falling back to claude-sonnet-5');
-    apiKey = 'sk-dc6f9e27f2a453bdef8063cbf9c7330ff2ccec3491385740b094898bb304329a';
+    apiKey = 'sk-54ae310275be8eebb33ecd4112b373367a66adf31cabb15f8e5dcdea9bb51882';
     endpoint = '/api/claude/chat/completions';
     modelName = 'claude-sonnet-5';
   }

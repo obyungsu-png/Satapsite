@@ -13,37 +13,56 @@ interface WordPopupProps {
 }
 
 export function WordPopup({ word, context, language, x, y, onClose }: WordPopupProps) {
-  const [loading, setLoading] = useState(true);
+  // 영어 모드(무료 dictionary API)만 자동 로드. 한국어 모드(유료 Claude API)는 버튼 트리거.
+  const [loading, setLoading] = useState(language === 'en');
   const [definitions, setDefinitions] = useState<WordDefinition[]>([]);
   const [translation, setTranslation] = useState<WordTranslation | null>(null);
   const [error, setError] = useState(false);
+  const [translateRequested, setTranslateRequested] = useState(false);
+  const [translateLoading, setTranslateLoading] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState({ x, y });
 
+  // 영어 모드만 자동 로드 (무료 API)
   useEffect(() => {
+    if (language !== 'en') return;
     let cancelled = false;
     setLoading(true);
     setError(false);
     setDefinitions([]);
-    setTranslation(null);
 
     (async () => {
-      if (language === 'en') {
-        const defs = await getWordDefinitions(word);
-        if (cancelled) return;
-        if (defs.length === 0) setError(true);
-        else setDefinitions(defs);
-      } else {
-        const trans = await translateWord(word, context);
-        if (cancelled) return;
-        if (!trans) setError(true);
-        else setTranslation(trans);
-      }
+      const defs = await getWordDefinitions(word);
+      if (cancelled) return;
+      if (defs.length === 0) setError(true);
+      else setDefinitions(defs);
       if (!cancelled) setLoading(false);
     })();
 
     return () => { cancelled = true; };
-  }, [word, language, context]);
+  }, [word, language]);
+
+  // 단어 변경 시 한국어 번역 상태 초기화
+  useEffect(() => {
+    setTranslateRequested(false);
+    setTranslateLoading(false);
+    setTranslation(null);
+    setError(false);
+  }, [word, context]);
+
+  // 한국어 번역 — 유저가 직접 [번역 보기] 버튼을 누를 때만 Claude API 호출 (자동 호출 방지)
+  const handleTranslate = async () => {
+    setTranslateRequested(true);
+    setTranslateLoading(true);
+    setError(false);
+    const trans = await translateWord(word, context);
+    if (!trans) {
+      setError(true);
+    } else {
+      setTranslation(trans);
+    }
+    setTranslateLoading(false);
+  };
 
   // 팝업 위치 조정 (화면 경계 + AI 튜터 위젯 영역 회피)
   useEffect(() => {
@@ -60,7 +79,6 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
         newY = Math.max(20, y - rect.height - 40);
       }
       // AI 튜터 FAB 위젯 영역 (우측 하단)과 겹치지 않도록 위로 밀어올림
-      // FAB: right-6 (24px from right), bottom-16 mobile / bottom-6 desktop, 56x56px
       const isMobile = window.innerWidth < 768;
       const fabSize = 56;
       const fabRight = 24;
@@ -76,7 +94,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
       }
       setAdjustedPos({ x: Math.max(20, newX), y: Math.max(20, newY) });
     }
-  }, [x, y, loading]);
+  }, [x, y, loading, translateLoading, translation]);
 
   // 팝업 바깥 클릭 시 닫기
   useEffect(() => {
@@ -121,35 +139,54 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
       </div>
 
       {/* 내용 */}
-      {loading ? (
-        <div className="flex items-center justify-center py-4">
-          <div className="w-5 h-5 border-2 border-gray-300 border-t-[#1e6b73] rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-gray-500">검색 중...</span>
-        </div>
-      ) : error ? (
-        <p className="text-sm text-gray-500 py-2">이 단어의 정의를 찾을 수 없습니다.</p>
-      ) : language === 'en' ? (
-        <div className="space-y-2">
-          {definitions.map((def, i) => (
-            <div key={i} className="text-sm">
-              <span className="text-xs text-gray-400 italic mr-1">{def.partOfSpeech}</span>
-              <span className="text-gray-800">{def.definition}</span>
-              {def.example && (
-                <p className="text-xs text-gray-500 italic mt-0.5">"{def.example}"</p>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <div>
-            <span className="text-xs text-gray-400 mr-1">뜻:</span>
-            <span className="text-base font-semibold text-[#1e6b73]">{translation?.koreanMeaning}</span>
+      {language === 'en' ? (
+        loading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-[#1e6b73] rounded-full animate-spin"></div>
+            <span className="ml-2 text-sm text-gray-500">검색 중...</span>
           </div>
-          {translation?.englishExplanation && (
-            <p className="text-xs text-gray-600 italic">{translation.englishExplanation}</p>
-          )}
-        </div>
+        ) : error ? (
+          <p className="text-sm text-gray-500 py-2">이 단어의 정의를 찾을 수 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            {definitions.map((def, i) => (
+              <div key={i} className="text-sm">
+                <span className="text-xs text-gray-400 italic mr-1">{def.partOfSpeech}</span>
+                <span className="text-gray-800">{def.definition}</span>
+                {def.example && (
+                  <p className="text-xs text-gray-500 italic mt-0.5">"{def.example}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        // 한국어 모드: 유료 Claude API → 버튼 트리거
+        !translateRequested ? (
+          <button
+            onClick={handleTranslate}
+            className="w-full mt-1 px-3 py-2 rounded-lg bg-gradient-to-r from-[#1e6b73] to-[#2a8b94] text-white text-sm font-semibold hover:from-[#155a62] hover:to-[#237a82] transition-colors"
+          >
+            번역 보기
+          </button>
+        ) : translateLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <div className="w-5 h-5 border-2 border-gray-300 border-t-[#1e6b73] rounded-full animate-spin"></div>
+            <span className="ml-2 text-sm text-gray-500">번역 중...</span>
+          </div>
+        ) : error ? (
+          <p className="text-sm text-gray-500 py-2">이 단어의 번역을 가져올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
+        ) : (
+          <div className="space-y-2">
+            <div>
+              <span className="text-xs text-gray-400 mr-1">뜻:</span>
+              <span className="text-base font-semibold text-[#1e6b73]">{translation?.koreanMeaning}</span>
+            </div>
+            {translation?.englishExplanation && (
+              <p className="text-xs text-gray-600 italic">{translation.englishExplanation}</p>
+            )}
+          </div>
+        )
       )}
     </div>,
     document.body

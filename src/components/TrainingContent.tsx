@@ -1,5 +1,5 @@
 import { Target, BookOpen, BarChart3, Lock } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { AdBannerDisplay, Advertisement } from './AdManagement';
 
@@ -57,6 +57,11 @@ export function TrainingContent({
   
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const subjectTabs = ['독해', '문법', '수학'];
+
+  useEffect(() => {
+    setSelectedCard(null);
+  }, [selectedSubject]);
   
   // Question types by subject
   const questionTypesBySubject: { [key: string]: any[] } = {
@@ -148,30 +153,39 @@ export function TrainingContent({
           <AdBannerDisplay advertisements={advertisements} location="training" />
         </div>
 
-        {/* 1. 과목 선택 탭 (Subject Selection Tabs) */}
-        <div className="mb-5 md:mb-6">
-          <div className="flex border-b border-gray-200">
-            {['독해', '문법', '수학'].map((subject) => (
-              <button
-                key={subject}
-                onClick={() => setSelectedSubject(subject)}
-                className={`flex-1 md:flex-none md:px-6 py-2.5 md:py-3 text-sm transition-colors rounded-t-lg ${
-                  selectedSubject === subject
-                    ? 'text-white font-medium'
-                    : 'text-gray-700 bg-white border border-gray-300 border-b-0 hover:bg-gray-50'
-                }`}
-                style={selectedSubject === subject ? { backgroundColor: '#3D5AA1' } : {}}
-              >
-                {subject}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Question Types */}
+        <div className="mb-5 md:mb-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 md:px-5 pt-4 md:pt-5">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div>
+                <h2 className="text-base md:text-lg font-bold text-gray-900">Question Types</h2>
+                <p className="text-xs md:text-sm text-gray-500 mt-1">과목 하위탭을 선택한 뒤 문제 유형을 고르세요.</p>
+              </div>
+            </div>
 
-        {/* 2. 카드 섹션 (Question Types Grid) */}
-        <div className="mb-5 md:mb-6">
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3">
-            {questionTypes.map((type, index) => {
+            <div className="flex border-b border-gray-200 overflow-x-auto">
+              {subjectTabs.map((subject) => (
+                <button
+                  key={subject}
+                  onClick={() => setSelectedSubject(subject)}
+                  className={`shrink-0 px-5 md:px-7 py-3 text-sm font-semibold transition-colors relative ${
+                    selectedSubject === subject
+                      ? 'text-[#3D5AA1]'
+                      : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  {subject}
+                  {selectedSubject === subject && (
+                    <span className="absolute left-3 right-3 bottom-0 h-[3px] rounded-t-full bg-[#3D5AA1]" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 md:p-5">
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 md:gap-3">
+              {questionTypes.map((type, index) => {
               const IconComponent = type.icon;
               const isHovered = hoveredCard === type.id;
               const isSelected = selectedCard === type.id;
@@ -269,6 +283,7 @@ export function TrainingContent({
                 </motion.div>
               );
             })}
+            </div>
           </div>
         </div>
 
