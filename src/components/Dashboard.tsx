@@ -26,6 +26,8 @@ import { AdManagement, Advertisement, AdBannerDisplay } from './AdManagement';
 import { LandingPage } from './LandingPage';
 import { BulkUpload } from './BulkUpload';
 import { RedeemVoucherForm } from './RedeemVoucherForm';
+import LMSSGRClass from './SGRClass/LMSSGRClass';
+import LMSSGRVoca from './SGRVoca/LMSSGRVoca';
 
 // uploadedFiles 전용 localStorage 키 (practiceTests의 'sat_practice_tests'와 충돌 방지)
 const UPLOADED_FILES_KEY = 'sat_uploaded_files';
@@ -4171,6 +4173,28 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 학생 관리
               </button>
               <button
+                onClick={() => setUploadTab('sgr-class-관리')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  uploadTab === 'sgr-class-관리'
+                    ? 'border-cyan-500 text-cyan-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <BookOpen className="h-4 w-4 inline mr-2" />
+                SGR Class 관리
+              </button>
+              <button
+                onClick={() => setUploadTab('sgr-voca-관리')}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  uploadTab === 'sgr-voca-관리'
+                    ? 'border-rose-500 text-rose-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <BookOpen className="h-4 w-4 inline mr-2" />
+                SGR Voca 관리
+              </button>
+              <button
                 onClick={() => setUploadTab('관리자모드')}
                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-600 hover:text-gray-800`}
               >
@@ -4272,6 +4296,18 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       </table>
                     </div>
                   )}
+                </div>
+              </div>
+            ) : uploadTab === 'sgr-class-관리' ? (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
+                  <LMSSGRClass />
+                </div>
+              </div>
+            ) : uploadTab === 'sgr-voca-관리' ? (
+              <div className="space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
+                  <LMSSGRVoca />
                 </div>
               </div>
             ) : uploadTab === '관리자모드' ? (
