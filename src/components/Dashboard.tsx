@@ -1,4 +1,4 @@
-import { ImageWithFallback } from "./figma/ImageWithFallback";
+﻿import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { Button } from "./ui/button";
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Upload, FileText, Home, BookOpen, Target, BarChart3, BookmarkPlus, Settings, ArrowRight, GraduationCap, Download, Trash2, Volume2, Lock, Menu, X, Share2, Mail, MessageCircle, Copy, Check, TrendingUp, Zap, Database } from "lucide-react";
@@ -1642,7 +1642,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     // Merge: keep defaults and add uploaded tests that don't conflict
     const mergedTests = [
       ...defaultTests,
-      ...uploadedTests.filter(ut => !defaultIds.has(ut.id))
+      ...uploadedTests.filter(ut => !defaultIds.has(Number(ut.id)))
     ];
     
     return mergedTests;
@@ -4326,165 +4326,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </div>
             ) : (
               <>
-                {/* Upload Form */}
-                <div className="space-y-6">
-              {/* File Upload Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Upload className="h-5 w-5 text-gray-600" />
-                  <h2 className="text-lg font-medium text-gray-800">파일 업로드</h2>
+                {/* Upload Form — 실제 업로드는 UploadContent 컴포넌트에서 처리됨 */}
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600">자료 업로드는 '직접 입력' 탭을 이용해주세요.</p>
                 </div>
-                <p className="text-sm text-gray-600 mb-4">
-                  자료를 업로드할 카테고���를 선택하고 파일을 업로드하세요.
-                </p>
-
-                {/* Upload Category */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">업로드 위치 선택</label>
-                  <select 
-                    className="w-full p-3 border border-gray-300 rounded-md bg-white"
-                    value={uploadLocation}
-                    onChange={(e) => handleUploadLocationChange(e.target.value)}
-                  >
-                    <option value="스마트 연습 - 기출문제">스마트 연습 - 기출문제</option>
-                    <option value="스마트 연습 - 공식 샘플">스마트 연습 - 공식 샘플</option>
-                    <option value="전문 훈련">전문 훈련</option>
-                    <option value="강의 자료">강의 자료</option>
-                  </select>
-                </div>
-
-                {/* Category Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">세부 카테고리 선택</label>
-                  <select 
-                    className="w-full p-3 border border-gray-300 rounded-md bg-white"
-                    value={uploadSubcategory}
-                    onChange={(e) => setUploadSubcategory(e.target.value)}
-                  >
-                    <option value="">
-                      {uploadLocation === '전문 훈련' ? '문제 유형을 선택하세요' : '세부 카테고리를 선택하세요'}
-                    </option>
-                    {getSubcategoryOptions().map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Upload Method Selection */}
-                <div className="bg-blue-50 border-2 border-blue-300 border-dashed rounded-lg p-8 text-center">
-                  <Upload className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">{uploadLocation}</h3>
-                  {uploadSubcategory && (
-                    <p className="text-sm text-gray-600 mb-4">
-                      {uploadLocation === '전문 훈련' 
-                        ? questionTypes.find(type => type.id === uploadSubcategory)?.name
-                        : getSubcategoryOptions().find(option => option.value === uploadSubcategory)?.label
-                      }
-                    </p>
-                  )}
-                  <div className="flex gap-4 justify-center">
-                    <Button 
-                      onClick={() => setUploadMethod('local')}
-                      className={`px-4 py-2 rounded ${
-                        uploadMethod === 'local' 
-                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      로컬 파일
-                    </Button>
-                    <Button 
-                      onClick={() => setUploadMethod('external')}
-                      className={`px-4 py-2 rounded ${
-                        uploadMethod === 'external' 
-                          ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      외부 링크
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Upload Area - Local Files */}
-                {uploadMethod === 'local' && (
-                  <div 
-                    className="mt-6 border-2 border-gray-300 border-dashed rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onClick={() => {
-                      if (!uploadSubcategory) return;
-                      const input = document.createElement("input");
-                      input.type = "file";
-                      input.multiple = true;
-                      input.accept = ".pdf,.doc,.docx";
-                      input.onchange = (e) => {
-                        const files = (e.target as HTMLInputElement).files;
-                        if (files) handleFileUpload(files);
-                      };
-                      input.click();
-                    }}
-                  >
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                    <h3 className="text-base font-medium text-gray-700 mb-2">파일을 여기에 드래그하거나 클릭하여 업로드</h3>
-                    <p className="text-sm text-gray-500 mb-4">PDF, DOC, DOCX 파일 (최대 10MB)</p>
-                    <Button 
-                      className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-                      disabled={!uploadSubcategory || isUploading}
-                    >
-                      {isUploading ? '업로드 중...' : '파일 선택'}
-                    </Button>
-                    {!uploadSubcategory && (
-                      <p className="text-xs text-red-500 mt-2">
-                        {uploadLocation === '전문 훈��' ? '문제 유형을 선택하세요' : '세부 카테고리를 선택하세요'}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Upload Area - External Links */}
-                {uploadMethod === 'external' && (
-                  <div className="mt-6 space-y-4">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">지원되는 외부 링크</h4>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-white px-3 py-1 rounded text-xs text-gray-600 border">Google Drive</span>
-                        <span className="bg-white px-3 py-1 rounded text-xs text-gray-600 border">Dropbox</span>
-                        <span className="bg-white px-3 py-1 rounded text-xs text-gray-600 border">OneDrive</span>
-                        <span className="bg-white px-3 py-1 rounded text-xs text-gray-600 border">Box</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="https://drive.google.com/file/... 또는 다른 클라우드 링크"
-                        value={externalLink}
-                        onChange={(e) => setExternalLink(e.target.value)}
-                        className="flex-1 p-3 border border-gray-300 rounded-md bg-white text-sm"
-                        disabled={!uploadSubcategory}
-                      />
-                      <Button
-                        onClick={handleExternalLinkUpload}
-                        className="bg-blue-200 text-blue-700 px-6 py-3 rounded hover:bg-blue-300"
-                        disabled={!uploadSubcategory || !externalLink || isUploading}
-                      >
-                        {isUploading ? '처리 중...' : '추가'}
-                      </Button>
-                    </div>
-                    
-                    {!uploadSubcategory && (
-                      <p className="text-xs text-red-500">
-                        {uploadLocation === '전문 훈련' ? '문제 유형을 선택하세요' : '세부 카테고리를 선택하세요'}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            </>
+              </>
             )}
           </div>
         </div>
@@ -4567,7 +4414,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         <div className="max-w-7xl mx-auto">
           {/* Banner - Full width above sidebar */}
           <div className="px-6 pt-6">
-            <Banner />
+            <AdBannerDisplay advertisements={advertisements} location="history" />
           </div>
           
           <div className="flex">
@@ -4587,11 +4434,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       }`}
                       style={practiceRecordCategory === category.name ? { backgroundColor: '#2B478B' } : {}}
                     >
-                      {category.icon === specialIcon ? (
-                     <img src={category.icon} alt={category.name} className="w-5 h-5" />
-                   ) : (
-                     <span className="text-lg">{category.icon}</span>
-                   )}
+                      {(() => {
+                        const Icon = category.icon;
+                        return <Icon className="w-5 h-5" />;
+                      })()}
                       <span>{category.name}</span>
                     </button>
                   ))}

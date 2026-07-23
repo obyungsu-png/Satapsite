@@ -15,8 +15,9 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["vite/client", "node"]
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "api"]
+  "include": ["src", "api"],
+  "exclude": ["src/supabase", "src/app", "node_modules", "dist", "build"]
 }

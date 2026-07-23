@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, ChevronLeft, ChevronRight, ArrowLeft, FileText } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ArrowLeft, FileText, Globe, Search, BookOpen } from "lucide-react";
 import { SAT_AI_Widget } from "./SAT_AI_Widget";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";

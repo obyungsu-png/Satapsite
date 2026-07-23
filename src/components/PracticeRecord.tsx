@@ -29,12 +29,13 @@ interface PracticeRecordItem {
   correctAnswers: number;
   duration: string;
   questions?: Question[];
-  source?: '기출문제' | '공식문제' | '전문훈련';
+  source?: '기출문제' | '공식문제' | '전문훈련' | 'Homepage' | '유사문제' | 'Training' | string;
   timestamp?: string;
   readingScore?: string;
   writingScore?: string;
   mathScore?: string;
   status?: 'completed' | 'incomplete';
+  studentId?: string;
 }
 
 interface StudentQuestion {

@@ -38,7 +38,7 @@ export function RedeemVoucherForm({ email, onSuccess, compact = false }: RedeemV
           disabled: '비활성화된 수강권 코드예요. 관리자에게 문의해주세요.',
           no_email: '로그인 후 이용할 수 있습니다.',
         };
-        toast.error(messages[result.reason] || '수강권 등록에 실패했어요.');
+        toast.error(messages['reason' in result ? result.reason : ''] || '수강권 등록에 실패했어요.');
         return;
       }
       toast.success(`수강권이 등록되었습니다! (만료일: ${result.subscription.expiryDate})`);

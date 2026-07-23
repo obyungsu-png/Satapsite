@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactElement } from "react";
 import { Trash2, Underline, FileText } from "lucide-react";
 import { ReviewSelectionToolbar, HighlightColor } from "./ReviewSelectionToolbar";
 import { WordPopup } from "./WordPopup";
@@ -284,7 +284,7 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
       }
     }
 
-    const parts: JSX.Element[] = [];
+    const parts: ReactElement[] = [];
     let lastEnd = 0;
 
     mergedHighlights.forEach((highlight, index) => {
