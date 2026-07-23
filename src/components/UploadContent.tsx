@@ -93,7 +93,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [uploadLocation, setUploadLocation] = useState('스마트 연습');
   const [uploadSubcategory, setUploadSubcategory] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedAIModel, setSelectedAIModel] = useState(() => localStorage.getItem('selectedAIModel') || 'claude-4');
+  const [selectedAIModel, setSelectedAIModel] = useState(() => localStorage.getItem('selectedAIModel') || 'claude-sonnet-5');
   
   // Add question type and difficulty state for 기출문제/공식문제
   const [questionType, setQuestionType] = useState('');
@@ -2115,7 +2115,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     {[
-                      { value: 'claude-4', label: 'Claude 4', desc: 'Claude 4 모델 (apiclaude.cc)', color: 'orange' },
+                      { value: 'claude-sonnet-5', label: 'Claude Sonnet 5', desc: 'Claude Sonnet 5 모델 (apiclaude.cc)', color: 'orange' },
                       { value: 'glm-4.7', label: 'SGR 2.0', desc: 'SGR 2.0 모델', color: 'green' },
                       { value: 'glm-5.2', label: 'GLM 5.2', desc: 'Zhipu AI GLM 5.2 모델', color: 'purple' }
                     ].map((model) => {

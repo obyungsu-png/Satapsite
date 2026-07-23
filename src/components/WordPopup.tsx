@@ -20,12 +20,13 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
   const [error, setError] = useState(false);
   const [translateRequested, setTranslateRequested] = useState(false);
   const [translateLoading, setTranslateLoading] = useState(false);
+  const [activeLang, setActiveLang] = useState<'en' | 'ko'>(language);
   const popupRef = useRef<HTMLDivElement>(null);
   const [adjustedPos, setAdjustedPos] = useState({ x, y });
 
-  // 영어 모드만 자동 로드 (무료 API)
+  // 영어 모드만 자동 로드 (무료 API). 한국어 모드는 유료 Claude API → 버튼 트리거
   useEffect(() => {
-    if (language !== 'en') return;
+    if (activeLang !== 'en') return;
     let cancelled = false;
     setLoading(true);
     setError(false);
@@ -40,15 +41,15 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
     })();
 
     return () => { cancelled = true; };
-  }, [word, language]);
+  }, [word, activeLang]);
 
-  // 단어 변경 시 한국어 번역 상태 초기화
+  // 언어 전환/단어 변경 시 번역 상태 초기화 (KO로 전환해도 자동 호출 안 함)
   useEffect(() => {
     setTranslateRequested(false);
     setTranslateLoading(false);
     setTranslation(null);
     setError(false);
-  }, [word, context]);
+  }, [word, context, activeLang]);
 
   // 한국어 번역 — 유저가 직접 [번역 보기] 버튼을 누를 때만 Claude API 호출 (자동 호출 방지)
   const handleTranslate = async () => {
@@ -123,23 +124,43 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
       <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-gray-900">{word}</span>
-          {language === 'en' && definitions[0]?.phonetic && (
+          {activeLang === 'en' && definitions[0]?.phonetic && (
             <span className="text-sm text-gray-500">{definitions[0].phonetic}</span>
           )}
-          {language === 'ko' && translation?.partOfSpeech && (
+          {activeLang === 'ko' && translation?.partOfSpeech && (
             <span className="text-xs text-gray-500 italic">{translation.partOfSpeech}</span>
           )}
         </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-        >
-          ×
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-gray-100 rounded-full p-0.5 text-xs">
+            <button
+              onClick={() => setActiveLang('ko')}
+              className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                activeLang === 'ko' ? 'bg-white text-[#1e6b73] shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              KO
+            </button>
+            <button
+              onClick={() => setActiveLang('en')}
+              className={`px-2 py-0.5 rounded-full font-medium transition-colors ${
+                activeLang === 'en' ? 'bg-white text-[#1e6b73] shadow-sm' : 'text-gray-500'
+              }`}
+            >
+              EN
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* 내용 */}
-      {language === 'en' ? (
+      {activeLang === 'en' ? (
         loading ? (
           <div className="flex items-center justify-center py-4">
             <div className="w-5 h-5 border-2 border-gray-300 border-t-[#1e6b73] rounded-full animate-spin"></div>
@@ -161,7 +182,7 @@ export function WordPopup({ word, context, language, x, y, onClose }: WordPopupP
           </div>
         )
       ) : (
-        // 한국어 모드: 유료 Claude API → 버튼 트리거
+        // 한국어 모드: 유료 Claude API → 버튼 트리거 (자동 호출 방지)
         !translateRequested ? (
           <button
             onClick={handleTranslate}

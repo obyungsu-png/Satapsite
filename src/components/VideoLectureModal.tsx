@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const AI_MODEL_OPTIONS = [
-  { value: 'claude-4', label: 'Claude 4' },
+  { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
   { value: 'glm-4.7', label: 'SGR 2.0' },
   { value: 'glm-5.2', label: 'GLM 5.2' }
 ] as const;
@@ -14,7 +14,9 @@ const AI_MODEL_OPTIONS = [
 type AIModel = typeof AI_MODEL_OPTIONS[number]['value'];
 
 function getStoredAIModel(): AIModel {
-  return (localStorage.getItem('selectedAIModel') as AIModel) || 'claude-4';
+  const stored = localStorage.getItem('selectedAIModel') as AIModel;
+  const valid = AI_MODEL_OPTIONS.find(o => o.value === stored);
+  return valid ? valid.value : 'claude-sonnet-5';
 }
 
 interface VideoLectureModalProps {
