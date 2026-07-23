@@ -230,9 +230,11 @@ interface ToeflAiWidgetProps {
   showFab?: boolean;
   /** AI 추천 질문 목록. 미지정 시 기본값 사용 */
   suggestedQuestions?: string[];
+  /** 위젯이 열릴 때 입력창에 미리 채울 초기 프롬프트 (SGR Class/Voca 등에서 사용) */
+  initialPrompt?: string;
 }
 
-export function ToeflAiWidget({ position = 'right', contextLabel, questionData, zIndex = 90, open, onOpenChange, showFab = true, suggestedQuestions: propQuestions }: ToeflAiWidgetProps) {
+export function ToeflAiWidget({ position = 'right', contextLabel, questionData, zIndex = 90, open, onOpenChange, showFab = true, suggestedQuestions: propQuestions, initialPrompt }: ToeflAiWidgetProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = open !== undefined ? open : internalOpen;
   const setIsOpen = (value: boolean) => {
@@ -252,6 +254,13 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
     setChatMessages([]);
     setChatInput('');
   }, [contextLabel, questionData]);
+
+  // 외부에서 initialPrompt가 전달되면 입력창에 미리 채운다
+  useEffect(() => {
+    if (initialPrompt) {
+      setChatInput(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: isAiLoading ? 'auto' : 'smooth' });

@@ -1,4 +1,4 @@
-import { Target, BookOpen, BarChart3, Lock, GraduationCap, Sparkles, X } from 'lucide-react';
+import { Target, BookOpen, BarChart3, Lock, GraduationCap, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { AdBannerDisplay, Advertisement } from './AdManagement';
@@ -64,19 +64,17 @@ export function TrainingContent({
 
   // Two special SGR entries always shown at the front of the Question Types grid
   const sgrSpecialTypes = [
-    { id: 'sgr-class', name: 'SGR Class', icon: GraduationCap, isSgr: 'class' as const },
-    { id: 'sgr-voca', name: 'SGR Voca', icon: Sparkles, isSgr: 'voca' as const },
+    { id: 'sgr-class', name: 'SGR Class', icon: GraduationCap, sgrViewer: 'class' as const },
+    { id: 'sgr-voca', name: 'SGR Voca', icon: Sparkles, sgrViewer: 'voca' as const },
   ];
 
   useEffect(() => {
     setSelectedCard(null);
   }, [selectedSubject]);
-  
+
   // Question types by subject
   const questionTypesBySubject: { [key: string]: any[] } = {
     '독해': [
-      { id: 'sgr-class', name: 'SGR Class', icon: BookOpen, sgrViewer: 'class' },
-      { id: 'sgr-voca', name: 'SGR Voca', icon: BookOpen, sgrViewer: 'voca' },
       { id: 'central-ideas', name: 'Central Ideas and Details', icon: Target },
       { id: 'evidence-textual', name: 'Command of Evidence (Textual)', icon: BookOpen },
       { id: 'evidence-quantitative', name: 'Command of Evidence (Quantitative)', icon: BarChart3 },
@@ -503,21 +501,6 @@ export function TrainingContent({
           </motion.button>
         </div>
       </div>
-
-      {/* SGR Class / Voca fullscreen overlay */}
-      {sgrOverlay && (
-        <div className="fixed inset-0 z-[1000] bg-white overflow-y-auto">
-          <button
-            onClick={() => setSgrOverlay(null)}
-            className="fixed top-3 right-3 z-[1001] w-10 h-10 rounded-full bg-white/95 border border-gray-200 shadow-lg flex items-center justify-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
-            aria-label="닫기"
-            title="닫기"
-          >
-            <X className="h-5 w-5 text-gray-700" />
-          </button>
-          {sgrOverlay === 'class' ? <SGRClassViewer /> : <SGRVocaViewer />}
-        </div>
-      )}
     </div>
   );
 }

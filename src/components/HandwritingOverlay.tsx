@@ -176,7 +176,7 @@ export default function HandwritingOverlay({
         ref={svgRef}
         className="absolute inset-0 w-full h-full"
         style={{
-          pointerEvents: "active",
+          pointerEvents: "auto",
           touchAction: "none",
           cursor: eraser ? "cell" : "crosshair",
           zIndex: 20,
