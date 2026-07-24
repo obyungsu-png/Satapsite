@@ -117,6 +117,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   
   // Expanded card state for 2-step selection UI
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+
+  // 대량 업로드 탭에서, 방금 업로드한 내용을 바로 아래에서 확인하기 위한 상태
+  const [expandedBulkCardId, setExpandedBulkCardId] = useState<string | null>(null);
+  const [bulkPreviewLimit, setBulkPreviewLimit] = useState<{[key: string]: number}>({});
   
   // Category management state
   const [categories, setCategories] = useState<{[key: string]: Array<{value: string, label: string}>}>({
@@ -1234,13 +1238,130 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
 
             {/* Bulk Upload Form */}
             {uploadTab === '대량 업로드' && (
-              <BulkUpload
-                onUploadSuccess={(files) => {
-                  setUploadedFiles(prev => [...prev, ...files]);
-                }}
-                uploadLocation={uploadLocation}
-                uploadSubcategory={uploadSubcategory}
-              />
+              <>
+                <BulkUpload
+                  onUploadSuccess={(files) => {
+                    setUploadedFiles(prev => [...prev, ...files]);
+                    // 방금 업로드한 카드를 자동으로 펼쳐서 바로 아래에서 확인할 수 있도록 함
+                    if (files.length > 0) {
+                      setExpandedBulkCardId(files[files.length - 1].id);
+                    }
+                  }}
+                  uploadLocation={uploadLocation}
+                  uploadSubcategory={uploadSubcategory}
+                />
+
+                {/* 업로드한 내용 미리보기 (현재 선택된 위치/카테고리 기준, 최근 업로드가 위로) */}
+                {(() => {
+                  const bulkFiles = uploadedFiles
+                    .filter(f => f.location === uploadLocation && (!uploadSubcategory || f.subcategory === uploadSubcategory))
+                    .slice()
+                    .reverse();
+
+                  if (bulkFiles.length === 0) return null;
+
+                  return (
+                    <div className="mt-6 bg-white rounded-lg border border-gray-200 p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-purple-600" />
+                          업로드된 문제 목록
+                        </h3>
+                        <span className="text-xs text-gray-500">
+                          현재 위치 기준 총 {bulkFiles.length}개 카드
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {bulkFiles.map((file) => {
+                          const isExpanded = expandedBulkCardId === file.id;
+                          const questions: any[] = Array.isArray(file.data) ? file.data : [];
+                          const limit = bulkPreviewLimit[file.id] || 10;
+
+                          return (
+                            <div key={file.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedBulkCardId(isExpanded ? null : file.id)}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <span className={`text-xs px-2 py-1 rounded-full font-medium flex-shrink-0 ${
+                                    file.subjectType === 'math' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'
+                                  }`}>
+                                    {file.subjectType === 'math' ? '수학' : file.subjectType === 'reading' ? '리딩·문법' : '문제'}
+                                  </span>
+                                  <span className="font-medium text-gray-800 truncate">{file.name}</span>
+                                  <span className="text-xs text-gray-500 flex-shrink-0">
+                                    {file.questionCount}문제 · {file.uploadDate}
+                                  </span>
+                                </div>
+                                <span className="text-gray-400 flex-shrink-0 ml-2">
+                                  {isExpanded ? '▲ 접기' : '▼ 펼치기'}
+                                </span>
+                              </button>
+
+                              {isExpanded && (
+                                <div className="p-4 space-y-2 max-h-96 overflow-y-auto bg-white">
+                                  {questions.slice(0, limit).map((q, i) => (
+                                    <div key={i} className="text-sm border border-gray-100 rounded-md px-3 py-2 bg-gray-50">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <span className="font-semibold text-purple-700 flex-shrink-0">
+                                          {q.module ? `M${q.module}-` : ''}{q.title || `문제 ${i + 1}`}
+                                        </span>
+                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex-shrink-0">
+                                          정답 {(q.correctAnswer || '').toString().toUpperCase()}
+                                        </span>
+                                      </div>
+                                      {q.passage && (
+                                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                                          {q.passage.length > 100 ? q.passage.slice(0, 100) + '…' : q.passage}
+                                        </p>
+                                      )}
+                                      <p className="text-gray-700 mt-1">
+                                        {q.question?.length > 120 ? q.question.slice(0, 120) + '…' : q.question}
+                                      </p>
+                                      {Array.isArray(q.choices) && (
+                                        <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                                          {q.choices.map((c: string, ci: number) => (
+                                            <span key={ci} className="truncate">
+                                              {String.fromCharCode(65 + ci)}. {c}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+
+                                  {questions.length > limit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setBulkPreviewLimit(prev => ({ ...prev, [file.id]: limit + 10 }))}
+                                      className="w-full text-xs text-purple-600 hover:text-purple-800 py-2"
+                                    >
+                                      … 더 보기 ({questions.length - limit}개 남음)
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setUploadTab('편집');
+                                    }}
+                                    className="w-full text-xs text-blue-600 hover:text-blue-800 py-2 border-t border-gray-100 mt-2"
+                                  >
+                                    편집 탭에서 수정하기 →
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
             )}
 
             {/* Edit Form */}
