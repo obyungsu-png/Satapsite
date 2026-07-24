@@ -197,7 +197,9 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
     if (rows.length < 2) {
       throw new Error('CSV에 문제 데이터가 없습니다. 헤더 다음에 문제 행을 추가해주세요.');
     }
-    const header = rows[0].map(h => h.trim().toLowerCase());
+    // 공백/밑줄/하이픈 등은 무시하고 비교 — "Choice A", "choice_a", "CHOICE-A" 모두 choiceA로 인식
+    const normalize = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+    const header = rows[0].map(normalize);
     const col = (name: string) => header.indexOf(name);
     const idx = {
       passage: col('passage'),
@@ -215,7 +217,9 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
     };
     if (idx.question === -1 || idx.choiceA === -1 || idx.choiceB === -1 ||
         idx.choiceC === -1 || idx.choiceD === -1 || idx.answer === -1) {
-      throw new Error('CSV 헤더가 올바르지 않습니다. question, choiceA, choiceB, choiceC, choiceD, answer 열이 필요합니다.');
+      throw new Error(
+        `CSV 헤더가 올바르지 않습니다. question, choiceA, choiceB, choiceC, choiceD, answer 열이 필요합니다. (인식된 헤더: ${rows[0].join(', ')})`
+      );
     }
 
     const get = (row: string[], i: number) => (i >= 0 && i < row.length ? row[i].trim() : '');
