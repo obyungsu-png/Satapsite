@@ -79,7 +79,7 @@ function formatInline(text: string, showAnswer: boolean, answer?: string) {
 // ─── Sub-page components ───────────────────────────
 function PagePreview({ lesson, showAnswer, dark }: { lesson: SGRLesson; showAnswer: boolean; dark: boolean }) {
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
       {/* Unit hero */}
       <div className="relative mb-8 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-gray-800 to-gray-700 dark:from-gray-950 dark:to-gray-900">
         <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><path d=%22M0 60 Q 25 20 50 60 T 100 60 L 100 100 L 0 100 Z%22 fill=%22white%22/></svg>')] bg-repeat-x bg-bottom" />
@@ -179,7 +179,7 @@ function PagePassage({ lesson, dark }: { lesson: SGRLesson; dark: boolean }) {
   const right = lesson.passageParagraphs.slice(half);
 
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
       {/* Title hero */}
       <div className="relative mb-8">
         <div className="rounded-2xl overflow-hidden bg-gradient-to-r from-slate-700 to-slate-800 dark:from-gray-900 dark:to-black shadow-lg h-40 flex items-end">
@@ -395,7 +395,7 @@ function QuestionRenderer({
 
 function PageQuestions({ lesson, showAnswer }: { lesson: SGRLesson; showAnswer: boolean }) {
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
       <div className="flex items-center gap-3 mb-6">
         <span className="inline-block px-4 py-1.5 bg-black text-white rounded-full text-sm font-bold">
           Main Idea and Details
@@ -413,7 +413,7 @@ function PageQuestions({ lesson, showAnswer }: { lesson: SGRLesson; showAnswer: 
 function PageVocabReview({ lesson, showAnswer }: { lesson: SGRLesson; showAnswer: boolean }) {
   const { wordBank, items } = lesson.vocabReview;
   return (
-    <div className="max-w-[1600px] mx-auto p-6 lg:p-10">
+    <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
       <div className="flex items-center gap-3 mb-3">
         <span className="w-3 h-3 rounded-full bg-cyan-500" />
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Vocabulary Review</h2>
@@ -580,7 +580,7 @@ function PageDirectReading({ lesson, showAnswer }: { lesson: SGRLesson; showAnsw
   ];
 
   return (
-    <div className="max-w-[1600px] mx-auto p-4 lg:p-8">
+    <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
       {/* Sub tabs */}
       <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
         {SUB_TABS.map(t => (

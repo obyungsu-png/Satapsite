@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  BookOpen, CheckCircle2, Circle, ChevronRight, Pen,
-  Moon, Sun, Eye, EyeOff, Highlighter, Download, FileText, ListChecks,
+  BookOpen, ChevronRight, ChevronLeft, Pen,
+  Moon, Sun, Eye, EyeOff, Highlighter, Download,
+  Sparkles, HelpCircle, Check,
 } from "lucide-react";
 import { ReadingReviewPassage } from "../SGRClass/ReadingReviewPassage";
 import { ReadingReviewActions } from "../SGRClass/ReadingReviewToolbar";
+import { ToeflAiWidget } from "../ToeflAiWidget";
+import { WordPopup } from "../SGRClass/WordPopup";
+import { AiActionPopup } from "../SGRClass/AiActionPopup";
 import HandwritingOverlay from "../HandwritingOverlay";
 import { downloadSGRGrammarPdf } from "./pdfUtils";
 
@@ -229,8 +233,8 @@ const DARK_KEY = "sgrGrammar_dark";
 type PageKey = "concept" | "questions";
 
 const PAGES: Array<{ key: PageKey; label: string; icon: any }> = [
-  { key: "concept", label: "문법 설명", icon: BookOpen },
-  { key: "questions", label: "SAT 문제", icon: ListChecks },
+  { key: "concept", label: "Concept", icon: Sparkles },
+  { key: "questions", label: "Questions", icon: HelpCircle },
 ];
 
 function loadProgress(): Record<string, Record<string, number>> {
@@ -269,6 +273,15 @@ export default function SGRGrammarViewer() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [language, setLanguage] = useState<"en" | "ko">("en");
   const [clearTrigger, setClearTrigger] = useState(0);
+  const [popupData, setPopupData] = useState<{ word: string; context: string; x: number; y: number } | null>(null);
+  const [aiTutorOpen, setAiTutorOpen] = useState(false);
+  const [aiTutorPrompt, setAiTutorPrompt] = useState<string | undefined>(undefined);
+  const [aiActionPopup, setAiActionPopup] = useState<{
+    action: "explain" | "translate" | "analyze" | "rewrite";
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // CMS 연동
   useEffect(() => {
@@ -293,6 +306,19 @@ export default function SGRGrammarViewer() {
   const handleAnswer = (qId: string, choiceIdx: number) => {
     setProgress(prev => ({ ...prev, [selected.id]: { ...(prev[selected.id] || {}), [qId]: choiceIdx } }));
   };
+
+  const handleDictionary = useCallback((data: { word: string; context: string; x: number; y: number }) => {
+    setPopupData(data);
+  }, []);
+
+  const handleAiTutor = useCallback((action: "explain" | "translate" | "analyze" | "rewrite", text: string) => {
+    const selection = window.getSelection();
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+    const rect = range?.getBoundingClientRect();
+    const x = rect ? rect.left + rect.width / 2 - 160 : window.innerWidth / 2 - 160;
+    const y = rect ? rect.bottom + 10 : window.innerHeight / 2;
+    setAiActionPopup({ action, text, x, y });
+  }, []);
 
   if (!selected) {
     return (
@@ -436,37 +462,12 @@ export default function SGRGrammarViewer() {
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="max-w-[1100px] mx-auto px-6 lg:px-10 pt-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 mb-5">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div>
-                <span className="inline-block text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded-full mb-2">
-                  {selected.category}
-                </span>
-                <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100">{selected.title}</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selected.summary}</p>
-              </div>
-            </div>
-            {totalQ > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-600 rounded-full transition-all" style={{ width: `${completionPct}%` }} />
-                </div>
-                <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                  {answeredCount}/{totalQ} · 정답 {correctCount}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* Page content */}
         <div className="relative">
           <ReadingReviewPassage
             toolsOpen={toolsOpen}
-            onDictionary={() => {}}
-            onAiTutor={() => {}}
+            onDictionary={handleDictionary}
+            onAiTutor={handleAiTutor}
             clearTrigger={clearTrigger}
           >
             <AnimatePresence mode="wait">
@@ -476,82 +477,124 @@ export default function SGRGrammarViewer() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.25 }}
-                className="max-w-[1100px] mx-auto p-6 lg:p-10"
               >
                 {pageKey === "concept" && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 md:p-6 relative">
-                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-3 flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-amber-600" /> 문법 설명
-                    </h3>
-                    <ul className="space-y-2 mb-4">
-                      {selected.explanation.map((line, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                          <ChevronRight className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                          <span>{line}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
+                    {/* Hero */}
+                    <div className="relative mb-8 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-amber-700 to-amber-500 dark:from-gray-950 dark:to-amber-950">
+                      <div className="relative flex items-center gap-5 p-6 lg:p-10">
+                        <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-black flex items-center justify-center shadow-xl border-4 border-amber-300 shrink-0">
+                          <div className="text-center text-white">
+                            <div className="text-[9px] font-bold tracking-widest">GRAMMAR</div>
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <span className="inline-block text-xs font-bold text-amber-100 bg-amber-900/40 px-2 py-0.5 rounded-full mb-2">
+                            {selected.category}
+                          </span>
+                          <h1 className="text-2xl lg:text-4xl font-black text-white drop-shadow-lg leading-tight">
+                            {selected.title}
+                          </h1>
+                          <p className="text-sm text-amber-100 mt-1">{selected.summary}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Explanation card */}
+                    <div className="p-5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm mb-4">
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="w-10 h-10 rounded-lg bg-amber-600 text-white flex items-center justify-center text-xl font-black shadow-md">
+                          <BookOpen className="w-5 h-5" />
+                        </span>
+                        <p className="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">문법 설명</p>
+                      </div>
+                      <ul className="space-y-2">
+                        {selected.explanation.map((line, i) => (
+                          <li key={i} className="flex gap-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                            <ChevronRight className="w-4 h-4 text-amber-600 mt-1 shrink-0" />
+                            <span>{line}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Example cards */}
                     {selected.examples.length > 0 && (
-                      <div className="space-y-2 mt-4">
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">예시</p>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3 mb-1">
+                          <span className="w-3 h-3 rounded-full bg-amber-500" />
+                          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">예시</h2>
+                        </div>
                         {selected.examples.map((ex, i) => (
-                          <div key={i} className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                            <p className="text-sm text-red-500 line-through mb-1">✗ {ex.wrong}</p>
-                            <p className="text-sm text-emerald-600 font-medium mb-1">✓ {ex.correct}</p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500">{ex.note}</p>
+                          <div key={i} className="p-5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <p className="text-base text-red-500 line-through mb-1">✗ {ex.wrong}</p>
+                            <p className="text-base text-emerald-600 font-medium mb-1">✓ {ex.correct}</p>
+                            <p className="text-sm text-gray-400 dark:text-gray-500">{ex.note}</p>
                           </div>
                         ))}
                       </div>
                     )}
-                    <HandwritingOverlay active={penActive} storageKey={`sgrGrammar_${selected.id}_concept`} />
                   </div>
                 )}
 
                 {pageKey === "questions" && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 md:p-6 relative">
-                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-amber-600" /> 관련 SAT 문제
-                    </h3>
-                    <div className="space-y-5">
+                  <div className="max-w-[1100px] mx-auto p-6 lg:p-10">
+                    {/* Hero with progress */}
+                    <div className="relative mb-8 rounded-2xl overflow-hidden shadow-lg bg-gradient-to-r from-amber-700 to-amber-500 dark:from-gray-950 dark:to-amber-950 px-8 py-6">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <h1 className="text-3xl lg:text-4xl font-black text-white drop-shadow-lg tracking-tight">SAT 문제</h1>
+                        {totalQ > 0 && (
+                          <div className="flex items-center gap-3">
+                            <div className="w-32 h-2 bg-white/20 rounded-full overflow-hidden">
+                              <div className="h-full bg-white rounded-full transition-all" style={{ width: `${completionPct}%` }} />
+                            </div>
+                            <span className="text-xs font-bold text-white">{answeredCount}/{totalQ} · 정답 {correctCount}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Question cards */}
+                    <div className="space-y-4">
                       {selected.questions.map((q, qi) => {
                         const userAns = lessonProgress[q.id];
                         const answered = userAns !== undefined;
                         const isCorrect = userAns === q.answer;
                         const revealAnswer = showAnswer || answered;
                         return (
-                          <div key={q.id} className="border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0">
-                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">
-                              <span className="text-amber-600 font-bold mr-1">Q{qi + 1}.</span>
-                              {q.prompt}
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div key={q.id} className="p-5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <div className="flex gap-3 mb-3">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-600 text-white font-bold text-sm shrink-0">
+                                {qi + 1}
+                              </span>
+                              <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 pt-0.5">{q.prompt}</p>
+                            </div>
+                            <div className="ml-11 grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {q.choices.map((choice, ci) => {
                                 const selectedChoice = userAns === ci;
                                 const isAnswerChoice = q.answer === ci;
-                                let cls = "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-amber-500 hover:bg-amber-50/40 dark:hover:bg-amber-950/20";
+                                let cls = "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 hover:border-amber-300";
                                 if (revealAnswer) {
-                                  if (isAnswerChoice) cls = "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30";
-                                  else if (selectedChoice && !answered) cls = "border-amber-400 bg-amber-50 dark:bg-amber-950/30";
-                                  else if (selectedChoice) cls = "border-red-400 bg-red-50 dark:bg-red-950/30";
-                                  else cls = "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 opacity-60";
+                                  if (isAnswerChoice) cls = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 font-bold";
+                                  else if (selectedChoice) cls = "border-red-400 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300";
+                                  else cls = "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 opacity-60";
                                 }
                                 return (
                                   <button
                                     key={ci}
                                     onClick={() => !answered && handleAnswer(q.id, ci)}
                                     disabled={answered || showAnswer}
-                                    className={`text-left px-3 py-2 rounded-xl border-2 text-sm transition-all ${cls} text-gray-800 dark:text-gray-200`}
+                                    className={`text-left p-3 rounded-lg border-2 text-sm transition-all ${cls}`}
                                   >
-                                    <span className="font-bold mr-2 text-gray-400 dark:text-gray-500">
-                                      {String.fromCharCode(65 + ci)}
-                                    </span>
+                                    <span className="font-bold mr-2">{String.fromCharCode(97 + ci)}.</span>
                                     {choice}
+                                    {revealAnswer && isAnswerChoice && <Check className="inline ml-2 w-4 h-4 text-emerald-600" />}
                                   </button>
                                 );
                               })}
                             </div>
                             {revealAnswer && (
-                              <div className={`mt-2 rounded-xl p-3 text-xs ${
+                              <div className={`ml-11 mt-3 rounded-lg p-3 text-xs ${
                                 isCorrect || (showAnswer && !answered) ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400" : "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400"
                               }`}>
                                 <strong>{showAnswer && !answered ? "정답" : isCorrect ? "정답! 👏" : "오답"}</strong> — {q.explanation}
@@ -561,33 +604,88 @@ export default function SGRGrammarViewer() {
                         );
                       })}
                     </div>
-                    <HandwritingOverlay active={penActive} storageKey={`sgrGrammar_${selected.id}_questions`} />
                   </div>
                 )}
               </motion.div>
             </AnimatePresence>
           </ReadingReviewPassage>
-          <HandwritingOverlay active={penActive} storageKey={`sgrGrammar_${selected.id}_${pageKey}_overlay`} />
+          {/* 필기 오버레이 (펜 모드일 때만 활성) */}
+          <HandwritingOverlay
+            active={penActive}
+            storageKey={`sgrGrammar_${selected.id}_${pageKey}`}
+          />
         </div>
 
-        {/* Navigation buttons */}
-        <div className="max-w-[1100px] mx-auto px-6 lg:px-10 pb-10 flex justify-between">
+        {/* 단어 뜻 팝업 */}
+        {popupData && (
+          <WordPopup
+            word={popupData.word}
+            context={popupData.context}
+            language={language}
+            x={popupData.x}
+            y={popupData.y}
+            onClose={() => setPopupData(null)}
+            onLanguageChange={setLanguage}
+          />
+        )}
+
+        {/* AI 액션 말풍선 */}
+        {aiActionPopup && (
+          <AiActionPopup
+            action={aiActionPopup.action}
+            selectedText={aiActionPopup.text}
+            x={aiActionPopup.x}
+            y={aiActionPopup.y}
+            onClose={() => setAiActionPopup(null)}
+          />
+        )}
+
+        {/* Bottom nav */}
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between px-6 py-6 border-t border-gray-200 dark:border-gray-700 mt-8">
           <button
             onClick={goPrev}
             disabled={currentIdx === 0}
-            className="px-4 py-2 rounded-lg text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 disabled:opacity-40 hover:bg-gray-200 dark:hover:bg-gray-700"
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold ${
+              currentIdx === 0
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                : "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            }`}
           >
-            ← 이전
+            <ChevronLeft className="w-4 h-4" /> 이전
           </button>
+          <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            {currentIdx + 1} / {PAGES.length} · {PAGES[currentIdx].label}
+          </span>
           <button
             onClick={goNext}
             disabled={currentIdx === PAGES.length - 1}
-            className="px-4 py-2 rounded-lg text-sm font-bold bg-amber-600 text-white disabled:opacity-40 hover:bg-amber-700"
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold ${
+              currentIdx === PAGES.length - 1
+                ? "bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed"
+                : "bg-amber-600 hover:bg-amber-700 text-white shadow-md"
+            }`}
           >
-            다음 →
+            다음 <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      {/* AI 튜터 FAB */}
+      <ToeflAiWidget
+        position="right"
+        zIndex={80}
+        open={aiTutorOpen}
+        onOpenChange={setAiTutorOpen}
+        initialPrompt={aiTutorPrompt}
+        contextLabel={`SGR Grammar · ${selected?.title || ""}`}
+        questionData={selected}
+        suggestedQuestions={[
+          '이 문법 규칙을 더 자세히 설명해줘',
+          '관련 예문을 더 만들어줘',
+          '이 문제의 정답과 해설을 알려줘',
+          '비슷한 문법 문제를 더 내줘',
+        ]}
+      />
     </div>
   );
 }
