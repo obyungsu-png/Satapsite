@@ -479,18 +479,30 @@ app.post('/make-server-46fa08c1/upload-image', async (c) => {
     
     const bucketName = 'make-46fa08c1-images';
     const filePath = `${Date.now()}-${fileName}`;
-    
+
     // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    let { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, binaryData, {
         contentType: contentType || 'image/png',
         upsert: false,
       });
 
+    // 버킷이 아직 없는 경우(최초 배포 직후 등) 한 번 만들고 재시도
+    if (uploadError && /bucket not found/i.test(uploadError.message)) {
+      console.log(`Bucket '${bucketName}' missing — creating and retrying upload`);
+      await supabase.storage.createBucket(bucketName, { public: false });
+      ({ error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, binaryData, {
+          contentType: contentType || 'image/png',
+          upsert: false,
+        }));
+    }
+
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      return c.json({ success: false, error: 'Failed to upload image', details: String(uploadError) }, 500);
+      return c.json({ success: false, error: 'Failed to upload image', details: String(uploadError.message || uploadError) }, 500);
     }
 
     // Generate signed URL (valid for 10 years)
@@ -511,7 +523,7 @@ app.post('/make-server-46fa08c1/upload-image', async (c) => {
     });
   } catch (error) {
     console.error('Error uploading image:', error);
-    return c.json({ success: false, error: 'Failed to upload image', details: String(error) }, 500);
+    return c.json({ success: false, error: 'Failed to upload image', details: error instanceof Error ? error.message : String(error) }, 500);
   }
 });
 

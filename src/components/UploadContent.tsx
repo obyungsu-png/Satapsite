@@ -394,11 +394,11 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
             }
             toast.success('이미지가 업로드되었습니다!');
           } else {
-            throw new Error(data.error || 'Upload failed');
+            throw new Error(data.details ? `${data.error}: ${data.details}` : data.error || 'Upload failed');
           }
         } catch (error) {
           console.error('Image upload error:', error);
-          toast.error('이미지 업로드에 실패했습니다.');
+          toast.error(`이미지 업로드에 실패했습니다. ${error instanceof Error ? error.message : ''}`);
         } finally {
           if (target === 'manual') {
             setManualImageUploading(false);
