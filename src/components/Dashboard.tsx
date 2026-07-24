@@ -1614,59 +1614,22 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     }
   ];
 
-  // Get default practice tests (with fallback to hardcoded values)
+  // Get default practice tests — CRM 업로드 카드만 표시 (하드코딩 기본값 제거)
   const getDefaultPracticeTests = () => {
-    const defaultTests = [
-      { id: 1, title: "2025년 6월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 2, title: "2025년 6월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 3, title: "2025년 6월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 4, title: "2025년 6월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 5, title: "2025년 6월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 6, title: "2025년 6월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 7, title: "2025년 8월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 8, title: "2025년 8월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 9, title: "2025년 8월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 10, title: "2025년 8월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 11, title: "2025년 8월 제3회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 12, title: "2025년 8월 제3회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 13, title: "2025년 8월 제4회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 14, title: "2025년 8월 제4회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 15, title: "2025년 8월 제5회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 16, title: "2025년 8월 제5회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 17, title: "2025년 10월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 18, title: "2025년 10월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 19, title: "2025년 10월 제2회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 20, title: "2025년 10월 제2회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 21, title: "2025년 12월 제1회 독해문법", type: "Reading", status: "available", category: "past-exams" },
-      { id: 22, title: "2025년 12월 제1회 수학", type: "Math", status: "available", category: "past-exams" },
-      { id: 101, title: "SAT Official Sample 1 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 102, title: "SAT Official Sample 2 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 103, title: "SAT Official Sample 1 - Math", type: "Math", status: "available", category: "official-samples" },
-      { id: 104, title: "SAT Official Sample 2 - Math", type: "Math", status: "available", category: "official-samples" },
-      { id: 105, title: "SAT Official Sample 3 - Reading", type: "Reading", status: "available", category: "official-samples" },
-      { id: 106, title: "SAT Official Sample 3 - Math", type: "Math", status: "available", category: "official-samples" }
-    ];
-    
-    // If no uploaded files with practice data, return defaults
+    // 하드코딩된 기본 테스트를 사용하지 않고 업로드된 파일만 반환
     if (uploadedFiles.length === 0) {
-      return defaultTests;
+      return [];
     }
-    
-    // Filter uploadedFiles that are past-exams or official-samples and merge with defaults
+
+    // Filter uploadedFiles that are past-exams or official-samples
     const practiceFiles = uploadedFiles.filter(
       file => file && file.subcategory && file.location &&
-              (file.subcategory === 'past-exams' || file.subcategory === 'official-samples') && 
+              (file.subcategory === 'past-exams' || file.subcategory === 'official-samples') &&
               (file.location === '스마트 연습')
     );
-    
-    // Create a map of existing default test IDs to avoid duplicates
-    const defaultIds = new Set(defaultTests.map(t => t.id));
-    
+
     // Convert uploaded files to test format
-    const uploadedTests = practiceFiles.map(file => {
-      // file.type 은 'csv'/'bulk-upload'/'imported' 같은 업로드 마커이지 과목이 아님.
-      // createPracticeTestFromFile 과 동일한 정규화로 'Math'/'Reading' 을 유도해야
-      // 과목 필터(전체/독해문법/수학)가 정상 동작함.
+    return practiceFiles.map(file => {
       const isMathFile =
         file.subjectType === 'math' ||
         file.subcategory === 'math' ||
@@ -1677,18 +1640,10 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         type: isMathFile ? 'Math' : 'Reading',
         status: file.status === 'completed' ? 'available' : 'processing',
         category: file.subcategory,
-        data: file.data, // Include the actual question data
+        data: file.data,
         subjectType: file.subjectType || (isMathFile ? 'math' : 'reading'),
       };
     });
-    
-    // Merge: keep defaults and add uploaded tests that don't conflict
-    const mergedTests = [
-      ...defaultTests,
-      ...uploadedTests.filter(ut => !defaultIds.has(Number(ut.id)))
-    ];
-    
-    return mergedTests;
   };
 
   // Practice tests state - loaded from localStorage
@@ -1848,17 +1803,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     return uniqueWords;
   };
 
-  // Combine original tests with uploaded files for Practice
+  // Practice 섹션에 표시할 테스트 목록 — CRM 업로드 카드만 사용 (하드코딩 기본값 제거)
   const getAllPracticeTests = () => {
     const uploadedSmartPracticeFiles = getUploadedFilesForSmartPractice();
     const uploadedTests = uploadedSmartPracticeFiles.map(createPracticeTestFromFile);
-    
-    // Create a map of uploaded tests by title for easy lookup
-    const uploadedTestsMap = new Map();
-    uploadedTests.forEach(test => {
-      uploadedTestsMap.set(test.title, test);
-    });
-    
+
     // Filter based on current tab (기출문제 or 공식문제)
     const filteredUploaded = uploadedTests.filter(test => {
       if (smartPracticeTab === '기출문제') {
@@ -1868,62 +1817,31 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       }
       return true;
     });
-    
+
     // Filter by subject for uploaded tests
     const subjectFilteredUploaded = filteredUploaded.filter(test => {
       if (smartPracticeSubject === '전체') return true;
       return test.type === smartPracticeSubject;
     });
-    
-    // Filter by subject and category for original practice tests from Supabase
-    // Replace original tests with uploaded versions if they exist (same title)
-    const subjectFilteredOriginal = practiceTests
-      .filter(test => {
-        // Filter by tab (기출문제 or 공식문제)
-        if (smartPracticeTab === '기출문제' && test.category !== 'past-exams') return false;
-        if (smartPracticeTab === '공식문제' && test.category !== 'official-samples') return false;
-        
-        // Filter by subject
-        if (smartPracticeSubject === '전체') return true;
-        return test.type === smartPracticeSubject;
-      })
-      .map(test => {
-        // If an uploaded version exists with the same title, use that instead
-        const uploadedVersion = uploadedTestsMap.get(test.title);
-        if (uploadedVersion) {
-          return uploadedVersion;
-        }
-        return test;
-      });
-    
-    // Only add uploaded tests that don't have matching titles in original tests
-    const originalTitles = new Set(practiceTests.map(t => t.title));
-    const uniqueUploadedTests = subjectFilteredUploaded.filter(
-      test => !originalTitles.has(test.title)
-    );
-    
-    const combined = [...subjectFilteredOriginal, ...uniqueUploadedTests];
-    
+
     // Sort by date (newest first) - extract year and month from title
-    const sortedTests = combined.sort((a, b) => {
-      // Extract year and month from title
-      // Format examples: "2026년 3월 제1회 독해문법", "2025년 12월 제2회 수학"
+    const sortedTests = subjectFilteredUploaded.sort((a, b) => {
       const extractDate = (title: string) => {
         const match = title.match(/(\d{4})년\s*(\d{1,2})월/);
         if (match) {
           const year = parseInt(match[1]);
           const month = parseInt(match[2]);
-          return year * 100 + month; // e.g., 2026년 3월 -> 202603
+          return year * 100 + month;
         }
-        return 0; // No date found, push to end
+        return 0;
       };
-      
+
       const dateA = extractDate(a.title);
       const dateB = extractDate(b.title);
-      
+
       return dateB - dateA; // Descending order (newest first)
     });
-    
+
     return sortedTests;
   };
 
@@ -3531,7 +3449,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   onStartReview={() => onStartReview(test)}
                   onViewWords={() => {
                     // Show words from this test
-                    const testWords = allWordsFromTests.filter(w => w.testId === test.id);
+                    const testWords = allWordsFromTests.filter(w => String(w.testId) === String(test.id));
                     if (testWords.length > 0) {
                       const testWordList = {
                         id: `test_${test.id}`,

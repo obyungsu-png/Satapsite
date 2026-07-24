@@ -392,13 +392,25 @@ export default function App() {
       return null;
     }
   }); // Current logged in user
-  const totalQuestions = questions.length;
+
+  // 불완전한 문제(질문 텍스트 없음, 선택지 없음, 정답 없음) 필터링
+  // CSV 가 불완전하면 해당 문제를 건너뛰고 유효한 문제만 모듈에 배정한다.
+  const validQuestions = questions.filter(q => {
+    if (!q) return false;
+    const hasText = q.question || q.passage || q.text;
+    if (!hasText) return false;
+    const choices = q.choices;
+    const hasChoices = choices && (Array.isArray(choices) ? choices.length >= 2 : Object.keys(choices).length >= 2);
+    if (!hasChoices) return false;
+    return true;
+  });
+  const totalQuestions = validQuestions.length;
 
   // Split questions into modules based on test type
   const questionsPerModule = currentTestInfo?.type === 'Math' ? 22 : 27;
-  const module1Questions = questions.slice(0, questionsPerModule);
-  const module2Questions = questions.slice(questionsPerModule, questionsPerModule * 2);
-  
+  const module1Questions = validQuestions.slice(0, questionsPerModule);
+  const module2Questions = validQuestions.slice(questionsPerModule, questionsPerModule * 2);
+
   // Get current module's questions
   const currentModuleQuestions = currentModule === 1 ? module1Questions : module2Questions;
   const currentModuleTotalQuestions = currentModuleQuestions.length;
@@ -539,7 +551,7 @@ export default function App() {
         if (currentTestInfo && !isPracticeReview) {
           const newRecord = buildPracticeRecord({
             testInfo: currentTestInfo,
-            questions,
+            questions: validQuestions,
             selectedAnswers,
             markedForReview,
             totalQuestions,
@@ -748,7 +760,7 @@ export default function App() {
   const handlePracticeComplete = () => {
     const newRecord = buildPracticeRecord({
       testInfo: currentTestInfo,
-      questions,
+      questions: validQuestions,
       selectedAnswers,
       markedForReview,
       totalQuestions,
@@ -1246,7 +1258,7 @@ export default function App() {
 
   // Show Score Report screen
   if (gameState === 'score-report') {
-    const correctAnswers = questions.reduce((count, question) => {
+    const correctAnswers = validQuestions.reduce((count, question) => {
       const userAnswer = (selectedAnswers[question.id] || '').toLowerCase();
       // 업로드/CMS 문제 포함 모든 문제는 correctAnswer 필드 기준으로 채점
       const correctAnswer = (question.correctAnswer || 'a').toLowerCase();
@@ -1254,8 +1266,8 @@ export default function App() {
     }, 0);
     
     const mathScore = 200; // Default score for demo
-    const totalQuestions = 27 * 2; // Module 1 + Module 2
-    const incorrectAnswers = totalQuestions - correctAnswers;
+    const scoreTotalQuestions = validQuestions.length;
+    const incorrectAnswers = scoreTotalQuestions - correctAnswers;
 
     return (
       <>
@@ -1270,12 +1282,13 @@ export default function App() {
             setMarkedForReview({});
             setTimeRemaining(32 * 60);
           }}
-          questions={questions}
+          questions={validQuestions}
           selectedAnswers={selectedAnswers}
           onReviewQuestion={(questionId) => {
             handleQuestionSelect(questionId);
             setShowReviewModal(true);
           }}
+          testInfo={currentTestInfo}
         />
 
         {/* Review Modal */}
