@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronLeft, Sparkles, Send, Bot, User } from 'lucide-react';
+import { ChevronLeft, Sparkles, Send, Bot, User, PanelLeft, PanelRight, Move, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -249,6 +249,82 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const activeQuestions = propQuestions ?? defaultSuggestedQuestions;
 
+  // ── 도킹(고정) 모드: 'left' | 'right' | 'floating'
+  // 사용자가 AI 튜터 패널을 좌/우에 고정하거나 떠있게(드래그+크기조절) 할 수 있다.
+  type DockMode = 'left' | 'right' | 'floating';
+  const [dockMode, setDockMode] = useState<DockMode>(() => {
+    try {
+      const saved = localStorage.getItem('toeflAiDockMode') as DockMode | null;
+      if (saved === 'left' || saved === 'right' || saved === 'floating') return saved;
+    } catch { /* noop */ }
+    return position;
+  });
+  // floating 모드 위치/크기
+  const [floatPos, setFloatPos] = useState({ x: 0, y: 0 });
+  const [panelWidth, setPanelWidth] = useState(420);
+  const floatInitializedRef = useRef(false);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const resizeRef = useRef<{ startX: number; origW: number } | null>(null);
+
+  const changeDockMode = useCallback((mode: DockMode) => {
+    setDockMode(mode);
+    try { localStorage.setItem('toeflAiDockMode', mode); } catch { /* noop */ }
+  }, []);
+
+  // floating 진입 시 화면 중앙에 한 번만 배치
+  useEffect(() => {
+    if (dockMode === 'floating' && !floatInitializedRef.current) {
+      const w = Math.min(460, window.innerWidth - 40);
+      const h = Math.min(620, window.innerHeight - 80);
+      setPanelWidth(w);
+      setFloatPos({
+        x: Math.max(12, (window.innerWidth - w) / 2),
+        y: Math.max(12, (window.innerHeight - h) / 2),
+      });
+      floatInitializedRef.current = true;
+    }
+  }, [dockMode]);
+
+  // 헤더 드래그로 floating 패널 이동
+  const onHeaderPointerDown = (e: React.PointerEvent) => {
+    if (dockMode !== 'floating') return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: floatPos.x, origY: floatPos.y };
+    const move = (ev: PointerEvent) => {
+      if (!dragRef.current) return;
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      setFloatPos({
+        x: Math.max(0, Math.min(window.innerWidth - 120, dragRef.current.origX + dx)),
+        y: Math.max(0, Math.min(window.innerHeight - 60, dragRef.current.origY + dy)),
+      });
+    };
+    const up = () => {
+      dragRef.current = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  // 좌측 가장자리 드래그로 너비 조절
+  const onResizePointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    resizeRef.current = { startX: e.clientX, origW: panelWidth };
+    const move = (ev: PointerEvent) => {
+      if (!resizeRef.current) return;
+      const dw = resizeRef.current.startX - ev.clientX;
+      setPanelWidth(Math.max(320, Math.min(window.innerWidth - 40, resizeRef.current.origW + dw)));
+    };
+    const up = () => {
+      resizeRef.current = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
   // 컨텍스트(또는 문제 데이터)가 바뀌면 대화 초기화
   useEffect(() => {
     setChatMessages([]);
@@ -385,7 +461,7 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
     }
   };
 
-  const fabSideClass = position === 'left' ? 'left-6' : 'right-6';
+  const fabSideClass = dockMode === 'left' ? 'left-6' : 'right-6';
 
   return (
     <>
@@ -467,17 +543,44 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
         }
         .toefl-ai-panel {
           position: fixed;
-          top: 0;
-          ${position === 'left' ? 'left: 0;' : 'right: 0;'}
-          height: 100%;
-          width: 420px;
-          max-width: 100vw;
+          ${dockMode === 'floating'
+            ? `top: ${floatPos.y}px; left: ${floatPos.x}px; height: min(620px, calc(100vh - ${floatPos.y}px - 24px)); width: ${panelWidth}px; max-width: calc(100vw - 24px); border-radius: 14px;`
+            : `top: 0; ${dockMode === 'left' ? 'left: 0;' : 'right: 0;'} height: 100%; width: 420px; max-width: 100vw;`
+          }
           background: #fff;
           z-index: ${zIndex + 1};
-          box-shadow: ${position === 'left' ? '8px 0 30px rgba(0,0,0,0.15)' : '-8px 0 30px rgba(0,0,0,0.15)'};
+          box-shadow: ${dockMode === 'floating'
+            ? '0 12px 40px rgba(0,0,0,0.22)'
+            : dockMode === 'left' ? '8px 0 30px rgba(0,0,0,0.15)' : '-8px 0 30px rgba(0,0,0,0.15)'};
           display: flex;
           flex-direction: column;
-          animation: ${position === 'left' ? 'toeflAiSlideInLeft' : 'toeflAiSlideInRight'} 0.25s ease;
+          ${dockMode === 'floating' ? '' : `animation: ${dockMode === 'left' ? 'toeflAiSlideInLeft' : 'toeflAiSlideInRight'} 0.25s ease;`}
+        }
+        .toefl-ai-dock-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 4px 8px;
+          border-radius: 8px;
+          font-size: 11px;
+          font-weight: 600;
+          border: 1px solid #e5e7eb;
+          background: #fff;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .toefl-ai-dock-btn:hover { border-color: #14b8a6; color: #0d9488; }
+        .toefl-ai-dock-btn.active { background: #0d9488; border-color: #0d9488; color: #fff; }
+        .toefl-ai-resize-handle {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 6px;
+          height: 100%;
+          cursor: ew-resize;
+          z-index: 5;
         }
         @keyframes toeflAiSlideInRight {
           from { transform: translateX(100%); }
@@ -532,12 +635,23 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
         </button>
       )}
 
-      {/* AI 패널 (슬라이드인) */}
+      {/* AI 패널 (슬라이드인 / 도킹 / 플로팅) */}
       {isOpen && (
         <>
-          <div className="toefl-ai-panel-overlay" onClick={() => setIsOpen(false)} />
+          {/* 도킹 모드에서만 배경 오버레이 표시. floating 모드는 뒤 화면 조작 허용 */}
+          {dockMode !== 'floating' && (
+            <div className="toefl-ai-panel-overlay" onClick={() => setIsOpen(false)} />
+          )}
           <div className="toefl-ai-panel">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
+            {/* floating 모드: 좌측 가장자리 너비 조절 핸들 */}
+            {dockMode === 'floating' && (
+              <div className="toefl-ai-resize-handle" onPointerDown={onResizePointerDown} />
+            )}
+            <div
+              className="flex items-center justify-between px-5 py-4 border-b"
+              onPointerDown={onHeaderPointerDown}
+              style={{ cursor: dockMode === 'floating' ? 'move' : 'default', touchAction: 'none' }}
+            >
               <div className="flex items-center gap-2">
                 <span className="toefl-ai-fab" style={{ width: 36, height: 36 }}>
                   <span className="toefl-ai-fab-eyes">
@@ -546,7 +660,10 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
                   </span>
                 </span>
                 <div className="flex flex-col">
-                  <span className="font-bold text-gray-800">AI 튜터</span>
+                  <span className="font-bold text-gray-800">
+                    AI 튜터
+                    {dockMode === 'floating' && <Move className="inline-block w-3 h-3 ml-1 text-gray-400" />}
+                  </span>
                   {contextLabel && (
                     <span className="text-[11px] text-gray-400 leading-tight max-w-[260px] truncate">
                       {contextLabel}
@@ -558,8 +675,33 @@ export function ToeflAiWidget({ position = 'right', contextLabel, questionData, 
                 onClick={() => setIsOpen(false)}
                 className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                돌아가기
+                {dockMode === 'floating' ? <X className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+                {dockMode === 'floating' ? '닫기' : '돌아가기'}
+              </button>
+            </div>
+            {/* ── 고정(도킹) 모드 선택 바 ── */}
+            <div className="flex items-center gap-1.5 px-5 py-2 border-b bg-gray-50/80">
+              <span className="text-[11px] font-semibold text-gray-500 mr-1">고정</span>
+              <button
+                onClick={() => changeDockMode('left')}
+                className={`toefl-ai-dock-btn ${dockMode === 'left' ? 'active' : ''}`}
+                title="왼쪽에 고정"
+              >
+                <PanelLeft className="w-3.5 h-3.5" /> 좌
+              </button>
+              <button
+                onClick={() => changeDockMode('right')}
+                className={`toefl-ai-dock-btn ${dockMode === 'right' ? 'active' : ''}`}
+                title="오른쪽에 고정"
+              >
+                <PanelRight className="w-3.5 h-3.5" /> 우
+              </button>
+              <button
+                onClick={() => changeDockMode('floating')}
+                className={`toefl-ai-dock-btn ${dockMode === 'floating' ? 'active' : ''}`}
+                title="떠있기 (드래그·크기조절)"
+              >
+                <Move className="w-3.5 h-3.5" /> 분리
               </button>
             </div>
             {/* ── 모델 선택 바 ── */}

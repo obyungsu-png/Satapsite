@@ -140,17 +140,77 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
     toast.success('템플릿이 클립보드에 복사되었습니다!');
   };
 
+  // ── Training 자동 분류 ──
+  // CSV에 trainingType/trainingSubcategory 열이 비어 있으면 passage·question·선택지 내용을
+  // 기반으로 수학/문법/독해를 자동 판별한다. 전문 훈련 업로드 시 각 문제에 분류가 자동 입력됨.
+  const autoClassifyTraining = (
+    passage: string,
+    question: string,
+    choices: string[]
+  ): { trainingType: string; trainingSubcategory: string } => {
+    const text = `${passage} ${question} ${choices.join(' ')}`.toLowerCase();
+
+    // ── 수학 감지 ──
+    const mathSymbols = /[=×÷≤≥≠±√∑∫π∞²³∠△]/;
+    const mathExpr = /\b\d+\s*[+\-*/x]\s*\d+\b|=\s*\d|y\s*=|f\s*\(|\b\d+x\b|x[²³]|x\^/i;
+    const mathKeywords =
+      /\b(solve|calculate|equation|variable|fraction|decimal|percent|ratio|proportion|algebra|geometry|triangle|angle|parallel|perpendicular|coordinate|graph|function|slope|intercept|polynomial|exponent|root|square|cube|probability|statistic|mean|median|mode|range|domain|area|perimeter|volume|circumference|radius|diameter|linear|quadratic)\b/;
+    const mathKr = /(계산|방정식|함수|기울기|좌표|삼각형|각도|평행|수직|확률|통계|비율|백분율|소수|분수|그래프|면적|둘레|부피|원의|반지름|지름|정답을\s*구하|값을\s*구하)/;
+    const isMath =
+      mathSymbols.test(text) || mathExpr.test(text) || mathKeywords.test(text) || mathKr.test(text);
+
+    if (isMath) {
+      // 수학 하위 분류
+      if (/\b(triangle|angle|circle|area|perimeter|volume|circumference|radius|diameter|geometry|trigon|cos|sin|tan)\b|삼각형|각도|원의|면적|둘레|부피|반지름|지름/.test(text))
+        return { trainingType: 'math', trainingSubcategory: 'geometry' };
+      if (/\b(ratio|percent|probability|statistic|mean|median|mode|data|survey|table|chart)\b|비율|백분율|확률|통계|평균|표/.test(text))
+        return { trainingType: 'math', trainingSubcategory: 'problem-solving' };
+      if (/\b(quadratic|polynomial|exponent|function|graph|parabola|factor)\b|이차|다항식|지수|포물선|인수분해/.test(text))
+        return { trainingType: 'math', trainingSubcategory: 'advanced-math' };
+      return { trainingType: 'math', trainingSubcategory: 'algebra' };
+    }
+
+    // ── 문법 감지 ──
+    const grammarMarkers =
+      /\b(which choice|best revision|best version|no change|grammatical|punctuation|comma|semicolon|colon|apostrophe|transition|therefore|however|moreover|consequently|nevertheless|nonetheless|in addition|for example|in contrast|similarly|specifically|in other words|clause|phrase|subject.?verb|agreement|tense|modifier|parallel|conjunction|relative pronoun|antecedent|redundan|concise|accomplish.*goal|logically connect)\b/i;
+    const grammarKr = /(문법|수정|고쳐|접속사|쉼표|구두점|문장\s*구조|수일치|시제|병렬|수식어|가장\s*적절|논리적\s*연결)/;
+    const isGrammar = grammarMarkers.test(text) || grammarKr.test(text);
+
+    if (isGrammar) {
+      // 문법 하위 분류
+      if (/\b(therefore|however|moreover|consequently|nevertheless|nonetheless|in addition|for example|in contrast|similarly|specifically|in other words|transition|logically connect)\b|접속사|전환|논리적\s*연결/.test(text))
+        return { trainingType: 'grammar', trainingSubcategory: 'transitions' };
+      if (/\b(which choice best accomplish|redundan|concise|combine|delete|add|revis)\b|가장\s*적절|불필요|간결|결합/i.test(text))
+        return { trainingType: 'grammar', trainingSubcategory: 'rhetorical-synthesis' };
+      if (/\b(comma|semicolon|colon|punctuation|run.?on|splice|boundary)\b|쉼표|구두점/.test(text))
+        return { trainingType: 'grammar', trainingSubcategory: 'boundaries' };
+      return { trainingType: 'grammar', trainingSubcategory: 'form-structure' };
+    }
+
+    // ── 독해 (기본값) ──
+    if (/\b(imply|suggest|infer|inference)\b|추론|함축|시사/.test(text))
+      return { trainingType: 'reading', trainingSubcategory: 'inferences' };
+    if (/\b(evidence|cite|support|which.*provides|which.*supports)\b|근거/.test(text))
+      return { trainingType: 'reading', trainingSubcategory: 'command-evidence' };
+    if (/\b(tone|attitude|structure|craft|word choice|purpose.*author|perspective|point of view)\b|어조|태도|구조|관점/.test(text))
+      return { trainingType: 'reading', trainingSubcategory: 'craft-structure' };
+    return { trainingType: 'reading', trainingSubcategory: 'central-ideas' };
+  };
+
   // ── CSV 업로드 지원 ──
   // CSV 템플릿 (기출문제/공식문제 대량 업로드용)
   // passage/question/choices에 쉼표·줄바꿈이 포함될 수 있으므로 항상 큰따옴표로 감싼다.
   // module 열: 리딩 한 세트 업로드 시 모듈 구분 표기용(1 또는 2). 비워두면 문제 순서로 자동 구분(앞 27문제=모듈1).
   // vocabulary/analysis 열: 단어·분석 메모. AI 튜터/복습 화면에서 활용된다.
+  // trainingType/trainingSubcategory 열: 전문 훈련 분류(reading/grammar/math + 세부 영역).
+  //   비워두면 passage·question·선택지 내용으로 자동 분류됨.
   const getCsvTemplate = () => {
     return [
-      'passage,question,choiceA,choiceB,choiceC,choiceD,answer,explanation,vocabulary,analysis,imageUrl,module',
-      '"도시 집적 경제는 도시 지역에 산업과 인구가 집중될 때 발생하는 경제적 이익을 말한다.","이 지문의 주요 주제는 무엇인가?","도시의 인구 증가","도시 집적 경제의 정의","산업의 발전","경제적 손실","B","도시 집적 경제의 정의를 묻는 문제입니다.","agglomeration:집적; economy:경제","주제문은 첫 문장에 있다","",""',
-      '"Two-line passage can be written like this.","Which choice best states the main idea?","Choice A","Choice B","Choice C","Choice D","A","","","","","1"',
-      '"","지문 없이 질문만 있는 문제도 가능합니다.","선택지 1","선택지 2","선택지 3","선택지 4","C","","","","https://example.com/image.png","2"',
+      'passage,question,choiceA,choiceB,choiceC,choiceD,answer,explanation,vocabulary,analysis,imageUrl,module,trainingType,trainingSubcategory',
+      '"도시 집적 경제는 도시 지역에 산업과 인구가 집중될 때 발생하는 경제적 이익을 말한다.","이 지문의 주요 주제는 무엇인가?","도시의 인구 증가","도시 집적 경제의 정의","산업의 발전","경제적 손실","B","도시 집적 경제의 정의를 묻는 문제입니다.","agglomeration:집적; economy:경제","주제문은 첫 문장에 있다","","","reading","central-ideas"',
+      '"Two-line passage can be written like this.","Which choice best states the main idea?","Choice A","Choice B","Choice C","Choice D","A","","","","","1","",""',
+      '"","If 3x + 7 = 22, what is the value of x?","3","5","7","15","B","3x=15 이므로 x=5","","","","2","math","algebra"',
+      '"","Which choice best completes the text? The students ___ completed the assignment received extra credit.","who","which","whose","whom","A","관계대명사 who가 주격으로 적절","","","","1","grammar","form-structure"',
     ].join('\n');
   };
 
@@ -229,6 +289,8 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
       analysis: col('analysis'),
       imageUrl: col('imageurl'),
       module: col('module'),
+      trainingType: col('trainingtype'),
+      trainingSubcategory: col('trainingsubcategory'),
     };
     if (idx.question === -1 || idx.choiceA === -1 || idx.choiceB === -1 ||
         idx.choiceC === -1 || idx.choiceD === -1 || idx.answer === -1) {
@@ -249,17 +311,40 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
         throw new Error(`${line}행: answer는 A, B, C, D 중 하나여야 합니다. (현재: "${get(row, idx.answer)}")`);
       }
       const moduleRaw = get(row, idx.module);
+      const passage = get(row, idx.passage);
+      const choicesArr = [get(row, idx.choiceA), get(row, idx.choiceB), get(row, idx.choiceC), get(row, idx.choiceD)];
+
+      // Training 분류: CSV에 값이 있으면 사용, 없으면 내용 기반 자동 분류
+      let trainingType = idx.trainingType >= 0 ? get(row, idx.trainingType).toLowerCase() : '';
+      let trainingSubcategory = idx.trainingSubcategory >= 0 ? get(row, idx.trainingSubcategory).toLowerCase() : '';
+      const validTypes = ['reading', 'grammar', 'math'];
+      if (!validTypes.includes(trainingType)) {
+        const auto = autoClassifyTraining(passage, question, choicesArr);
+        trainingType = auto.trainingType;
+        trainingSubcategory = auto.trainingSubcategory;
+      } else if (!trainingSubcategory) {
+        // trainingType은 있는데 subcategory가 없으면 해당 타입의 기본값
+        const subDefault: Record<string, string> = {
+          reading: 'central-ideas',
+          grammar: 'form-structure',
+          math: 'algebra',
+        };
+        trainingSubcategory = subDefault[trainingType] || 'central-ideas';
+      }
+
       questions.push({
         title: `문제 ${questions.length + 1}`,
-        passage: get(row, idx.passage),
+        passage,
         question,
-        choices: [get(row, idx.choiceA), get(row, idx.choiceB), get(row, idx.choiceC), get(row, idx.choiceD)],
+        choices: choicesArr,
         correctAnswer: answer,
         explanation: get(row, idx.explanation),
         vocabulary: get(row, idx.vocabulary),
         analysis: get(row, idx.analysis),
         imageUrl: get(row, idx.imageUrl),
         module: moduleRaw === '1' || moduleRaw === '2' ? Number(moduleRaw) : null,
+        trainingType,
+        trainingSubcategory,
       });
     });
 
@@ -369,15 +454,23 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
         );
       }
 
-      // Convert to proper format with auto-incrementing numbers
-      const formattedQuestions = allQuestions.map((q: any, idx: number) => ({
-        title: `문제 ${idx + 1}`,
-        passage: q.passage || '',
-        question: q.question || '',
-        choices: [q.choiceA || '', q.choiceB || '', q.choiceC || '', q.choiceD || ''],
-        correctAnswer: q.answer || 'a',
-        explanation: q.explanation || ''
-      }));
+      // Convert to proper format with auto-incrementing numbers + 자동 분류
+      const formattedQuestions = allQuestions.map((q: any, idx: number) => {
+        const passage = q.passage || '';
+        const questionText = q.question || '';
+        const choicesArr = [q.choiceA || '', q.choiceB || '', q.choiceC || '', q.choiceD || ''];
+        const auto = autoClassifyTraining(passage, questionText, choicesArr);
+        return {
+          title: `문제 ${idx + 1}`,
+          passage,
+          question: questionText,
+          choices: choicesArr,
+          correctAnswer: q.answer || 'a',
+          explanation: q.explanation || '',
+          trainingType: auto.trainingType,
+          trainingSubcategory: auto.trainingSubcategory,
+        };
+      });
 
       return formattedQuestions;
     } catch (error: any) {
@@ -413,6 +506,25 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
       const parsedData = inputMode === 'csv' ? csvQuestions : parseTextUpload(textInput);
       const newFiles = [];
       const isSmartPractice = uploadLocation === '스마트 연습';
+      const isTraining = uploadLocation === '전문 훈련';
+
+      // 전문 훈련: 각 문제의 trainingType/trainingSubcategory가 없으면 자동 분류로 보완
+      const finalData = isTraining
+        ? parsedData.map((q: any) => {
+            const validTypes = ['reading', 'grammar', 'math'];
+            if (!validTypes.includes(q.trainingType)) {
+              const auto = autoClassifyTraining(q.passage || '', q.question || '', q.choices || []);
+              return { ...q, trainingType: auto.trainingType, trainingSubcategory: auto.trainingSubcategory };
+            }
+            if (!q.trainingSubcategory) {
+              const subDefault: Record<string, string> = {
+                reading: 'central-ideas', grammar: 'form-structure', math: 'algebra',
+              };
+              return { ...q, trainingSubcategory: subDefault[q.trainingType] || 'central-ideas' };
+            }
+            return q;
+          })
+        : parsedData;
 
       // Create single card with all questions
       const combinedFile = {
@@ -422,18 +534,19 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
         location: uploadLocation,
         subcategory: uploadSubcategory,
         subjectType: isSmartPractice ? subjectType : undefined, // 실전 시험 과목 구분 (Reading/Math 판별용)
+        trainingType: isTraining ? uploadSubcategory : undefined, // 전문 훈련 과목 (reading/grammar/math)
         moduleInfo: null, // 리딩·수학 모두 모듈1+2 통합 시험
         uploadDate: new Date().toISOString().split('T')[0],
         status: 'completed' as const,
-        questionCount: parsedData.length,
-        data: parsedData
+        questionCount: finalData.length,
+        data: finalData
       };
       newFiles.push(combinedFile);
 
       // Call parent callback
       onUploadSuccess(newFiles);
 
-      toast.success(`✅ 업로드 완료! 총 ${parsedData.length}문제`);
+      toast.success(`✅ 업로드 완료! 총 ${finalData.length}문제${isTraining ? ' (Training 자동 분류 적용)' : ''}`);
 
       // Reset form
       resetCardTitle();
@@ -465,7 +578,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
             <div className="bg-white rounded-lg p-4 text-xs text-gray-600 space-y-2">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                <span><strong>1개 카드에 통합</strong> (리딩 최대 54문제 · 수학 최대 44문제)</span>
+                <span><strong>1개 카드에 통합</strong> (독해문법 최대 54문제 · 수학 최대 44문제)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
@@ -473,7 +586,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
               </div>
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                <span><strong>Training 분류는 \"편집\" 탭에서</strong> 각 문제별로 설정하세요</span>
+                <span><strong>Training 분류 자동 입력</strong> — 전문 훈련 업로드 시 passage·question 내용으로 수학/문법/독해가 자동 분류됩니다</span>
               </div>
             </div>
           </div>
@@ -551,7 +664,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
             className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
           >
             <option value="">과목 선택</option>
-            <option value="리딩">리딩</option>
+            <option value="독해문법">독해문법</option>
             <option value="수학">수학</option>
           </select>
           <select
@@ -571,7 +684,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
           </p>
         )}
         <p className="mt-2 text-xs text-gray-500">
-          💡 모든 문제가 1개의 카드로 저장됩니다. (예: 2026년 3월 SAT 리딩 1회차)
+          💡 모든 문제가 1개의 카드로 저장됩니다. (예: 2026년 3월 SAT 독해문법 1회차)
         </p>
       </div>
 
@@ -632,7 +745,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
                     : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
                 }`}
               >
-                📖 리딩·문법
+                📖 독해문법
                 <span className="block text-xs font-normal mt-1 text-gray-400">한 세트 = 모듈1 + 모듈2 (최대 54문제)</span>
               </button>
               <button
@@ -692,6 +805,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
                 <li>필수 열: <code className="bg-white px-1 rounded">question, choiceA, choiceB, choiceC, choiceD, answer</code> (answer는 A~D)</li>
                 <li>선택 열: <code className="bg-white px-1 rounded">passage, explanation, vocabulary, analysis, imageUrl, module</code></li>
                 <li><code className="bg-white px-1 rounded">module</code> 열은 1 또는 2 (비워두면 문제 순서로 자동 구분)</li>
+                <li><code className="bg-white px-1 rounded">trainingType, trainingSubcategory</code> 열: 전문 훈련 분류 (비워두면 내용으로 자동 분류: reading/grammar/math)</li>
                 <li>쉼표·줄바꿈이 포함된 내용은 반드시 큰따옴표("...")로 감싸주세요</li>
                 <li>위의 <strong>CSV 템플릿 다운로드</strong> 버튼으로 예시 파일을 받아 Excel에서 편집하면 가장 쉽습니다</li>
               </ul>
@@ -727,6 +841,15 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
                       <span className="font-semibold text-green-700">{q.title}.</span>{' '}
                       {q.question.length > 60 ? q.question.substring(0, 60) + '…' : q.question}
                       <span className="ml-2 text-gray-400">정답: {q.correctAnswer.toUpperCase()}</span>
+                      {q.trainingType && (
+                        <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          q.trainingType === 'math' ? 'bg-indigo-100 text-indigo-700'
+                          : q.trainingType === 'grammar' ? 'bg-amber-100 text-amber-700'
+                          : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {q.trainingType === 'math' ? '수학' : q.trainingType === 'grammar' ? '문법' : '독해'} · {q.trainingSubcategory}
+                        </span>
+                      )}
                     </div>
                   ))}
                   {csvQuestions.length > 5 && (
@@ -775,7 +898,7 @@ EXPLANATION: 다음 해설`}
                 <li>문제 구분은 빈 줄 1칸 띄우기</li>
                 <li><strong>Module 구분:</strong> _____ (밑줄 5개)로 Module 1과 Module 2 구분 가능</li>
                 <li>문제 번호는 자동 생성됨 (===문제=== 불필요)</li>
-                <li>최대 {maxQuestions}문제까지 업로드 가능 (리딩·문법 27+27 = 54, 수학 22+22 = 44)</li>
+                <li>최대 {maxQuestions}문제까지 업로드 가능 (독해문법 27+27 = 54, 수학 22+22 = 44)</li>
               </ul>
             </div>
           </div>

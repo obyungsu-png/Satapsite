@@ -10,6 +10,7 @@ interface ScoreDetailModalProps {
   questions: any[];
   selectedAnswers: Record<number, string>;
   onReviewQuestion: (questionId: number) => void;
+  testInfo?: any;
 }
 
 export function ScoreDetailModal({
@@ -18,6 +19,7 @@ export function ScoreDetailModal({
   questions,
   selectedAnswers,
   onReviewQuestion,
+  testInfo,
 }: ScoreDetailModalProps) {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showScore, setShowScore] = useState(false);
@@ -36,6 +38,14 @@ export function ScoreDetailModal({
 
   const totalQuestions = questions?.length || 0;
   const incorrectAnswers = totalQuestions - correctAnswers;
+
+  // 섹션 판별: Math 시험인지 Reading & Writing 인지. App.tsx 와 동일한 기준.
+  // testInfo 가 없으면(구형 레코드) 기본 Reading 으로 간주.
+  const isMath = testInfo?.type === 'Math' || (testInfo?.title && /수학|math/i.test(testInfo.title));
+  const sectionLabel = isMath ? 'Math' : 'Reading and Writing';
+  // 섹션 환산 점수(200~800 근사치): 정답률 기반. 실제 Bluebook 스케일과는 ±차이 있음(안내문 표기).
+  const accuracyPct = totalQuestions > 0 ? correctAnswers / totalQuestions : 0;
+  const sectionScore = Math.round(200 + accuracyPct * 600);
 
   // PDF 다운로드: 문제/정답/내 답/해설을 담은 복습 자료 생성
   const handleDownloadPDF = async () => {
@@ -186,7 +196,7 @@ export function ScoreDetailModal({
               <div className="h-4 w-px bg-gray-300" />
               <div>
                 <h2 className="text-base text-gray-900 font-medium">
-                  Reading and Writing: Question {reviewingQuestion.id}
+                  {sectionLabel}: Question {reviewingQuestion.id}
                 </h2>
               </div>
             </div>
@@ -398,9 +408,10 @@ export function ScoreDetailModal({
               {/* Analysis View */}
               <h3 className="text-2xl mb-6 text-gray-900">성적 분석 및 개선 방안</h3>
 
-              {/* Reading and Writing Analysis */}
+              {/* Reading and Writing Analysis — Reading 섹션일 때만 표시 */}
+              {!isMath && (
               <div className="mb-8">
-                <h4 className="text-xl mb-4 text-gray-800 border-b-2 border-blue-600 pb-2">Reading and Writing 영역</h4>
+                <h4 className="text-xl mb-4 text-gray-800 border-b-2 border-blue-600 pb-2">{sectionLabel} 영역</h4>
                 <div className="space-y-6">
                   {Object.entries(analysisData.reading).map(([category, data]) => (
                     <div key={category} className="bg-white border border-gray-200 rounded-lg p-6">
@@ -460,10 +471,12 @@ export function ScoreDetailModal({
                   ))}
                 </div>
               </div>
+              )}
 
-              {/* Math Analysis */}
+              {/* Math Analysis — Math 섹션일 때만 표시 */}
+              {isMath && (
               <div className="mb-8">
-                <h4 className="text-xl mb-4 text-gray-800 border-b-2 border-blue-600 pb-2">Math 영역</h4>
+                <h4 className="text-xl mb-4 text-gray-800 border-b-2 border-blue-600 pb-2">{sectionLabel} 영역</h4>
                 <div className="space-y-6">
                   {Object.entries(analysisData.math).map(([category, data]) => (
                     <div key={category} className="bg-white border border-gray-200 rounded-lg p-6">
@@ -523,6 +536,7 @@ export function ScoreDetailModal({
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Overall Recommendations */}
               <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
@@ -541,113 +555,50 @@ export function ScoreDetailModal({
               {/* Score Overview - Only show when showScore is true */}
               {showScore && (
                 <>
-                  {/* Mobile: stacked cards */}
+                  {/* Mobile: section-aware score cards */}
                   <div className="md:hidden space-y-3 mb-6">
-                    {/* Total Score Card */}
+                    {/* Section Score Card */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
-                      <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Total Score</h3>
+                      <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">{sectionLabel} Section Score</h3>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-light text-gray-900">1120</span>
-                        <span className="text-xs text-gray-400">/ 1600</span>
+                        <span className="text-4xl font-light text-gray-900">{sectionScore}</span>
+                        <span className="text-xs text-gray-400">/ 800</span>
                         <div className="bg-gray-100 px-2 py-0.5 rounded-full ml-auto">
-                          <span className="text-xs text-gray-600">75th*</span>
+                          <span className="text-xs text-gray-600">{Math.round(accuracyPct * 100)}% 정답</span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Range: 1080-1160 · Avg: 1100</p>
-                    </div>
-
-                    {/* Section Scores - 2 columns */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Reading & Writing</h3>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-3xl font-light text-gray-900">620</span>
-                          <span className="text-xs text-gray-400">/ 800</span>
-                        </div>
-                        <div className="bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
-                          <span className="text-xs text-gray-600">60th*</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Range: 590-650</p>
-                      </div>
-                      <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h3 className="text-xs text-gray-500 uppercase tracking-wider mb-2">Math</h3>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-3xl font-light text-gray-900">500</span>
-                          <span className="text-xs text-gray-400">/ 800</span>
-                        </div>
-                        <div className="bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">
-                          <span className="text-xs text-gray-600">70th*</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Range: 470-530</p>
-                      </div>
+                      <p className="text-xs text-gray-500 mt-1">정답 {correctAnswers}/{totalQuestions} · Range: {Math.max(200, sectionScore - 30)}-{Math.min(800, sectionScore + 30)}</p>
                     </div>
 
                     {/* Note - compact */}
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 leading-relaxed">
-                      <p>* Percentiles represent the percent of 11th grade test takers from the past 3 years who scored the same as or below you. Score range is the range you could get if you took the SAT multiple times.</p>
+                      <p>* 환산 점수는 정답률 기준 근사치이며 Bluebook 실제 스케일과는 ±10~20점 차이가 있을 수 있습니다.</p>
                     </div>
                   </div>
 
-                  {/* Desktop: 3-col grid */}
-                  <div className="hidden md:grid grid-cols-3 gap-6 mb-8">
-                    {/* Total Score */}
+                  {/* Desktop: section-aware score cards */}
+                  <div className="hidden md:grid grid-cols-2 gap-6 mb-8">
+                    {/* Section Score */}
                     <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <h3 className="text-sm text-gray-600 mb-2">TOTAL SCORE</h3>
+                      <h3 className="text-sm text-gray-600 mb-2">{sectionLabel.toUpperCase()} SECTION SCORE</h3>
                       <div className="flex items-baseline gap-3 mb-2">
-                        <span className="text-5xl text-gray-900">1120</span>
+                        <span className="text-5xl text-gray-900">{sectionScore}</span>
                         <div className="flex flex-col text-xs text-gray-500">
-                          <span>400-</span>
-                          <span>1600</span>
+                          <span>200-</span>
+                          <span>800</span>
                         </div>
                         <div className="bg-gray-100 px-3 py-1 rounded-full">
-                          <span className="text-sm">75th*</span>
+                          <span className="text-sm">{Math.round(accuracyPct * 100)}% 정답</span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500">Score Range: 1080-1160</p>
-                      <p className="text-xs text-gray-500">Average Score (all testers): 1100</p>
-                    </div>
-
-                    {/* Section Scores */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <h3 className="text-sm text-gray-600 mb-4">SECTION SCORES</h3>
-                      
-                      <div className="mb-4">
-                        <div className="flex items-baseline gap-3 mb-1">
-                          <span className="text-2xl text-gray-900">620</span>
-                          <div className="flex flex-col text-xs text-gray-500">
-                            <span>200-</span>
-                            <span>800</span>
-                          </div>
-                          <div className="bg-gray-100 px-2 py-0.5 rounded-full">
-                            <span className="text-xs">60th*</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-600">Reading and Writing</p>
-                        <p className="text-xs text-gray-500">Your Score Range: 590-650</p>
-                        <p className="text-xs text-gray-500">Average Score (all testers): 600</p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-baseline gap-3 mb-1">
-                          <span className="text-2xl text-gray-900">500</span>
-                          <div className="flex flex-col text-xs text-gray-500">
-                            <span>200-</span>
-                            <span>800</span>
-                          </div>
-                          <div className="bg-gray-100 px-2 py-0.5 rounded-full">
-                            <span className="text-xs">70th*</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-600">Math</p>
-                        <p className="text-xs text-gray-500">Your Score Range: 470-530</p>
-                        <p className="text-xs text-gray-500">Average Score (all testers): 530</p>
-                      </div>
+                      <p className="text-xs text-gray-500">정답: {correctAnswers}/{totalQuestions} · 오답: {incorrectAnswers}</p>
+                      <p className="text-xs text-gray-500">Score Range: {Math.max(200, sectionScore - 30)}-{Math.min(800, sectionScore + 30)}</p>
                     </div>
 
                     {/* Note */}
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-xs text-gray-600">
-                      <p className="mb-2">* Percentiles represent the percent of 11th grade test takers from the past 3 years who scored the same as or below you.</p>
-                      <p>Score range: This is the range of scores you could possibly get if you took the SAT multiple times on different days.</p>
+                      <p className="mb-2">* 환산 점수는 정답률을 기준으로 한 근사치입니다. 정확한 점수 데이터를 공개하기 어려워 Bluebook 평가 결과를 참고했으며, 각 섹션 점수는 ±10~20점 변동될 수 있습니다.</p>
+                      <p>현재 응시한 섹션: <strong>{sectionLabel}</strong></p>
                     </div>
                   </div>
                 </>

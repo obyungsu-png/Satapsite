@@ -2060,7 +2060,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                                 choices: editingChoices,
                                                 correctAnswer: editingCorrectAnswer,
                                                 explanation: editingExplanation,
-                                                imageUrl: editingImageUrl || undefined,
+                                                imageUrl: editingImages.length > 0 ? editingImages[0].url : (editingImageUrl || undefined),
+                                                images: editingImages.length > 0 ? editingImages : undefined,
                                                 vocabulary: editingVocabulary,
                                                 analysis: editingAnalysis,
                                                 module: editingModule === '1' || editingModule === '2' ? Number(editingModule) : null,
@@ -2257,6 +2258,11 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               setEditingExplanation(file.data.explanation);
                                               // 대량 업로드(CSV/텍스트) 추가 필드 연동
                                               setEditingImageUrl(file.data.imageUrl || '');
+                                              // 다중 이미지 로드: images 배열 우선, 없으면 legacy imageUrl을 1개로 변환
+                                              const singleImages = Array.isArray(file.data.images) && file.data.images.length > 0
+                                                ? file.data.images
+                                                : (file.data.imageUrl ? [{ url: file.data.imageUrl, position: 'above-question', caption: '' }] : []);
+                                              setEditingImages(singleImages);
                                               setEditingVocabulary(file.data.vocabulary || '');
                                               setEditingAnalysis(file.data.analysis || '');
                                               setEditingModule(file.data.module ? String(file.data.module) : '');

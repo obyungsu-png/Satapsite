@@ -868,39 +868,47 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
     moduleInfo?: 'module1' | 'module2' | null; // 수학 모듈별 시험 구분 (리딩은 null = 모듈1+2 통합)
   }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  
+  // 초기 KV 로드 완료 플래그. 로드 전에는 빈 초기 state([])로 KV를 덮어쓰지 않도록 저장을 막고,
+  // 로드 후에는 마지막 카드 삭제(빈 배열)도 정상 저장되도록 한다.
+  const hasLoadedUploadedFilesRef = useRef(false);
+
   // Load uploaded files from Supabase KV or localStorage on mount
   useEffect(() => {
     const loadUploadedFiles = async () => {
-      console.log('🔍 uploadedFiles를 KV store에서 로드 시도...');
+      try {
+        console.log('🔍 uploadedFiles를 KV store에서 로드 시도...');
 
-      // 1. Supabase KV store (edge function 404/타임아웃 제거를 위해 직접 접근)
-      const kvFiles = await kvGet('sat_uploaded_files');
-      if (Array.isArray(kvFiles) && kvFiles.length > 0) {
-        console.log('✅ KV store에서 uploadedFiles 로드 성공:', kvFiles.length, '개');
-        setUploadedFiles(kvFiles);
-        localStorage.setItem(UPLOADED_FILES_KEY, JSON.stringify(kvFiles));
-        return;
-      }
-
-      // 2. KV에 없으면 localStorage에서 로드 (오프라인 캐시)
-      const stored = localStorage.getItem(UPLOADED_FILES_KEY) || localStorage.getItem('sat_practice_tests');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          // 구형 키('sat_practice_tests')에는 practiceTests가 섞여 있을 수 있어 파일 형식만 필터링
-          // (실제 업로드 파일은 항상 location과 문자열 id를 가짐)
-          const filesOnly = Array.isArray(parsed)
-            ? parsed.filter((f: any) => f && typeof f === 'object' && typeof f.id === 'string' && typeof f.location === 'string')
-            : [];
-          if (filesOnly.length > 0) {
-            console.log('📂 localStorage에서 uploadedFiles 로드:', filesOnly.length, '개');
-            setUploadedFiles(filesOnly);
-            kvSet('sat_uploaded_files', filesOnly); // KV에 백업
-          }
-        } catch (error) {
-          console.error('Error loading practice tests from localStorage:', error);
+        // 1. Supabase KV store (edge function 404/타임아웃 제거를 위해 직접 접근)
+        const kvFiles = await kvGet('sat_uploaded_files');
+        if (Array.isArray(kvFiles) && kvFiles.length > 0) {
+          console.log('✅ KV store에서 uploadedFiles 로드 성공:', kvFiles.length, '개');
+          setUploadedFiles(kvFiles);
+          localStorage.setItem(UPLOADED_FILES_KEY, JSON.stringify(kvFiles));
+          return;
         }
+
+        // 2. KV에 없으면 localStorage에서 로드 (오프라인 캐시)
+        const stored = localStorage.getItem(UPLOADED_FILES_KEY) || localStorage.getItem('sat_practice_tests');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            // 구형 키('sat_practice_tests')에는 practiceTests가 섞여 있을 수 있어 파일 형식만 필터링
+            // (실제 업로드 파일은 항상 location과 문자열 id를 가짐)
+            const filesOnly = Array.isArray(parsed)
+              ? parsed.filter((f: any) => f && typeof f === 'object' && typeof f.id === 'string' && typeof f.location === 'string')
+              : [];
+            if (filesOnly.length > 0) {
+              console.log('📂 localStorage에서 uploadedFiles 로드:', filesOnly.length, '개');
+              setUploadedFiles(filesOnly);
+              kvSet('sat_uploaded_files', filesOnly); // KV에 백업
+            }
+          } catch (error) {
+            console.error('Error loading practice tests from localStorage:', error);
+          }
+        }
+      } finally {
+        // 로드 시도가 끝났으면(데이터 유무와 무관) 이후 변경사항은 저장 허용
+        hasLoadedUploadedFilesRef.current = true;
       }
     };
 
@@ -909,7 +917,9 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
 
   // Save uploaded files to localStorage AND Supabase KV whenever they change
   useEffect(() => {
-    if (uploadedFiles.length === 0) return;
+    // 초기 KV 로드가 완료되기 전 빈 state([])로 KV/localStorage를 덮어쓰는 것을 방지.
+    // 로드 후에는 빈 배열(마지막 카드 삭제)도 저장하여 삭제가 practice/Supabase에 동기화됨.
+    if (!hasLoadedUploadedFilesRef.current) return;
 
     // 1. localStorage에 즉시 저장
     localStorage.setItem(UPLOADED_FILES_KEY, JSON.stringify(uploadedFiles));
@@ -1446,6 +1456,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
         analysis: item.analysis || '',
         vocabulary: item.vocabulary || '',
         imageUrl: item.imageUrl || '',
+        // 다중 이미지 + 위치 배치 지원: images 배열이 있으면 그대로 전달,
+        // 없으면 legacy imageUrl을 above-question 위치 단일 이미지로 폴백.
+        images: Array.isArray(item.images) && item.images.length > 0
+          ? item.images
+          : (item.imageUrl ? [{ url: item.imageUrl, position: 'above-question' }] : []),
         module: item.module || null,
         category: file.questionType || 'general',
         difficulty: file.difficulty || 'medium'
@@ -1648,14 +1663,24 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     const defaultIds = new Set(defaultTests.map(t => t.id));
     
     // Convert uploaded files to test format
-    const uploadedTests = practiceFiles.map(file => ({
-      id: file.id,
-      title: file.name,
-      type: file.type,
-      status: file.status === 'completed' ? 'available' : 'processing',
-      category: file.subcategory,
-      data: file.data // Include the actual question data
-    }));
+    const uploadedTests = practiceFiles.map(file => {
+      // file.type 은 'csv'/'bulk-upload'/'imported' 같은 업로드 마커이지 과목이 아님.
+      // createPracticeTestFromFile 과 동일한 정규화로 'Math'/'Reading' 을 유도해야
+      // 과목 필터(전체/독해문법/수학)가 정상 동작함.
+      const isMathFile =
+        file.subjectType === 'math' ||
+        file.subcategory === 'math' ||
+        (!file.subjectType && /수학|math/i.test(file.name || ''));
+      return {
+        id: file.id,
+        title: file.name,
+        type: isMathFile ? 'Math' : 'Reading',
+        status: file.status === 'completed' ? 'available' : 'processing',
+        category: file.subcategory,
+        data: file.data, // Include the actual question data
+        subjectType: file.subjectType || (isMathFile ? 'math' : 'reading'),
+      };
+    });
     
     // Merge: keep defaults and add uploaded tests that don't conflict
     const mergedTests = [
