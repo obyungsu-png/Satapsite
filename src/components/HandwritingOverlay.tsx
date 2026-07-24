@@ -24,9 +24,12 @@ const COLORS = [
   { key: "red", hex: "#ef4444", label: "빨강" },
   { key: "blue", hex: "#3b82f6", label: "파랑" },
   { key: "black", hex: "#1f2937", label: "검정" },
+  { key: "white", hex: "#ffffff", label: "흰색" },
+  { key: "skin", hex: "#ffd9b3", label: "살색" },
 ];
 
-const DEFAULT_WIDTH = 3;
+const WIDTHS = [2, 4, 6, 10];
+const DEFAULT_WIDTH = 4;
 const MAX_STORAGE_BYTES = 1_500_000; // 1.5MB 가드
 
 function loadStrokes(key: string): Stroke[] {
@@ -225,25 +228,37 @@ export default function HandwritingOverlay({
                 onClick={() => { setColor(c.hex); setEraser(false); }}
                 title={c.label}
                 className={`w-7 h-7 rounded-full border-2 transition-transform ${
-                  color === c.hex && !eraser ? "border-gray-800 dark:border-white scale-110" : "border-transparent"
+                  color === c.hex && !eraser ? "border-gray-800 dark:border-white scale-110" : "border-gray-300"
                 }`}
                 style={{ backgroundColor: c.hex }}
               />
             ))}
           </div>
 
-          {/* 두께 */}
+          {/* 두께 - 선 모양 선택 */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-gray-500 dark:text-gray-400 w-6">두께</span>
-            <input
-              type="range"
-              min={1}
-              max={12}
-              value={width}
-              onChange={e => setWidth(Number(e.target.value))}
-              className="flex-1 accent-[#3D5AA1]"
-            />
-            <span className="text-[10px] text-gray-500 dark:text-gray-400 w-5 text-right">{width}</span>
+            <div className="flex items-center gap-1.5 flex-1">
+              {WIDTHS.map(w => (
+                <button
+                  key={w}
+                  onClick={() => setWidth(w)}
+                  title={`두께 ${w}`}
+                  className={`flex-1 h-7 rounded-lg flex items-center justify-center transition-all ${
+                    width === w ? "bg-[#3D5AA1]/15 ring-1 ring-[#3D5AA1]" : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className="block rounded-full"
+                    style={{
+                      width: 22,
+                      height: w,
+                      backgroundColor: width === w ? "#3D5AA1" : "#9ca3af",
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 모드 / 삭제 */}

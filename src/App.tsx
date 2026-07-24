@@ -139,6 +139,58 @@ const loadPracticeRecordsFromSupabase = async (userId: string): Promise<any[]> =
   }
 };
 
+// Build a unified practice record for history.
+// 실전(practice) · 전문훈련(training) · 복습 모두 동일 스키마를 사용해
+// history / view result / review 가 일치하도록 한다.
+// 호출 측은 completionPercent >= 50 일 때만 savePracticeRecords 하도록 게이트.
+function buildPracticeRecord(opts: {
+  testInfo: any;
+  questions: any[];
+  selectedAnswers: Record<string, string>;
+  markedForReview: Record<string, boolean>;
+  totalQuestions: number;
+  currentUser: any;
+  isReview: boolean;
+}): any {
+  const { testInfo, questions, selectedAnswers, markedForReview, totalQuestions, currentUser, isReview } = opts;
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const correctCount = questions.reduce((count, q) => {
+    const userAnswer = selectedAnswers[q.id]?.toLowerCase();
+    const correctAnswer = (q.correctAnswer || 'a').toLowerCase();
+    return userAnswer === correctAnswer ? count + 1 : count;
+  }, 0);
+  const accuracy = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+  const completionPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const now = new Date();
+  const title = testInfo?.title || (isReview ? '복습 모드' : 'SAT Practice Test');
+  return {
+    id: Date.now().toString(),
+    title,                       // PracticeRecordCard + PracticeRecord.tsx 정규화가 읽는 메인 필드
+    testTitle: title,            // PracticeRecordItem 인터페이스 호환용 별칭
+    type: testInfo?.type || (isReview ? 'Training' : '독해문법'),
+    source: testInfo?.source || (isReview ? '전문훈련' : '기출문제'),
+    date: now.toISOString().split('T')[0],
+    time: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: Date.now(),
+    totalQuestions,
+    answeredQuestions: answeredCount,
+    correctAnswers: correctCount,   // 통일 필드 (기존 training 은 correctCount 였음)
+    accuracy,
+    score: 200 + (correctCount * 10),
+    completionPercent,
+    status: completionPercent >= 50 ? 'completed' : 'incomplete',
+    difficulty: testInfo?.difficulty,
+    trainingType: testInfo?.trainingType,
+    questionCount: testInfo?.questionCount,
+    answers: { ...selectedAnswers },
+    markedForReview: { ...markedForReview },
+    questions,
+    studentId: currentUser?.id || null,
+    studentEmail: currentUser?.email || null,
+    studentName: currentUser?.name || currentUser?.username || null,
+  };
+}
+
 // Save practice records to localStorage and Supabase
 const savePracticeRecords = async (records: any[], currentUser?: any) => {
   try {
@@ -483,43 +535,24 @@ export default function App() {
         setGameState('finished');
         
         // Save practice record when test is completed (but NOT in review mode)
+        // 50% 이상 풀어야 history 에 기록(게이트). 미달 시 저장 생략.
         if (currentTestInfo && !isPracticeReview) {
-          // Calculate correct answers for the record
-          const correctCount = questions.reduce((count, question) => {
-            const userAnswer = selectedAnswers[question.id]?.toLowerCase();
-            const correctAnswer = (question.correctAnswer || 'a').toLowerCase();
-            return userAnswer === correctAnswer ? count + 1 : count;
-          }, 0);
-          
-          const accuracy = Math.round((correctCount / totalQuestions) * 100);
-          const score = 200 + (correctCount * 10); // Simple mock score calculation
-
-          const newRecord = {
-            id: Date.now().toString(),
-            title: currentTestInfo.title || 'SAT Practice Test',
-            type: currentTestInfo.type || '독해문법',
-            source: currentTestInfo.source || '기출문제',
-            date: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-            totalQuestions: totalQuestions,
-            answeredQuestions: Object.keys(selectedAnswers).length,
-            correctAnswers: correctCount,
-            accuracy: accuracy,
-            score: score,
-            difficulty: currentTestInfo.difficulty,
-            trainingType: currentTestInfo.trainingType,
-            questionCount: currentTestInfo.questionCount,
-            answers: selectedAnswers,
-            markedForReview: markedForReview,
-            questions: questions, // Store questions to review later
-            studentId: currentUser?.id || null,
-            studentEmail: currentUser?.email || null,
-            studentName: currentUser?.name || currentUser?.username || null
-          };
-          
-          const updatedRecords = [newRecord, ...practiceRecords];
-          setPracticeRecords(updatedRecords);
-          savePracticeRecords(updatedRecords, currentUser);
+          const newRecord = buildPracticeRecord({
+            testInfo: currentTestInfo,
+            questions,
+            selectedAnswers,
+            markedForReview,
+            totalQuestions,
+            currentUser,
+            isReview: false,
+          });
+          if (newRecord.completionPercent >= 50) {
+            const updatedRecords = [newRecord, ...practiceRecords];
+            setPracticeRecords(updatedRecords);
+            savePracticeRecords(updatedRecords, currentUser);
+          } else {
+            toast.info(`풀이 진행률 ${newRecord.completionPercent}% — 문제의 50% 이상을 풀어야 기록에 남습니다.`);
+          }
         }
       }
     }, 3000);
@@ -711,29 +744,24 @@ export default function App() {
   };
 
   // Complete practice/review mode and save results
+  // 50% 이상 풀어야 history 에 기록(게이트). 미달 시 저장 생략.
   const handlePracticeComplete = () => {
-    const correctCount = questions.reduce((count, question) => {
-      const userAnswer = selectedAnswers[question.id]?.toLowerCase();
-      const correctAns = (question.correctAnswer || 'a').toLowerCase();
-      return userAnswer === correctAns ? count + 1 : count;
-    }, 0);
-    const accuracy = Math.round((correctCount / totalQuestions) * 100);
-    const newRecord = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      testTitle: currentTestInfo?.title || '전문훈련',
-      type: currentTestInfo?.type || 'Training',
-      source: currentTestInfo?.source || '전문훈련',
-      score: 200 + (correctCount * 10),
-      correctCount,
+    const newRecord = buildPracticeRecord({
+      testInfo: currentTestInfo,
+      questions,
+      selectedAnswers,
+      markedForReview,
       totalQuestions,
-      accuracy,
-      questions: questions,
-      answers: { ...selectedAnswers },
-    };
-    const updatedRecords = [newRecord, ...practiceRecords];
-    setPracticeRecords(updatedRecords);
-    savePracticeRecords(updatedRecords, currentUser);
+      currentUser,
+      isReview: isPracticeReview,
+    });
+    if (newRecord.completionPercent >= 50) {
+      const updatedRecords = [newRecord, ...practiceRecords];
+      setPracticeRecords(updatedRecords);
+      savePracticeRecords(updatedRecords, currentUser);
+    } else {
+      toast.info(`풀이 진행률 ${newRecord.completionPercent}% — 문제의 50% 이상을 풀어야 기록에 남습니다.`);
+    }
     setGameState('score-report');
   };
 

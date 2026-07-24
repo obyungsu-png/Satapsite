@@ -30,6 +30,7 @@ import LMSSGRClass from './SGRClass/LMSSGRClass';
 import LMSSGRVoca from './SGRVoca/LMSSGRVoca';
 import SGRClassViewer from './SGRClass/SGRClassViewer';
 import SGRVocaViewer from './SGRVoca/SGRVocaViewer';
+import SGRGrammarViewer from './SGRGrammar/SGRGrammarViewer';
 
 // uploadedFiles 전용 localStorage 키 (practiceTests의 'sat_practice_tests'와 충돌 방지)
 const UPLOADED_FILES_KEY = 'sat_uploaded_files';
@@ -467,13 +468,21 @@ function PracticeRecordCard({ record, index, onViewDetail, onRetry }: {
 
         {/* Record Details */}
         <div className="flex-1">
-          <h3 className="font-medium text-gray-800 mb-1">{record.title}</h3>
+          <h3 className="font-medium text-gray-800 mb-1">{record.title || record.testTitle || 'SAT Practice Test'}</h3>
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
             <span>{record.date}</span>
             <span>문제 수: {record.totalQuestions || record.questionsCount}</span>
             <span className="text-green-600 font-medium">정답률: {record.accuracy}%</span>
+            {typeof record.completionPercent === 'number' && (
+              <span className="text-gray-400 font-medium">풀이율: {record.completionPercent}%</span>
+            )}
           </div>
-          <p className="text-xs text-gray-500">점수: {record.score}점 • 시간: {record.time || record.timeUsed}</p>
+          <p className="text-xs text-gray-500">
+            점수: {record.score}점 • 시간: {record.time || record.timeUsed || '—'}
+            {record.answeredQuestions != null && record.totalQuestions
+              ? ` • 푼 문제: ${record.answeredQuestions}/${record.totalQuestions}`
+              : ''}
+          </p>
         </div>
 
         {/* Action Buttons */}
@@ -561,6 +570,7 @@ const COURSECAT_TO_URL: Record<string, string> = {
   'special': 'special-lectures',
   'sgrClass': 'sgr-class',
   'sgrVoca': 'sgr-voca',
+  'sgrGrammar': 'sgr-grammar',
 };
 const URL_TO_COURSECAT: Record<string, string> = Object.fromEntries(
   Object.entries(COURSECAT_TO_URL).map(([s, u]) => [u, s])
@@ -785,6 +795,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   // Practice content state
   const [practiceOrder, setPracticeOrder] = useState('시간순 정렬'); // 시간순 정렬, 모의고사 연습 적합, 보충 연습 적합
   const [smartPracticeSubject, setSmartPracticeSubject] = useState('전체'); // 전체, Reading, Math
+  const [practiceSortOrder, setPracticeSortOrder] = useState<'desc' | 'asc'>('desc'); // desc: 최신순, asc: 오래된순
   
   // Word Management state
   const [wordListType, setWordListType] = useState('전체'); // 전체, 고빈도 단어, 어려운 단어, 틀린 단어
@@ -1891,7 +1902,11 @@ ${studentMessage || '(메시지가 없습니다)'}`;
     return sortedTests;
   };
 
-  const allTests = getAllPracticeTests();
+  const allTests = (() => {
+    const tests = getAllPracticeTests();
+    // getAllPracticeTests는 기본 내림차순(최신순) 정렬. 오름차순일 경우 반전.
+    return practiceSortOrder === 'asc' ? [...tests].reverse() : tests;
+  })();
   const totalPages = Math.ceil(allTests.length / testsPerPage);
   const startIndex = (currentPage - 1) * testsPerPage;
   const currentTests = allTests.slice(startIndex, startIndex + testsPerPage);
@@ -2769,6 +2784,27 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                       {sub === 'Reading' ? '독해문법' : sub === 'Math' ? '수학' : sub}
                     </button>
                   ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">정렬</span>
+                <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                  <button
+                    onClick={() => { setPracticeSortOrder('desc'); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      practiceSortOrder === 'desc' ? 'bg-[#3D5AA1] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    ↓ 내림차순
+                  </button>
+                  <button
+                    onClick={() => { setPracticeSortOrder('asc'); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      practiceSortOrder === 'asc' ? 'bg-[#3D5AA1] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >
+                    ↑ 오름차순
+                  </button>
                 </div>
               </div>
             </div>
@@ -3687,7 +3723,8 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       { id: 'pastExams', name: 'Past Exams', icon: BookOpen, description: 'Real practice with actual SAT past papers' },
       { id: 'special', name: 'Special Lectures', icon: Target, description: 'Special lecture series for high scores' },
       { id: 'sgrClass', name: 'SGR Class', icon: BookOpen, description: 'SGR Class 리딩 뷰어' },
-      { id: 'sgrVoca', name: 'SGR Voca', icon: Sparkles, description: 'SGR Voca 어휘 뷰어' }
+      { id: 'sgrVoca', name: 'SGR Voca', icon: Sparkles, description: 'SGR Voca 어휘 뷰어' },
+      { id: 'sgrGrammar', name: 'SGR Grammar', icon: BookOpen, description: 'SGR Grammar 문법 뷰어' }
     ];
 
     // Reset page when category changes
@@ -3696,9 +3733,13 @@ ${studentMessage || '(메시지가 없습니다)'}`;
       setCoursePage(1);
     };
 
-    // SGR Class / SGR Voca 뷰어 풀스크린 렌더링
-    if (selectedCourseCategory === 'sgrClass' || selectedCourseCategory === 'sgrVoca') {
-      const isClass = selectedCourseCategory === 'sgrClass';
+    // SGR Class / SGR Voca / SGR Grammar 뷰어 풀스크린 렌더링
+    if (selectedCourseCategory === 'sgrClass' || selectedCourseCategory === 'sgrVoca' || selectedCourseCategory === 'sgrGrammar') {
+      const viewerTitle = selectedCourseCategory === 'sgrClass'
+        ? 'SGR Class'
+        : selectedCourseCategory === 'sgrVoca'
+          ? 'SGR Voca'
+          : 'SGR Grammar';
       return (
         <div className="min-h-screen bg-gray-50">
           {/* Top bar with back button + category tabs */}
@@ -3713,7 +3754,7 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                   목록으로
                 </button>
                 <h1 className="text-base md:text-lg font-bold text-gray-900">
-                  {isClass ? 'SGR Class' : 'SGR Voca'}
+                  {viewerTitle}
                 </h1>
                 <div className="w-20" />
               </div>
@@ -3734,7 +3775,9 @@ ${studentMessage || '(메시지가 없습니다)'}`;
               </div>
             </div>
           </div>
-          {isClass ? <SGRClassViewer /> : <SGRVocaViewer />}
+          {selectedCourseCategory === 'sgrClass' && <SGRClassViewer />}
+          {selectedCourseCategory === 'sgrVoca' && <SGRVocaViewer />}
+          {selectedCourseCategory === 'sgrGrammar' && <SGRGrammarViewer />}
         </div>
       );
     }
@@ -4007,13 +4050,13 @@ ${studentMessage || '(메시지가 없습니다)'}`;
             <p className="text-gray-600">AI가 분석한 개인 취약점을 바탕으로 맞춤형 문제를 제공합니다.</p>
           </div>
 
-          {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 */}
-          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit overflow-x-auto max-w-full">
+          {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 (반응형: 모바일/데스크톱 공통 한 줄) */}
+          <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit overflow-x-auto max-w-full">
             {courseCategories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => handleCategoryChange(category.id)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 shrink-0 whitespace-nowrap ${
+                className={`px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 shrink-0 whitespace-nowrap ${
                   selectedCourseCategory === category.id
                     ? 'bg-[#3D5AA1] text-white shadow-md'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
