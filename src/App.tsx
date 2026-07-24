@@ -1446,6 +1446,7 @@ export default function App() {
                   testInfo={currentTestInfo}
                   onShowVideoLecture={handleShowVideoLecture}
                   imageUrl={currentQuestion.imageUrl}
+                  images={currentQuestion.images}
                   imageAlt={currentQuestion.imageAlt}
                   isPracticeReview={isPracticeReview}
                   correctAnswer={currentQuestion.correctAnswer}
@@ -1542,6 +1543,7 @@ export default function App() {
                 testInfo={currentTestInfo}
                 onShowVideoLecture={handleShowVideoLecture}
                 imageUrl={currentQuestion.imageUrl}
+                images={currentQuestion.images}
                 imageAlt={currentQuestion.imageAlt}
                 isPracticeReview={isPracticeReview}
                 correctAnswer={currentQuestion.correctAnswer}
@@ -1646,6 +1648,7 @@ export default function App() {
                   isExpanded={isExpanded}
                   expandDirection={expandDirection}
                   isPracticeReview={isPracticeReview}
+                  images={currentQuestion.images}
                 />
               </Resizable>
               
@@ -1664,6 +1667,7 @@ export default function App() {
                   testInfo={currentTestInfo}
                   onShowVideoLecture={handleShowVideoLecture}
                   imageUrl={currentQuestion.imageUrl}
+                  images={currentQuestion.images}
                   isPracticeReview={isPracticeReview}
                   correctAnswer={currentQuestion.correctAnswer}
                   explanation={currentQuestion.explanation}
@@ -1762,6 +1766,7 @@ export default function App() {
                 testInfo={currentTestInfo}
                 onShowVideoLecture={handleShowVideoLecture}
                 imageUrl={currentQuestion.imageUrl}
+                images={currentQuestion.images}
                 sectionLabel={currentTestInfo?.type === 'Math' || currentTestInfo?.title?.includes('수학') ? 'Math' : 'Reading'}
                 highlightsMode={highlightsMode}
                 isPracticeReview={isPracticeReview}

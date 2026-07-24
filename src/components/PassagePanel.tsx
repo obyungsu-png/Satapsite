@@ -12,6 +12,7 @@ interface PassagePanelProps {
   isExpanded?: boolean;
   expandDirection?: 'left' | 'right' | null;
   isPracticeReview?: boolean;
+  images?: Array<{url: string; position: string; caption?: string}>;
 }
 
 interface HighlightData {
@@ -28,7 +29,7 @@ interface ToolbarPosition {
   y: number;
 }
 
-export function PassagePanel({ content, highlightsMode = false, onExpandRight, isExpanded = false, expandDirection = null, isPracticeReview = false }: PassagePanelProps) {
+export function PassagePanel({ content, highlightsMode = false, onExpandRight, isExpanded = false, expandDirection = null, isPracticeReview = false, images }: PassagePanelProps) {
   // Add default highlight for question 4 passage
   const getInitialHighlights = (): HighlightData[] => {
     if (content.includes("In the decades after Mexico")) {
@@ -431,9 +432,25 @@ export function PassagePanel({ content, highlightsMode = false, onExpandRight, i
       }}
     >
       <div className="max-w-2xl">
+        {/* Images above passage (지문 위) */}
+        {images?.filter(img => img.position === 'above-passage').map((img, i) => (
+          <div key={`ap-${i}`} className="mb-4">
+            <img src={img.url} alt={img.caption || `Image ${i+1}`} className="max-w-full h-auto rounded-md border border-gray-300 mx-auto" style={{ maxHeight: '400px' }} />
+            {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+          </div>
+        ))}
+
         <p className="leading-[1.8] md:leading-[1.8] text-gray-900 select-text" style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
           {renderHighlightedText()}
         </p>
+
+        {/* Images below passage (지문 아래, 질문 앞) */}
+        {images?.filter(img => img.position === 'below-passage').map((img, i) => (
+          <div key={`bp-${i}`} className="mt-4">
+            <img src={img.url} alt={img.caption || `Image ${i+1}`} className="max-w-full h-auto rounded-md border border-gray-300 mx-auto" style={{ maxHeight: '400px' }} />
+            {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+          </div>
+        ))}
       </div>
 
       {/* Practice Review toolbar: single highlight/underline + dict + AI submenu */}

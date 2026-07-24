@@ -26,6 +26,7 @@ interface QuestionPanelProps {
   testInfo?: any;
   onShowVideoLecture?: (questionId: number) => void;
   imageUrl?: string;
+  images?: Array<{url: string; position: string; caption?: string}>;
   isPracticeReview?: boolean;
   correctAnswer?: string;
   explanation?: string;
@@ -47,6 +48,7 @@ export function QuestionPanel({
   testInfo,
   onShowVideoLecture,
   imageUrl,
+  images,
   isPracticeReview = false,
   correctAnswer,
   explanation,
@@ -160,23 +162,38 @@ export function QuestionPanel({
         
         {/* Question Section */}
         <div className="relative">
-          {/* Image Display (if exists) */}
-          {imageUrl && (
-            <div className="mb-4">
-              <img 
-                src={imageUrl} 
-                alt="Question diagram" 
-                className="max-w-full h-auto rounded-md border border-gray-300"
-                style={{ maxHeight: '400px' }}
-              />
-            </div>
-          )}
-          
+          {/* Images above question (다중 이미지 + legacy imageUrl 호환) */}
+          {(() => {
+            const aboveImgs = images?.filter(img => img.position === 'above-question') || [];
+            const hasImagesArr = images && images.length > 0;
+            // images 배열이 없으면 legacy imageUrl을 above-question으로 표시
+            const imgsToShow = hasImagesArr ? aboveImgs : (imageUrl ? [{url: imageUrl, caption: ''}] : []);
+            if (imgsToShow.length === 0) return null;
+            return (
+              <div className="mb-4 space-y-2">
+                {imgsToShow.map((img, i) => (
+                  <div key={i}>
+                    <img src={img.url} alt={img.caption || `Image ${i+1}`} className="max-w-full h-auto rounded-md border border-gray-300" style={{ maxHeight: '400px' }} />
+                    {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           <div className="mb-5">
             <p className="text-[#222] leading-[1.6]" style={{ fontSize: `${fontSize}px`, fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
               {question}
             </p>
           </div>
+
+          {/* Images below question (질문 아래, 선택지 앞) */}
+          {images?.filter(img => img.position === 'below-question').map((img, i) => (
+            <div key={`bq-${i}`} className="mb-4">
+              <img src={img.url} alt={img.caption || `Image ${i+1}`} className="max-w-full h-auto rounded-md border border-gray-300" style={{ maxHeight: '400px' }} />
+              {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+            </div>
+          ))}
         </div>
         
         <div className="pb-6">

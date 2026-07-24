@@ -21,6 +21,7 @@ interface MobileExamTabsProps {
   testInfo?: any;
   onShowVideoLecture?: (questionId: number) => void;
   imageUrl?: string;
+  images?: Array<{url: string; position: string; caption?: string}>;
   sectionLabel?: string;
   highlightsMode?: boolean;
   isPracticeReview?: boolean;
@@ -42,6 +43,7 @@ export function MobileExamTabs({
   testInfo,
   onShowVideoLecture,
   imageUrl,
+  images,
   sectionLabel = "Reading",
   highlightsMode = false,
   isPracticeReview = false,
@@ -116,6 +118,7 @@ export function MobileExamTabs({
               isExpanded={false}
               expandDirection={null}
               isPracticeReview={isPracticeReview}
+              images={images}
             />
           </div>
         ) : (
@@ -166,6 +169,7 @@ export function MobileExamTabs({
                 testInfo={testInfo}
                 onShowVideoLecture={onShowVideoLecture}
                 imageUrl={imageUrl}
+                images={images}
                 isPracticeReview={isPracticeReview}
                 correctAnswer={correctAnswer}
                 explanation={explanation}

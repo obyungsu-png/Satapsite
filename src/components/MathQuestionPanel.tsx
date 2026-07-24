@@ -23,6 +23,7 @@ interface MathQuestionPanelProps {
   onShowVideoLecture?: (questionId: number) => void;
   imageUrl?: string;
   imageAlt?: string;
+  images?: Array<{url: string; position: string; caption?: string}>;
   isPracticeReview?: boolean;
   correctAnswer?: string;
   explanation?: string;
@@ -41,6 +42,7 @@ export function MathQuestionPanel({
   onShowVideoLecture,
   imageUrl,
   imageAlt,
+  images,
   isPracticeReview = false,
   correctAnswer,
   explanation,
@@ -126,6 +128,24 @@ export function MathQuestionPanel({
           </div>
         </div>
         
+        {/* Images above question (다중 이미지 + legacy imageUrl 호환) */}
+        {(() => {
+          const aboveImgs = images?.filter(img => img.position === 'above-question') || [];
+          const hasImagesArr = images && images.length > 0;
+          const imgsToShow = hasImagesArr ? aboveImgs : [];
+          if (imgsToShow.length === 0) return null;
+          return (
+            <div className="mb-4 space-y-2">
+              {imgsToShow.map((img, i) => (
+                <div key={`aq-${i}`} className="flex justify-center">
+                  <img src={img.url} alt={img.caption || `Image ${i+1}`} className="max-w-md w-full rounded-md border border-gray-300" />
+                  {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Question Text */}
         <div className="mb-5">
           <p className="text-[#222] leading-[1.5]" style={{ fontSize: '18px', fontFamily: '"Times New Roman", Times, serif', fontWeight: 400 }}>
@@ -133,16 +153,24 @@ export function MathQuestionPanel({
           </p>
         </div>
 
-        {/* Image/Graph if present */}
-        {imageUrl && (
-          <div className="flex justify-center mb-5">
-            <img 
-              src={imageUrl} 
-              alt={imageAlt || "Question diagram"} 
-              className="max-w-md w-full"
-            />
-          </div>
-        )}
+        {/* Images below question (질문 아래, 선택지 앞) — legacy imageUrl 포함 */}
+        {(() => {
+          const belowImgs = images?.filter(img => img.position === 'below-question') || [];
+          const hasImagesArr = images && images.length > 0;
+          // images 배열이 없으면 legacy imageUrl을 below-question으로 표시
+          const imgsToShow = hasImagesArr ? belowImgs : (imageUrl ? [{url: imageUrl, caption: ''}] : []);
+          if (imgsToShow.length === 0) return null;
+          return (
+            <div className="mb-5 space-y-2">
+              {imgsToShow.map((img, i) => (
+                <div key={`bq-${i}`} className="flex justify-center">
+                  <img src={img.url} alt={img.caption || imageAlt || `Image ${i+1}`} className="max-w-md w-full rounded-md border border-gray-300" />
+                  {img.caption && <p className="text-xs text-gray-500 mt-1 text-center">{img.caption}</p>}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
         
         {/* Answer Choices */}
         <div className="space-y-2.5">

@@ -169,7 +169,9 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   const [editingChoices, setEditingChoices] = useState<string[]>(['', '', '', '']);
   const [editingCorrectAnswer, setEditingCorrectAnswer] = useState('a');
   const [editingExplanation, setEditingExplanation] = useState('');
-  const [editingImageUrl, setEditingImageUrl] = useState(''); // Image URL for editing
+  const [editingImageUrl, setEditingImageUrl] = useState(''); // Image URL for editing (legacy)
+  // 다중 이미지 + 위치 배치 (지문 위/아래, 질문 위/아래)
+  const [editingImages, setEditingImages] = useState<Array<{url: string; position: string; caption?: string}>>([]);
   const [editingVocabulary, setEditingVocabulary] = useState(''); // CSV vocabulary field
   const [editingAnalysis, setEditingAnalysis] = useState(''); // CSV analysis field
   const [editingModule, setEditingModule] = useState(''); // CSV module field ('1' | '2' | '')
@@ -417,6 +419,51 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
       } else if (target === 'editing') {
         setEditingImageUploading(false);
       }
+    }
+  };
+
+  // 다중 이미지 갤러리 업로드 — 업로드 후 editingImages 배열에 추가
+  const handleGalleryImageUpload = async (file: File) => {
+    if (!projectId || !publicAnonKey) {
+      toast.error('서버 정보가 없습니다.');
+      return;
+    }
+    setEditingImageUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Data = reader.result as string;
+        try {
+          const response = await fetch(
+            `https://${projectId}.supabase.co/functions/v1/make-server-46fa08c1/upload-image`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${publicAnonKey}`
+              },
+              body: JSON.stringify({ fileData: base64Data, fileName: file.name, contentType: file.type })
+            }
+          );
+          const data = await response.json();
+          if (data.success && data.imageUrl) {
+            setEditingImages(prev => [...prev, { url: data.imageUrl, position: 'above-question', caption: '' }]);
+            toast.success('이미지가 추가되었습니다! 위치를 선택하세요.');
+          } else {
+            throw new Error(data.error || 'Upload failed');
+          }
+        } catch (error) {
+          console.error('Gallery image upload error:', error);
+          toast.error('이미지 업로드에 실패했습니다.');
+        } finally {
+          setEditingImageUploading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('File read error:', error);
+      toast.error('파일을 읽을 수 없습니다.');
+      setEditingImageUploading(false);
     }
   };
 
@@ -1640,18 +1687,18 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                   {/* Image Upload (대량 업로드 imageUrl 연동) */}
                                   <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      이미지/그래프
-                                      <span className="text-gray-500 ml-2 text-xs font-normal">(선택사항 - CSV의 imageUrl과 연동됩니다)</span>
+                                      이미지/그래프 (도형, 그래프, 표 등)
+                                      <span className="text-gray-500 ml-2 text-xs font-normal">(여러 장 추가 가능 · 위치별 배치)</span>
                                     </label>
-                                    <div className="flex flex-col gap-2">
+
+                                    {/* 이미지 추가: 파일 업로드 + URL 입력 */}
+                                    <div className="flex flex-col gap-2 mb-3">
                                       <input
                                         type="file"
                                         accept="image/*"
                                         onChange={(e) => {
                                           const file = e.target.files?.[0];
-                                          if (file) {
-                                            handleImageUpload(file, 'editing');
-                                          }
+                                          if (file) handleGalleryImageUpload(file);
                                           e.target.value = '';
                                         }}
                                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
@@ -1660,30 +1707,91 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                       {editingImageUploading && (
                                         <p className="text-sm text-blue-600">이미지 업로드 중...</p>
                                       )}
-                                      {editingImageUrl && (
-                                        <div className="relative w-fit">
-                                          <img
-                                            src={editingImageUrl}
-                                            alt="Preview"
-                                            className="max-w-full h-auto max-h-48 rounded-md border border-gray-300"
-                                          />
-                                          <button
-                                            onClick={() => setEditingImageUrl('')}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                                            type="button"
-                                          >
-                                            ×
-                                          </button>
-                                        </div>
-                                      )}
-                                      <input
-                                        type="text"
-                                        value={editingImageUrl}
-                                        onChange={(e) => setEditingImageUrl(e.target.value)}
-                                        className="w-full p-2 text-sm border border-gray-300 rounded-md"
-                                        placeholder="또는 이미지 URL 직접 입력"
-                                      />
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          placeholder="또는 이미지 URL 직접 입력"
+                                          className="flex-1 p-2 text-sm border border-gray-300 rounded-md"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              const val = (e.target as HTMLInputElement).value.trim();
+                                              if (val) {
+                                                setEditingImages(prev => [...prev, { url: val, position: 'above-question', caption: '' }]);
+                                                (e.target as HTMLInputElement).value = '';
+                                                toast.success('이미지가 추가되었습니다!');
+                                              }
+                                            }
+                                          }}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                            const val = input?.value?.trim();
+                                            if (val) {
+                                              setEditingImages(prev => [...prev, { url: val, position: 'above-question', caption: '' }]);
+                                              input.value = '';
+                                              toast.success('이미지가 추가되었습니다!');
+                                            }
+                                          }}
+                                          className="px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                                        >
+                                          추가
+                                        </button>
+                                      </div>
                                     </div>
+
+                                    {/* 추가된 이미지 목록 (미리보기 + 위치 선택 + 캡션 + 삭제) */}
+                                    {editingImages.length > 0 && (
+                                      <div className="space-y-3">
+                                        {editingImages.map((img, i) => (
+                                          <div key={i} className="flex gap-3 p-3 bg-gray-50 rounded-md border border-gray-200">
+                                            <div className="relative shrink-0">
+                                              <img
+                                                src={img.url}
+                                                alt={`이미지 ${i + 1}`}
+                                                className="w-24 h-24 object-contain rounded-md border border-gray-300 bg-white"
+                                              />
+                                              <button
+                                                onClick={() => setEditingImages(prev => prev.filter((_, idx) => idx !== i))}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 text-xs"
+                                                type="button"
+                                              >
+                                                ×
+                                              </button>
+                                            </div>
+                                            <div className="flex-1 flex flex-col gap-2">
+                                              <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">배치 위치</label>
+                                                <select
+                                                  value={img.position}
+                                                  onChange={(e) => setEditingImages(prev => prev.map((im, idx) => idx === i ? { ...im, position: e.target.value } : im))}
+                                                  className="w-full p-1.5 text-xs border border-gray-300 rounded-md bg-white"
+                                                >
+                                                  <option value="above-passage">지문 위</option>
+                                                  <option value="below-passage">지문 아래 (질문 앞)</option>
+                                                  <option value="above-question">질문 위</option>
+                                                  <option value="below-question">질문 아래 (선택지 앞)</option>
+                                                </select>
+                                              </div>
+                                              <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">캡션 (선택)</label>
+                                                <input
+                                                  type="text"
+                                                  value={img.caption || ''}
+                                                  onChange={(e) => setEditingImages(prev => prev.map((im, idx) => idx === i ? { ...im, caption: e.target.value } : im))}
+                                                  className="w-full p-1.5 text-xs border border-gray-300 rounded-md"
+                                                  placeholder="예: Figure 1"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {editingImages.length === 0 && !editingImageUploading && (
+                                      <p className="text-xs text-gray-400">이미지가 없습니다. 파일을 업로드하거나 URL을 입력하세요.</p>
+                                    )}
                                   </div>
 
                                   {/* Vocabulary (대량 업로드 vocabulary 연동) */}
@@ -1882,7 +1990,8 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               choices: editingChoices,
                                               correctAnswer: editingCorrectAnswer,
                                               explanation: editingExplanation,
-                                              imageUrl: editingImageUrl || undefined,
+                                              imageUrl: editingImages.length > 0 ? editingImages[0].url : (editingImageUrl || undefined),
+                                              images: editingImages.length > 0 ? editingImages : undefined,
                                               vocabulary: editingVocabulary,
                                               analysis: editingAnalysis,
                                               module: editingModule === '1' || editingModule === '2' ? Number(editingModule) : null,
@@ -1933,6 +2042,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
                                     setEditingImageUrl('');
+                                    setEditingImages([]);
                                     setEditingVocabulary('');
                                     setEditingAnalysis('');
                                     setEditingModule('');
@@ -1958,6 +2068,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                     setEditingCorrectAnswer('a');
                                     setEditingExplanation('');
                                     setEditingImageUrl('');
+                                    setEditingImages([]);
                                     setEditingVocabulary('');
                                     setEditingAnalysis('');
                                     setEditingModule('');
@@ -2033,6 +2144,11 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                                               setEditingExplanation(q.explanation || '');
                                               // 대량 업로드(CSV/텍스트) 추가 필드 연동
                                               setEditingImageUrl(q.imageUrl || '');
+                                              // 다중 이미지 로드: images 배열 우선, 없으면 legacy imageUrl을 1개로 변환
+                                              const existingImages = Array.isArray(q.images) && q.images.length > 0
+                                                ? q.images
+                                                : (q.imageUrl ? [{ url: q.imageUrl, position: 'above-question', caption: '' }] : []);
+                                              setEditingImages(existingImages);
                                               setEditingVocabulary(q.vocabulary || '');
                                               setEditingAnalysis(q.analysis || '');
                                               setEditingModule(q.module ? String(q.module) : '');

@@ -10,7 +10,6 @@ interface BulkUploadProps {
 }
 
 export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation, uploadSubcategory: propUploadSubcategory }: BulkUploadProps) {
-  const [cardTitle, setCardTitle] = useState('');
   const [textInput, setTextInput] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -19,7 +18,7 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
   const [csvFileName, setCsvFileName] = useState('');
   const [csvQuestions, setCsvQuestions] = useState<any[]>([]);
   const [csvError, setCsvError] = useState('');
-  
+
   // Add category selection state
   const [uploadLocation, setUploadLocation] = useState(propUploadLocation || '스마트 연습');
   const [uploadSubcategory, setUploadSubcategory] = useState(propUploadSubcategory || '');
@@ -29,6 +28,15 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
 
   // 과목별 최대 문제 수 (리딩: 모듈1+2 = 27+27 = 54, 수학: 모듈1+2 = 22+22 = 44)
   const maxQuestions = subjectType === 'math' ? 44 : 54;
+
+  // 카드 제목: 연도·월 드롭다운 + 나머지 텍스트
+  const currentYear = new Date().getFullYear();
+  const [titleYear, setTitleYear] = useState<string>(String(currentYear));
+  const [titleMonth, setTitleMonth] = useState<string>('');
+  const [titleSuffix, setTitleSuffix] = useState('');
+  // 최종 카드 제목 (연도+월+나머지 텍스트 조합)
+  const cardTitle = [titleYear && `${titleYear}년`, titleMonth && `${titleMonth}월`, titleSuffix.trim()].filter(Boolean).join(' ');
+  const resetCardTitle = () => { setTitleYear(String(currentYear)); setTitleMonth(''); setTitleSuffix(''); };
 
   // Category options
   const categoryOptions: Record<string, Array<{value: string, label: string}>> = {
@@ -421,7 +429,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
       toast.success(`✅ 업로드 완료! 총 ${parsedData.length}문제`);
 
       // Reset form
-      setCardTitle('');
+      resetCardTitle();
       setTextInput('');
       setCsvFileName('');
       setCsvQuestions([]);
@@ -504,18 +512,44 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
         </div>
       </div>
 
-      {/* Card Title Input */}
+      {/* Card Title Input — 연도·월 드롭다운 + 나머지 텍스트 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
           <span className="text-2xl">📁</span> 카드 제목 (목록에 표시될 이름) *
         </label>
-        <input
-          type="text"
-          value={cardTitle}
-          onChange={(e) => setCardTitle(e.target.value)}
-          placeholder="예: 2024년 3월 SAT 기출문제"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={titleYear}
+            onChange={(e) => setTitleYear(e.target.value)}
+            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
+          >
+            {Array.from({ length: 8 }, (_, i) => String(currentYear - 2 + i)).map(y => (
+              <option key={y} value={y}>{y}년</option>
+            ))}
+          </select>
+          <select
+            value={titleMonth}
+            onChange={(e) => setTitleMonth(e.target.value)}
+            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
+          >
+            <option value="">월 선택</option>
+            {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(m => (
+              <option key={m} value={m}>{m}월</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={titleSuffix}
+            onChange={(e) => setTitleSuffix(e.target.value)}
+            placeholder="나머지 제목 (예: SAT 기출문제)"
+            className="flex-1 min-w-[200px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+        {cardTitle && (
+          <p className="mt-2 text-xs text-purple-600 font-medium">
+            ✓ 최종 제목: <span className="font-bold">{cardTitle}</span>
+          </p>
+        )}
         <p className="mt-2 text-xs text-gray-500">
           💡 모든 문제가 1개의 카드로 저장됩니다.
         </p>
@@ -732,7 +766,7 @@ EXPLANATION: 다음 해설`}
       <div className="flex justify-end gap-3">
         <Button
           onClick={() => {
-            setCardTitle('');
+            resetCardTitle();
             setTextInput('');
             setCsvFileName('');
             setCsvQuestions([]);
@@ -748,6 +782,8 @@ EXPLANATION: 다음 해설`}
           disabled={
             isUploading ||
             !cardTitle.trim() ||
+            !uploadLocation ||
+            !uploadSubcategory ||
             (inputMode === 'text' ? !textInput.trim() : csvQuestions.length === 0)
           }
           className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

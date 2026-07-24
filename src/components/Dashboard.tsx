@@ -3716,12 +3716,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
                 </h1>
                 <div className="w-20" />
               </div>
-              <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm w-fit">
+              <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-x-auto max-w-full">
                 {courseCategories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => handleCategoryChange(category.id)}
-                    className={`px-4 md:px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 ${
+                    className={`px-3 md:px-5 py-2 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 shrink-0 whitespace-nowrap ${
                       selectedCourseCategory === category.id
                         ? 'bg-[#3D5AA1] text-white shadow-md'
                         : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
@@ -3993,12 +3993,12 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           </div>
 
           {/* Category Tabs - 둥근 캡슐 탭 디자인 적용 */}
-          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit">
+          <div className="hidden md:flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-2xl shadow-sm mb-8 w-fit overflow-x-auto max-w-full">
             {courseCategories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => handleCategoryChange(category.id)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 shrink-0 whitespace-nowrap ${
                   selectedCourseCategory === category.id
                     ? 'bg-[#3D5AA1] text-white shadow-md'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
