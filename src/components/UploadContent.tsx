@@ -69,6 +69,10 @@ interface UploadContentProps {
     status: 'completed' | 'processing' | 'failed';
     questionCount?: number;
     data?: any;
+    subjectType?: string;
+    moduleInfo?: any;
+    imageUrl?: string;
+    images?: Array<{url: string; position: string; caption?: string}>;
   }>;
   setUploadedFiles: React.Dispatch<React.SetStateAction<Array<{
     id: string;
@@ -82,6 +86,10 @@ interface UploadContentProps {
     status: 'completed' | 'processing' | 'failed';
     questionCount?: number;
     data?: any;
+    subjectType?: string;
+    moduleInfo?: any;
+    imageUrl?: string;
+    images?: Array<{url: string; position: string; caption?: string}>;
   }>>>;
   projectId?: string;
   publicAnonKey?: string;
@@ -113,6 +121,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
   // Edit filter state
   const [editFilterCategory, setEditFilterCategory] = useState('all'); // all, past-exams, official-samples
   const [editFilterType, setEditFilterType] = useState('all'); // all, Reading, Math
+  const [editSortOrder, setEditSortOrder] = useState<'desc' | 'asc'>('desc'); // desc: 최신순, asc: 오래된순
   
   // Expanded card state for 2-step selection UI
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
@@ -1420,10 +1429,10 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
 
                 {/* Filter Section */}
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">카테고리 필터</label>
-                      <select 
+                      <select
                         className="w-full p-2 text-sm border border-gray-300 rounded-md bg-white"
                         value={editFilterCategory}
                         onChange={(e) => setEditFilterCategory(e.target.value)}
@@ -1435,7 +1444,7 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">문제 유형</label>
-                      <select 
+                      <select
                         className="w-full p-2 text-sm border border-gray-300 rounded-md bg-white"
                         value={editFilterType}
                         onChange={(e) => setEditFilterType(e.target.value)}
@@ -1444,6 +1453,27 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                         <option value="Reading">Reading</option>
                         <option value="Math">Math</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">정렬</label>
+                      <div className="flex items-center gap-1 bg-white rounded-md p-1 border border-gray-300">
+                        <button
+                          onClick={() => setEditSortOrder('desc')}
+                          className={`flex-1 px-2 py-1.5 rounded text-xs font-bold transition-all ${
+                            editSortOrder === 'desc' ? 'bg-[#3D5AA1] text-white' : 'text-gray-500 hover:bg-gray-100'
+                          }`}
+                        >
+                          ↓ 내림차순
+                        </button>
+                        <button
+                          onClick={() => setEditSortOrder('asc')}
+                          className={`flex-1 px-2 py-1.5 rounded text-xs font-bold transition-all ${
+                            editSortOrder === 'asc' ? 'bg-[#3D5AA1] text-white' : 'text-gray-500 hover:bg-gray-100'
+                          }`}
+                        >
+                          ↑ 오름차순
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-end">
                       <div className="text-xs text-gray-600">
@@ -1556,6 +1586,18 @@ export function UploadContent({ setActiveTab, onUnlockContent, uploadedFiles, se
                         }
                       }
                       return true;
+                    }).sort((a, b) => {
+                      // 정렬: 제목에서 연도·월 추출, 없으면 uploadDate 사용
+                      const extractKey = (item: any): number => {
+                        const name = item.name || '';
+                        const match = name.match(/(\d{4})년\s*(\d{1,2})월/);
+                        if (match) {
+                          return parseInt(match[1]) * 100 + parseInt(match[2]);
+                        }
+                        return item.uploadDate ? new Date(item.uploadDate).getTime() : 0;
+                      };
+                      const diff = extractKey(a) - extractKey(b);
+                      return editSortOrder === 'desc' ? -diff : diff;
                     });
 
                     if (filteredFiles.length === 0) {

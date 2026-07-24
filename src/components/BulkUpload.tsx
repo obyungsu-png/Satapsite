@@ -29,14 +29,21 @@ export function BulkUpload({ onUploadSuccess, uploadLocation: propUploadLocation
   // 과목별 최대 문제 수 (리딩: 모듈1+2 = 27+27 = 54, 수학: 모듈1+2 = 22+22 = 44)
   const maxQuestions = subjectType === 'math' ? 44 : 54;
 
-  // 카드 제목: 연도·월 드롭다운 + 나머지 텍스트
+  // 카드 제목: 연도·월·SAT·리딩/수학·횟차 드롭다운 조합
   const currentYear = new Date().getFullYear();
   const [titleYear, setTitleYear] = useState<string>(String(currentYear));
   const [titleMonth, setTitleMonth] = useState<string>('');
-  const [titleSuffix, setTitleSuffix] = useState('');
-  // 최종 카드 제목 (연도+월+나머지 텍스트 조합)
-  const cardTitle = [titleYear && `${titleYear}년`, titleMonth && `${titleMonth}월`, titleSuffix.trim()].filter(Boolean).join(' ');
-  const resetCardTitle = () => { setTitleYear(String(currentYear)); setTitleMonth(''); setTitleSuffix(''); };
+  const [titleSubject, setTitleSubject] = useState<string>(''); // '리딩' | '수학'
+  const [titleAttempt, setTitleAttempt] = useState<string>(''); // 1-8
+  // 최종 카드 제목 (연도+월+SAT+리딩/수학+횟차 조합)
+  const cardTitle = [
+    titleYear && `${titleYear}년`,
+    titleMonth && `${titleMonth}월`,
+    'SAT',
+    titleSubject,
+    titleAttempt && `${titleAttempt}회차`,
+  ].filter(Boolean).join(' ');
+  const resetCardTitle = () => { setTitleYear(String(currentYear)); setTitleMonth(''); setTitleSubject(''); setTitleAttempt(''); };
 
   // Category options
   const categoryOptions: Record<string, Array<{value: string, label: string}>> = {
@@ -512,7 +519,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
         </div>
       </div>
 
-      {/* Card Title Input — 연도·월 드롭다운 + 나머지 텍스트 */}
+      {/* Card Title Input — 연도·월·SAT·리딩/수학·횟차 드롭다운 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
           <span className="text-2xl">📁</span> 카드 제목 (목록에 표시될 이름) *
@@ -523,7 +530,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
             onChange={(e) => setTitleYear(e.target.value)}
             className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
           >
-            {Array.from({ length: 8 }, (_, i) => String(currentYear - 2 + i)).map(y => (
+            {Array.from({ length: 6 }, (_, i) => String(2023 + i)).map(y => (
               <option key={y} value={y}>{y}년</option>
             ))}
           </select>
@@ -537,13 +544,26 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
               <option key={m} value={m}>{m}월</option>
             ))}
           </select>
-          <input
-            type="text"
-            value={titleSuffix}
-            onChange={(e) => setTitleSuffix(e.target.value)}
-            placeholder="나머지 제목 (예: SAT 기출문제)"
-            className="flex-1 min-w-[200px] px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
+          <span className="px-2 py-3 text-sm font-bold text-gray-700">SAT</span>
+          <select
+            value={titleSubject}
+            onChange={(e) => setTitleSubject(e.target.value)}
+            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
+          >
+            <option value="">과목 선택</option>
+            <option value="리딩">리딩</option>
+            <option value="수학">수학</option>
+          </select>
+          <select
+            value={titleAttempt}
+            onChange={(e) => setTitleAttempt(e.target.value)}
+            className="px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm font-medium"
+          >
+            <option value="">횟차 선택</option>
+            {Array.from({ length: 8 }, (_, i) => String(i + 1)).map(a => (
+              <option key={a} value={a}>{a}회차</option>
+            ))}
+          </select>
         </div>
         {cardTitle && (
           <p className="mt-2 text-xs text-purple-600 font-medium">
@@ -551,7 +571,7 @@ EXPLANATION: Module 2 두 번째 문제 해설입니다.`;
           </p>
         )}
         <p className="mt-2 text-xs text-gray-500">
-          💡 모든 문제가 1개의 카드로 저장됩니다.
+          💡 모든 문제가 1개의 카드로 저장됩니다. (예: 2026년 3월 SAT 리딩 1회차)
         </p>
       </div>
 

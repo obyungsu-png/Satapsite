@@ -959,6 +959,7 @@ export function Dashboard({ onStartTest, onStartReview, onViewHistoryDetail, lea
   // Course content state
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [coursePage, setCoursePage] = useState(1);
+  const [courseSortOrder, setCourseSortOrder] = useState<'desc' | 'asc'>('desc'); // desc: 최신순, asc: 오래된순
   const [wordListPage, setWordListPage] = useState(1);
   const coursesPerPage = 8;
   
@@ -3885,7 +3886,21 @@ ${studentMessage || '(메시지가 없습니다)'}`;
 
 
 
-    const allCourses = courseData[selectedCourseCategory] || [];
+    const rawCourses = courseData[selectedCourseCategory] || [];
+    // 정렬: 제목에서 연도·월 추출 (예: "2026년 3월 SAT 리딩 1회차"), 없으면 date 필드 사용
+    const extractSortKey = (item: any): number => {
+      const title = item.title || item.name || '';
+      const match = title.match(/(\d{4})년\s*(\d{1,2})월/);
+      if (match) {
+        return parseInt(match[1]) * 100 + parseInt(match[2]);
+      }
+      const d = item.date ? new Date(item.date).getTime() : 0;
+      return d ? Math.floor(d / 86400000) : 0;
+    };
+    const allCourses = [...rawCourses].sort((a, b) => {
+      const diff = extractSortKey(a) - extractSortKey(b);
+      return courseSortOrder === 'desc' ? -diff : diff;
+    });
     const totalCoursePages = Math.ceil(allCourses.length / coursesPerPage);
     const startCourseIndex = (coursePage - 1) * coursesPerPage;
     const currentCourses = allCourses.slice(startCourseIndex, startCourseIndex + coursesPerPage);
@@ -4013,10 +4028,24 @@ ${studentMessage || '(메시지가 없습니다)'}`;
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex flex-wrap items-center gap-8">
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-gray-700">정렬</span>
-              <select className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 focus:outline-none focus:border-[#3D5AA1] bg-gray-50">
-                <option>시간순</option>
-                <option>인기순</option>
-              </select>
+              <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 border border-gray-200">
+                <button
+                  onClick={() => { setCourseSortOrder('desc'); setCoursePage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    courseSortOrder === 'desc' ? 'bg-[#3D5AA1] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  ↓ 내림차순
+                </button>
+                <button
+                  onClick={() => { setCourseSortOrder('asc'); setCoursePage(1); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    courseSortOrder === 'asc' ? 'bg-[#3D5AA1] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >
+                  ↑ 오름차순
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-gray-700">과목</span>
